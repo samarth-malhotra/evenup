@@ -1,15 +1,14 @@
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
-import React from "react";
-import { View, Dimensions, TouchableOpacity } from "react-native";
+import { Dimensions, TouchableOpacity, View } from "react-native";
 import Svg, {
   Defs,
-  LinearGradient as SvgGradient,
-  Stop,
-  Mask,
-  Rect,
   G,
+  Mask,
   Path,
+  Rect,
+  Stop,
+  LinearGradient as SvgGradient,
 } from "react-native-svg";
 
 import { COLORS } from "../theme/color";
@@ -56,13 +55,7 @@ export default function MiniHeaderWaves({
           </SvgGradient>
 
           <Mask id="fadeMask">
-            <Rect
-              x="0"
-              y="0"
-              width={width}
-              height={90}
-              fill={backgroundColor}
-            />
+            <Rect x="0" y="0" width={width} height={90} fill={backgroundColor} />
           </Mask>
         </Defs>
 
@@ -78,7 +71,7 @@ export default function MiniHeaderWaves({
       </Svg>
       <TouchableOpacity
         onPress={() => router.push("/notifications")}
-        style={{ position: "absolute", top: 22, right: 12 }}
+        style={{ position: "absolute", top: 40, right: 12 }}
       >
         <Ionicons name="notifications" size={28} color="#fff" />
       </TouchableOpacity>
