@@ -8,9 +8,14 @@
     "strict": true,
     "baseUrl": ".",
     "paths": {
-      "@/*": ["./*"]
+      "@/*": [
+        "./*"
+      ]
     },
-    "types": ["react", "react-native"]
+    "types": [
+      "react",
+      "react-native"
+    ]
   },
   "include": [
     "**/*.ts",
@@ -26,5 +31,6 @@
     "build",
     "babel.config.mjs",
     "tailwind.config.mjs"
-  ]
+  ],
+  "extends": "expo/tsconfig.base"
 }
