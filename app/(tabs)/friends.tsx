@@ -1,10 +1,10 @@
 // app/settings/index.tsx
-import { View, Text } from "react-native";
+import { Text, View } from "react-native";
 
 export default function SettingsScreen() {
   return (
     <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
-      <Text>Wallet</Text>
+      <Text>Friends</Text>
     </View>
   );
 }
