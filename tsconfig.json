@@ -12,12 +12,19 @@
     },
     "types": ["react", "react-native"]
   },
-  "include": ["**/*.ts", "**/*.tsx", "**/*.js", "**/*.jsx"],
+  "include": [
+    "**/*.ts",
+    "**/*.tsx",
+    "**/*.js",
+    "**/*.jsx",
+    "tailwind.config.mjs",
+    "babel.config.mjs"
+  ],
   "exclude": [
     "node_modules",
     "dist",
     "build",
-    "babel.config.js",
-    "tailwind.config.js"
+    "babel.config.mjs",
+    "tailwind.config.mjs"
   ]
 }
