@@ -1,22 +1,21 @@
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
-import React from "react";
-import { View, Dimensions, TouchableOpacity } from "react-native";
+import { Dimensions, TouchableOpacity, View } from "react-native";
 import Svg, {
   Defs,
-  LinearGradient as SvgGradient,
-  Stop,
-  Mask,
-  Rect,
   G,
+  Mask,
   Path,
+  Rect,
+  Stop,
+  LinearGradient as SvgGradient,
 } from "react-native-svg";
 
 import { COLORS } from "../../../theme/color";
 
 const { width } = Dimensions.get("window");
 
-export default function MiniHeaderWaves({
+export default function WaveHeader({
   height = 120, // keep it < 100
   top = "#6C4CE6",
   bottom = "#5336D3",
@@ -56,7 +55,13 @@ export default function MiniHeaderWaves({
           </SvgGradient>
 
           <Mask id="fadeMask">
-            <Rect x="0" y="0" width={width} height={90} fill={backgroundColor} />
+            <Rect
+              x="0"
+              y="0"
+              width={width}
+              height={90}
+              fill={backgroundColor}
+            />
           </Mask>
         </Defs>
 
