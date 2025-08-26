@@ -1,7 +1,7 @@
 // app/(tabs)/_layout.tsx
+import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { Tabs } from "expo-router";
 import { useTheme } from "react-native-paper";
-import { MaterialCommunityIcons } from "@expo/vector-icons";
 
 export default function TabsLayout() {
   const theme = useTheme();
@@ -41,20 +41,11 @@ export default function TabsLayout() {
       />
 
       <Tabs.Screen
-        name="addBills"
-        options={{
-          title: "Add Bills",
-          tabBarIcon: ({ color, size }) => (
-            <MaterialCommunityIcons name="cog-outline" color={color} size={size} />
-          ),
-        }}
-      />
-      <Tabs.Screen
         name="wallet"
         options={{
           title: "Wallet",
           tabBarIcon: ({ color, size }) => (
-            <MaterialCommunityIcons name="cog-outline" color={color} size={size} />
+            <MaterialCommunityIcons name="wallet-outline" color={color} size={size} />
           ),
         }}
       />

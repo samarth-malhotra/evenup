@@ -1,0 +1,10 @@
+import ThemedSafeArea from "@/components/ThemedSafeArea";
+import Summary from "@/lib/summary/summary";
+
+export default function GroupsScreen() {
+  return (
+    <ThemedSafeArea bg="white" statusBarStyle="dark" scroll={false} padding={0}>
+      <Summary />
+    </ThemedSafeArea>
+  );
+}

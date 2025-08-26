@@ -1,19 +1,14 @@
 // components/ThemedSafeArea.tsx
-import React from "react";
-import {
-  View,
-  ScrollView,
-  StyleSheet,
-  ViewStyle,
-  StyleProp,
-} from "react-native";
-import {
-  SafeAreaView,
-  useSafeAreaInsets,
-  Edge,
-} from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
-import { ColorKey, COLORS } from "../theme/color";
+import React from "react";
+import { ScrollView, StyleSheet, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+
+import { COLORS } from "../theme/color";
+
+import type { ColorKey } from "../theme/color";
+import type { StyleProp, ViewStyle } from "react-native";
+import type { Edge } from "react-native-safe-area-context";
 // import { COLORS, ColorKey } from "@/theme/colors";
 
 type Props = {
@@ -50,7 +45,7 @@ export default function ThemedSafeArea({
   statusBarBackgroundMatch = true,
   className,
 }: Props) {
-  const insets = useSafeAreaInsets();
+  // const insets = useSafeAreaInsets();
   const backgroundColor = (COLORS as any)[bg] ?? bg;
 
   const containerStyle: StyleProp<ViewStyle> = [
@@ -59,14 +54,14 @@ export default function ThemedSafeArea({
     style,
   ];
 
-  const contentPadTop = edges.includes("top") ? insets.top : 0;
-  const contentPadBottom = edges.includes("bottom") ? insets.bottom : 0;
+  // const contentPadTop = edges.includes("top") ? insets.top : 0;
+  // const contentPadBottom = edges.includes("bottom") ? insets.bottom : 0;
 
   return (
     <SafeAreaView
       style={[{ backgroundColor }, styles.flex]}
       edges={edges}
-      // @ts-ignore allow className if nativewind is present
+      // @ts-expect-error allow className if nativewind is present
       className={className}
     >
       <StatusBar
@@ -95,7 +90,7 @@ export default function ThemedSafeArea({
             containerStyle,
             // { paddingTop: contentPadTop, paddingBottom: contentPadBottom },
           ]}
-          // @ts-ignore allow className if nativewind is present
+          // @ts-expect-error allow className if nativewind is present
           className={className}
         >
           {children}

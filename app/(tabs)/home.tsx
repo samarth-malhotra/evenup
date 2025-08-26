@@ -1,20 +1,18 @@
 // app/(tabs)/index.tsx  — Expo Router
-import React from "react";
+import { Feather, Ionicons, MaterialIcons } from "@expo/vector-icons";
+import { Link } from "expo-router";
 import {
-  View,
-  Text,
-  StyleSheet,
   ScrollView,
+  StyleSheet,
+  Text,
   TouchableOpacity,
-  Image,
-  FlatList,
-  SafeAreaView,
+  View,
 } from "react-native";
+
 // import { LinearGradient } from "expo-linear-gradient";
-import { Ionicons, MaterialIcons, Feather } from "@expo/vector-icons";
 // import WaveHeader from "../../../components/waveHeader";
-import WavyHeader from "../../../components/waveHeader";
-import ThemedSafeArea from "../../../components/ThemedSafeArea";
+import ThemedSafeArea from "../../components/ThemedSafeArea";
+import WavyHeader from "../../components/waveHeader";
 
 const COLORS = {
   bg: "#F5F3FF",
@@ -39,42 +37,21 @@ const groups = [
 const quickLinks = [
   {
     id: "add",
-    label: "Add Expense",
+    label: "Add Bill",
     icon: <Ionicons name="flash" size={22} />,
+    link: "../addBills",
   },
   {
     id: "reports",
     label: "Reports",
     icon: <MaterialIcons name="bar-chart" size={22} />,
+    link: "../summary",
   },
   {
     id: "settle",
-    label: "Settle Up",
-    icon: <Feather name="credit-card" size={22} />,
-  },
-  {
-    id: "split",
-    label: "Split by Item",
-    icon: <Feather name="tag" size={22} />,
-  },
-];
-
-const activities = [
-  {
-    id: "a1",
-    title: "Dinner at Barbeque Nation",
-    subtitle: "You paid ₹ 850",
-    avatarColor: "#FFE4D6",
-    rightTitle: "You paid",
-    rightAmount: "₹ 100",
-  },
-  {
-    id: "a2",
-    title: "Juhi – Coffee",
-    subtitle: "Settled",
-    avatarColor: "#E6EBFF",
-    rightTitle: "",
-    rightAmount: "",
+    label: "Create Group",
+    icon: <Feather name="plus" size={22} />,
+    link: "../addBills",
   },
 ];
 
@@ -83,10 +60,7 @@ export default function HomeScreen() {
     <ThemedSafeArea bg="bg" statusBarStyle="dark" scroll>
       <ScrollView contentContainerStyle={{ paddingBottom: 32 }}>
         {/* Wave Header */}
-        <View style={{ backgroundColor: "#fff" }}>
-          <WavyHeader height={200} />
-          {/* place your avatar & “Hi, Rohan” absolutely on top if needed */}
-        </View>
+        <WavyHeader height={200} />
 
         <View
           style={{
@@ -138,58 +112,17 @@ export default function HomeScreen() {
         <SectionHeader title="Quick links" />
         <View style={styles.quickGrid}>
           {quickLinks.map((q) => (
-            <TouchableOpacity
-              key={q.id}
-              style={styles.quickItem}
-              activeOpacity={0.85}
-            >
-              <View style={styles.quickIcon}>{q.icon}</View>
-              <Text style={styles.quickText}>{q.label}</Text>
-            </TouchableOpacity>
+            <Link href={q.link} asChild key={q.id}>
+              <TouchableOpacity style={styles.quickItem} activeOpacity={0.85}>
+                <>
+                  <View style={styles.quickIcon}>{q.icon}</View>
+                  <Text style={styles.quickText}>{q.label}</Text>
+                </>
+              </TouchableOpacity>
+            </Link>
           ))}
         </View>
-
-        {/* Recent activity */}
-        <SectionHeader title="Recent activity" />
-        <FlatList
-          data={activities}
-          keyExtractor={(i) => i.id}
-          scrollEnabled={false}
-          ItemSeparatorComponent={() => <View style={styles.separator} />}
-          contentContainerStyle={{ paddingHorizontal: 16 }}
-          renderItem={({ item }) => (
-            <View style={styles.activityRow}>
-              <View
-                style={[
-                  styles.activityAvatar,
-                  { backgroundColor: item.avatarColor },
-                ]}
-              >
-                <Ionicons name="person" size={20} />
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.activityTitle} numberOfLines={1}>
-                  {item.title}
-                </Text>
-                <Text style={styles.activitySub}>{item.subtitle}</Text>
-              </View>
-              <View style={{ alignItems: "flex-end" }}>
-                {!!item.rightTitle && (
-                  <Text style={styles.activityRightTitle}>
-                    {item.rightTitle}
-                  </Text>
-                )}
-                {!!item.rightAmount && (
-                  <Text style={styles.activityRightAmount}>
-                    {item.rightAmount}
-                  </Text>
-                )}
-              </View>
-            </View>
-          )}
-        />
       </ScrollView>
-      {/* </SafeAreaView> */}
     </ThemedSafeArea>
   );
 }
@@ -266,9 +199,14 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     shadowOffset: { width: 0, height: 3 },
     elevation: 2,
-    alignItems: 'center',
+    alignItems: "center",
   },
-  summaryTitle: { color: COLORS.subtext, fontSize: 16, marginBottom: 6, fontWeight: "800" },
+  summaryTitle: {
+    color: COLORS.subtext,
+    fontSize: 16,
+    marginBottom: 6,
+    fontWeight: "800",
+  },
   summaryAmount: { fontSize: 26, fontWeight: "800" },
   sectionHeader: {
     paddingHorizontal: 16,
@@ -311,7 +249,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.06,
     shadowRadius: 6,
     elevation: 1,
-    marginRight: '3%'
+    marginRight: "3%",
   },
   quickIcon: {
     width: 36,
@@ -322,7 +260,12 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     marginBottom: 8,
   },
-  quickText: { fontSize: 15, fontWeight: "600", color: COLORS.text, textAlign: 'center' },
+  quickText: {
+    fontSize: 15,
+    fontWeight: "600",
+    color: COLORS.text,
+    textAlign: "center",
+  },
   activityRow: {
     flexDirection: "row",
     alignItems: "center",

@@ -1,10 +1,10 @@
-// app/home/details.tsx
+// app/settings/index.tsx
 import { View, Text } from "react-native";
 
-export default function HomeDetails() {
+export default function SettingsScreen() {
   return (
     <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
-      <Text>Home → Details</Text>
+      <Text>Wallet</Text>
     </View>
   );
 }

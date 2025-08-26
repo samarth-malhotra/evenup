@@ -1,20 +1,10 @@
-import { Link, useRouter } from "expo-router";
 import { useState } from "react";
 import { View } from "react-native";
-import {
-  Appbar,
-  Card,
-  Text,
-  TextInput,
-  Button,
-  List,
-  Avatar,
-} from "react-native-paper";
+import { Appbar, Avatar, Button, Text, TextInput } from "react-native-paper";
 
 export default function GroupsScreen() {
   const [name, setName] = useState("");
   const [members, setMembers] = useState("You, Alice, Bob");
-  const router = useRouter();
 
   return (
     <View style={{}}>
@@ -26,8 +16,6 @@ export default function GroupsScreen() {
         <Appbar.Action icon="magnify" onPress={() => {}} />
         <Avatar.Icon size={24} icon="folder" />
       </Appbar.Header>
-
-     
 
       <View style={{ padding: 16, gap: 12 }}>
         <Text variant="bodyMedium">
