@@ -12,7 +12,7 @@ import Svg, {
   Path,
 } from "react-native-svg";
 
-import { COLORS } from "../theme/color";
+import { COLORS } from "../../../theme/color";
 
 const { width } = Dimensions.get("window");
 
@@ -56,13 +56,7 @@ export default function MiniHeaderWaves({
           </SvgGradient>
 
           <Mask id="fadeMask">
-            <Rect
-              x="0"
-              y="0"
-              width={width}
-              height={90}
-              fill={backgroundColor}
-            />
+            <Rect x="0" y="0" width={width} height={90} fill={backgroundColor} />
           </Mask>
         </Defs>
 

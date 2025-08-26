@@ -1,18 +1,12 @@
 // app/(tabs)/index.tsx  — Expo Router
 import { Feather, Ionicons, MaterialIcons } from "@expo/vector-icons";
 import { Link } from "expo-router";
-import {
-  ScrollView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-} from "react-native";
+import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
 // import { LinearGradient } from "expo-linear-gradient";
 // import WaveHeader from "../../../components/waveHeader";
-import ThemedSafeArea from "../../components/ThemedSafeArea";
-import WavyHeader from "../../components/waveHeader";
+import ThemedSafeArea from "../../lib/shared/components/ThemedSafeArea";
+import WavyHeader from "../../lib/shared/components/waveHeader";
 
 const COLORS = {
   bg: "#F5F3FF",
@@ -76,16 +70,8 @@ export default function HomeScreen() {
           </Text>
           {/* your two summary cards */}
           <View style={{ flexDirection: "row", gap: 14 }}>
-            <SummaryCard
-              title="You owe"
-              amount="₹ 1,250"
-              amountColor="#FF6B3D"
-            />
-            <SummaryCard
-              title="Friends owe you"
-              amount="₹ 3,400"
-              amountColor="#10B981"
-            />
+            <SummaryCard title="You owe" amount="₹ 1,250" amountColor="#FF6B3D" />
+            <SummaryCard title="Friends owe you" amount="₹ 3,400" amountColor="#10B981" />
           </View>
         </View>
 
@@ -139,20 +125,12 @@ function SummaryCard({
   return (
     <View style={styles.summaryCard}>
       <Text style={styles.summaryTitle}>{title}</Text>
-      <Text style={[styles.summaryAmount, { color: amountColor }]}>
-        {amount}
-      </Text>
+      <Text style={[styles.summaryAmount, { color: amountColor }]}>{amount}</Text>
     </View>
   );
 }
 
-function SectionHeader({
-  title,
-  actionIcon = false,
-}: {
-  title: string;
-  actionIcon?: boolean;
-}) {
+function SectionHeader({ title, actionIcon = false }: { title: string; actionIcon?: boolean }) {
   return (
     <View style={styles.sectionHeader}>
       <Text style={styles.sectionTitle}>{title}</Text>
