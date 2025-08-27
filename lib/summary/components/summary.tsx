@@ -3,41 +3,112 @@ import { useMemo, useState } from "react";
 import { FlatList, StyleSheet, Text, View } from "react-native";
 import { BarChart } from "react-native-gifted-charts";
 
-const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun"];
-const VALUES = [4000, 6000, 4500, 6500, 7000, 2500];
+// ---------- Helpers ----------
+type Txn = {
+  id: string;
+  name: string;
+  date: string; // ISO string
+  amount: number; // + = credit, - = debit
+};
 
-const transactions = [
-  { id: "1", name: "Anisha Singh", date: "18 Jun · 14:20", amount: 500 },
-  { id: "2", name: "Alok Mehra", date: "16 Jun · 09:45", amount: -1200 },
-];
+const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun"] as const;
 
+// simple ₹ formatter
 const formatRs = (n: number) =>
   `₹${Math.abs(n)
     .toString()
     .replace(/\B(?=(\d{3})+(?!\d))/g, ",")}`;
 
+// "18 Jun · 14:20"
+const formatWhen = (iso: string) => {
+  const d = new Date(iso);
+  const day = d.getDate();
+  const mon = MONTHS[d.getMonth()];
+  const hh = String(d.getHours()).padStart(2, "0");
+  const mm = String(d.getMinutes()).padStart(2, "0");
+  return `${day} ${mon} · ${hh}:${mm}`;
+};
+
+// ---------- Mock data (lots) ----------
+const NAMES = [
+  "Anisha Singh",
+  "Alok Mehra",
+  "Rohit Verma",
+  "Priya Nair",
+  "Neha Kapoor",
+  "Kunal Shah",
+  "Meera Iyer",
+  "Amit Kulkarni",
+  "Isha Rao",
+  "Vikas Gupta",
+];
+
+function rand(min: number, max: number) {
+  return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+
+// create 60 transactions across Jan–Jun with mixed credits/debits
+const MOCK_TXNS: Txn[] = Array.from({ length: 60 }).map((_, i) => {
+  const month = rand(0, 5); // Jan..Jun
+  const day = rand(1, 28);
+  const hour = rand(8, 21);
+  const minute = rand(0, 59);
+  const name = NAMES[rand(0, NAMES.length - 1)];
+  const isDebit = Math.random() > 0.45; // mostly expenses
+  const base = rand(100, 2500);
+  const amount = isDebit ? -base : base;
+  const iso = new Date(2025, month, day, hour, minute).toISOString();
+  return { id: `${i + 1}`, name, date: iso, amount };
+});
+
+// ---------- Component ----------
 export default function WalletSummary() {
   const [selected, setSelected] = useState<number | null>(null);
 
-  const max = Math.max(...VALUES);
-  const yMax = Math.ceil((max + 400) / 1000) * 1000;
+  // sort txns by date desc for the list
+  const txns = useMemo(
+    () => [...MOCK_TXNS].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()),
+    [],
+  );
 
+  // aggregate monthly totals from the SAME dataset
+  const monthlyTotals = useMemo(() => {
+    const arr = new Array(6).fill(0);
+    for (const t of txns) {
+      const m = new Date(t.date).getMonth(); // 0..11
+      if (m <= 5) {
+        // choose one of the lines below:
+        arr[m] += Math.abs(t.amount); // visual volume (credits+debits)
+        // arr[m] += t.amount;        // net flow (credits - debits)
+      }
+    }
+    return arr;
+  }, [txns]);
+
+  const max = Math.max(...monthlyTotals, 0);
+  const yMax = Math.max(1000, Math.ceil((max + 400) / 1000) * 1000);
+
+  // Build k-style ticks: ["0k","2k","4k","6k","8k"]
   const yTicks = useMemo(() => {
     const sections = 4;
     const step = Math.round(yMax / sections);
-    return Array.from({ length: sections + 1 }, (_, i) => `${i * step}`);
+    return Array.from({ length: sections + 1 }, (_, i) => `${Math.round((i * step) / 1000)}k`);
   }, [yMax]);
 
-  const barData = VALUES.map((v, i) => ({
-    value: v,
-    label: MONTHS[i],
-    barWidth: 28,
-    frontColor: i === 4 ? "#6C5CE7" : "rgba(108,92,231,0.28)", // highlight May
-  }));
+  const barData = useMemo(
+    () =>
+      MONTHS.slice(0, 6).map((label, i) => ({
+        value: monthlyTotals[i],
+        label,
+        barWidth: 28,
+        frontColor: i === 4 ? "#6C5CE7" : "rgba(108,92,231,0.28)", // highlight May
+      })),
+    [monthlyTotals],
+  );
 
   return (
     <View style={styles.container}>
-      {/* ===== Chart ===== */}
+      {/* ===== Chart (driven by txns) ===== */}
       <BarChart
         data={barData}
         height={200}
@@ -48,7 +119,7 @@ export default function WalletSummary() {
         endSpacing={28}
         labelWidth={36}
         barBorderRadius={10}
-        // Show Y axis + dashed grid
+        // Y axis + dashed grid
         yAxisThickness={1}
         yAxisColor="#E5E7EB"
         yAxisTextStyle={{ color: "#9AA0A6", fontSize: 10 }}
@@ -59,8 +130,8 @@ export default function WalletSummary() {
         dashGap={6}
         xAxisThickness={0}
         xAxisLabelTextStyle={{ color: "#6B7280", fontSize: 12, marginTop: 6 }}
-        // Interactivity: tap to show/hide tooltip value
-        onPress={(item, index) => setSelected((p) => (p === index ? null : index))}
+        // Tap to show monthly total
+        onPress={(_, index) => setSelected((p) => (p === index ? null : index))}
         focusedBarIndex={selected ?? -1}
         renderTooltip={(item) =>
           selected !== null ? (
@@ -72,10 +143,10 @@ export default function WalletSummary() {
         isAnimated
       />
 
-      {/* ===== Transactions ===== */}
+      {/* ===== Transactions (same dataset) ===== */}
       <Text style={styles.title}>Transactions</Text>
       <FlatList
-        data={transactions}
+        data={txns}
         keyExtractor={(it) => it.id}
         ItemSeparatorComponent={() => <View style={styles.separator} />}
         renderItem={({ item }) => {
@@ -84,7 +155,7 @@ export default function WalletSummary() {
             <View style={styles.row}>
               <View>
                 <Text style={styles.name}>{item.name}</Text>
-                <Text style={styles.date}>{item.date}</Text>
+                <Text style={styles.date}>{formatWhen(item.date)}</Text>
               </View>
               <Text style={[styles.amount, isNegative ? styles.neg : styles.pos]}>
                 {isNegative ? "-" : "+"}
