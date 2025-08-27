@@ -86,7 +86,7 @@ export default function WalletSummary() {
   }, [txns]);
 
   const max = Math.max(...monthlyTotals, 0);
-  const yMax = Math.max(1000, Math.ceil((max + 400) / 1000) * 1000);
+  const yMax = Math.max(1000, Math.ceil((max * 1.2) / 1000) * 1000); // +20% headroom
 
   // Build k-style ticks: ["0k","2k","4k","6k","8k"]
   const yTicks = useMemo(() => {
@@ -114,12 +114,13 @@ export default function WalletSummary() {
         height={200}
         maxValue={yMax}
         noOfSections={4}
+        // spacing so labels aren't clipped at edges
         spacing={26}
-        initialSpacing={28}
-        endSpacing={28}
+        initialSpacing={32}
+        endSpacing={52} // more right-side room
         labelWidth={36}
         barBorderRadius={10}
-        // Y axis + dashed grid
+        // axis + grid (unchanged)
         yAxisThickness={1}
         yAxisColor="#E5E7EB"
         yAxisTextStyle={{ color: "#9AA0A6", fontSize: 10 }}
@@ -130,12 +131,19 @@ export default function WalletSummary() {
         dashGap={6}
         xAxisThickness={0}
         xAxisLabelTextStyle={{ color: "#6B7280", fontSize: 12, marginTop: 6 }}
-        // Tap to show monthly total
         onPress={(_, index) => setSelected((p) => (p === index ? null : index))}
         focusedBarIndex={selected ?? -1}
-        renderTooltip={(item) =>
+        renderTooltip={(item, index) =>
           selected !== null ? (
-            <View style={styles.tooltip}>
+            <View
+              style={[
+                styles.tooltip,
+                // If the bar is near the right edge, shift tooltip left a bit
+                (index >= barData.length - 1 || index === barData.length - 2) && {
+                  transform: [{ translateX: -24 }],
+                },
+              ]}
+            >
               <Text style={styles.tooltipText}>{formatRs(item?.value ?? 0)}</Text>
             </View>
           ) : null
