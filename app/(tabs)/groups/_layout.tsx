@@ -12,6 +12,7 @@ export default function GroupsStack() {
           presentation: "card",
         }}
       />
+      <Stack.Screen name="[id]" />
     </Stack>
   );
 }

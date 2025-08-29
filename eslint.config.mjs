@@ -19,7 +19,23 @@ import unusedImports from "eslint-plugin-unused-imports";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 export default [
-  { ignores: ["node_modules", "dist", "build", ".expo", "android", "ios"] },
+  {
+    // ⬇️ Added config files to ignores (Option A)
+    ignores: [
+      "node_modules",
+      "dist",
+      "build",
+      ".expo",
+      "android",
+      "ios",
+      // config files we don't want typed-linted
+      "babel.config.*",
+      "tailwind.config.*",
+      "metro.config.*",
+      "jest.config.*",
+      "postcss.config.*",
+    ],
+  },
 
   js.configs.recommended,
 
@@ -54,9 +70,7 @@ export default [
           project: ["./tsconfig.json"],
           alwaysTryTypes: true,
         },
-        node: {
-          extensions: [".js", ".jsx", ".ts", ".tsx", ".d.ts"],
-        },
+        node: { extensions: [".js", ".jsx", ".ts", ".tsx", ".d.ts"] },
       },
       react: { version: "detect" },
     },
@@ -86,9 +100,7 @@ export default [
           ],
           "newlines-between": "always",
           alphabetize: { order: "asc", caseInsensitive: true },
-          pathGroups: [
-            { pattern: "@/**", group: "internal", position: "before" },
-          ],
+          pathGroups: [{ pattern: "@/**", group: "internal", position: "before" }],
           pathGroupsExcludedImportTypes: ["builtin"],
         },
       ],
@@ -100,10 +112,7 @@ export default [
       "react-native/no-inline-styles": "off",
       "react-native/no-raw-text": "off",
 
-      "@typescript-eslint/consistent-type-imports": [
-        "warn",
-        { prefer: "type-imports" },
-      ],
+      "@typescript-eslint/consistent-type-imports": ["warn", { prefer: "type-imports" }],
       "@typescript-eslint/no-explicit-any": "off",
     },
   },

@@ -8,7 +8,7 @@ export default function AddBill() {
 
   return (
     <View style={{ padding: 16, gap: 12 }}>
-      <Text variant="bodyMedium">Bills yet. Create your first one below.</Text>
+      <Text variant="bodyMedium">Bills yet! Create your first one below.</Text>
 
       <Text variant="titleMedium" style={{ marginTop: 8 }}>
         Create Bill

@@ -1,6 +1,4 @@
-import { Ionicons } from "@expo/vector-icons";
-import { router } from "expo-router";
-import { Dimensions, TouchableOpacity, View } from "react-native";
+import { Dimensions, View } from "react-native";
 import Svg, {
   Defs,
   G,
@@ -55,13 +53,7 @@ export default function WaveHeader({
           </SvgGradient>
 
           <Mask id="fadeMask">
-            <Rect
-              x="0"
-              y="0"
-              width={width}
-              height={90}
-              fill={backgroundColor}
-            />
+            <Rect x="0" y="0" width={width} height={90} fill={backgroundColor} />
           </Mask>
         </Defs>
 
@@ -75,12 +67,6 @@ export default function WaveHeader({
           {/* solid white -> merges with page */}
         </G>
       </Svg>
-      <TouchableOpacity
-        onPress={() => router.push("/notifications")}
-        style={{ position: "absolute", top: 22, right: 12 }}
-      >
-        <Ionicons name="notifications" size={28} color="#fff" />
-      </TouchableOpacity>
     </View>
   );
 }
