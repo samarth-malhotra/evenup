@@ -6,9 +6,9 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { COLORS } from '../../../theme/color';
 
-import type { ColorKey } from '../../../theme/color';
 import type { StyleProp, ViewStyle } from 'react-native';
 import type { Edge } from 'react-native-safe-area-context';
+import type { ColorKey } from '../../../theme/color';
 // import { COLORS, ColorKey } from "@/theme/colors";
 
 type Props = {
