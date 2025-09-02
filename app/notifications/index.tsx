@@ -1,5 +1,5 @@
-import NotificationsScreen from "@/lib/notifications/components/Notification";
-import ThemedSafeArea from "@/lib/shared/components/ThemedSafeArea";
+import NotificationsScreen from '@/lib/notifications/components/Notification';
+import ThemedSafeArea from '@/lib/shared/components/ThemedSafeArea';
 
 function Notifications() {
   return (

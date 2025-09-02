@@ -1,7 +1,8 @@
-import ThemedSafeArea from '@/lib/shared/components/ThemedSafeArea';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useState } from 'react';
 import { Pressable, Text, TextInput } from 'react-native';
+
+import ThemedSafeArea from '@/lib/shared/components/ThemedSafeArea';
 // import { ThemedSafeArea } from "@/components/ThemedSafeArea";
 
 export default function EditTransaction() {

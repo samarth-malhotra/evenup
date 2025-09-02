@@ -1,12 +1,13 @@
 // app/(tabs)/groups/[id].tsx
-import ThemedSafeArea from '@/lib/shared/components/ThemedSafeArea';
-import WaveHeader from '@/lib/shared/components/WaveHeader';
-import { COLORS } from '@/theme/color';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import clsx from 'clsx';
 import { useLocalSearchParams, useNavigation, useRouter } from 'expo-router';
 import { useLayoutEffect, useMemo } from 'react';
 import { FlatList, Pressable, Text, TouchableOpacity, View } from 'react-native';
+
+import ThemedSafeArea from '@/lib/shared/components/ThemedSafeArea';
+import WaveHeader from '@/lib/shared/components/WaveHeader';
+import { COLORS } from '@/theme/color';
 
 // ---------------- Types (keep in sync with your data layer) ----------------
 export type Member = {

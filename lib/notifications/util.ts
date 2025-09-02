@@ -1,11 +1,11 @@
-import AsyncStorage from "@react-native-async-storage/async-storage";
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
-import { seed } from "./mock";
+import { seed } from './mock';
 
-import type { Activity } from "./types";
-import type { Feather } from "@expo/vector-icons";
+import type { Activity } from './types';
+import type { Feather } from '@expo/vector-icons';
 
-const STORAGE_KEY = "evenup.notifications.v1";
+const STORAGE_KEY = 'evenup.notifications.v1';
 
 export async function loadActivities(): Promise<Activity[]> {
   const raw = await AsyncStorage.getItem(STORAGE_KEY);
@@ -53,37 +53,37 @@ export function splitSections(items: Activity[]) {
   });
 
   const sections = [
-    { title: "Today", data: todayItems },
-    { title: "Yesterday", data: yesterdayItems },
-    { title: "Earlier", data: earlierItems },
+    { title: 'Today', data: todayItems },
+    { title: 'Yesterday', data: yesterdayItems },
+    { title: 'Earlier', data: earlierItems },
   ].filter((s) => s.data.length > 0);
 
   return sections;
 }
 
-export function pickIconName(cat?: Activity["category"]): keyof typeof Feather.glyphMap {
+export function pickIconName(cat?: Activity['category']): keyof typeof Feather.glyphMap {
   switch (cat) {
-    case "expense":
-      return "tag";
-    case "settlement":
-      return "credit-card";
-    case "group":
-      return "users";
+    case 'expense':
+      return 'tag';
+    case 'settlement':
+      return 'credit-card';
+    case 'group':
+      return 'users';
     default:
-      return "bell";
+      return 'bell';
   }
 }
 
-export function pickAvatarTint(cat?: Activity["category"]) {
+export function pickAvatarTint(cat?: Activity['category']) {
   switch (cat) {
-    case "expense":
-      return { backgroundColor: "#FFE4D6" };
-    case "settlement":
-      return { backgroundColor: "#E6F8EF" };
-    case "group":
-      return { backgroundColor: "#E6EBFF" };
+    case 'expense':
+      return { backgroundColor: '#FFE4D6' };
+    case 'settlement':
+      return { backgroundColor: '#E6F8EF' };
+    case 'group':
+      return { backgroundColor: '#E6EBFF' };
     default:
-      return { backgroundColor: "#F3F4F6" };
+      return { backgroundColor: '#F3F4F6' };
   }
 }
 
