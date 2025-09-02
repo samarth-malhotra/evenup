@@ -57,7 +57,7 @@ const quickLinks = [
 
 export default function HomeScreen() {
   return (
-    <ThemedSafeArea bg="bg" statusBarStyle="dark" scroll>
+    <ThemedSafeArea bg="bg" statusBarStyle="dark" scroll edges={['left', 'right']}>
       <ScrollView contentContainerStyle={{ paddingBottom: 32 }}>
         {/* Wave Header */}
         <WaveHeader height={200} />

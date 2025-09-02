@@ -75,7 +75,7 @@ export default function GroupDetailScreen() {
 
   // ---------------- Handlers ----------------
   const handleSettleUp = () => {
-    router.push({ pathname: '/settle', params: { groupId: id as string } });
+    router.push({ pathname: `/groups/${id}/settle-up`, params: { groupId: id as string } });
   };
 
   const handleAddExpense = () => {
@@ -144,36 +144,39 @@ export default function GroupDetailScreen() {
         renderItem={({ item }) => {
           const rel = relationFor(item);
           return (
-            <View className="shadow-xs mb-3 flex-row items-center gap-3 rounded-2xl border border-gray-100 bg-white p-3 dark:border-gray-800 dark:bg-neutral-900">
-              <View
-                className={clsx(
-                  'h-10 w-10 items-center justify-center rounded-full',
-                  rel.tone === 'lent' && 'bg-green-100 dark:bg-green-900/30',
-                  rel.tone === 'borrowed' && 'bg-red-100 dark:bg-red-900/30',
-                  rel.tone === 'neutral' && 'bg-gray-100 dark:bg-neutral-800'
-                )}>
-                <MaterialCommunityIcons
-                  name={item.paidBy === currentUserId ? 'cash-fast' : 'cash-multiple'}
-                  size={20}
-                />
-              </View>
+            <Pressable onPress={() => router.push(`/groups/${id}/transactions/${item.id}`)}>
+              {/* existing transaction card UI */}
+              <View className="shadow-xs mb-3 flex-row items-center gap-3 rounded-2xl border border-gray-100 bg-white p-3 dark:border-gray-800 dark:bg-neutral-900">
+                <View
+                  className={clsx(
+                    'h-10 w-10 items-center justify-center rounded-full',
+                    rel.tone === 'lent' && 'bg-green-100 dark:bg-green-900/30',
+                    rel.tone === 'borrowed' && 'bg-red-100 dark:bg-red-900/30',
+                    rel.tone === 'neutral' && 'bg-gray-100 dark:bg-neutral-800'
+                  )}>
+                  <MaterialCommunityIcons
+                    name={item.paidBy === currentUserId ? 'cash-fast' : 'cash-multiple'}
+                    size={20}
+                  />
+                </View>
 
-              <View className="flex-1">
-                <View className="flex-row items-center justify-between">
-                  <Text className="font-medium" numberOfLines={1}>
-                    {item.title}
-                  </Text>
-                  <Text className="font-semibold">{formatMoney(item.amount)}</Text>
-                </View>
-                <View className="mt-0.5 flex-row items-center justify-between">
-                  <View className="flex-row items-center gap-2">
-                    <Text className="text-xs text-gray-500">{formatDate(item.date)}</Text>
-                    <PaidBy id={item.paidBy} />
+                <View className="flex-1">
+                  <View className="flex-row items-center justify-between">
+                    <Text className="font-medium" numberOfLines={1}>
+                      {item.title}
+                    </Text>
+                    <Text className="font-semibold">{formatMoney(item.amount)}</Text>
                   </View>
-                  <Badge tone={rel.tone} label={rel.label} />
+                  <View className="mt-0.5 flex-row items-center justify-between">
+                    <View className="flex-row items-center gap-2">
+                      <Text className="text-xs text-gray-500">{formatDate(item.date)}</Text>
+                      <PaidBy id={item.paidBy} />
+                    </View>
+                    <Badge tone={rel.tone} label={rel.label} />
+                  </View>
                 </View>
               </View>
-            </View>
+            </Pressable>
           );
         }}
       />
