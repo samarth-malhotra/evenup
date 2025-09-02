@@ -1,8 +1,8 @@
-import { Feather, Ionicons } from "@expo/vector-icons";
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { RefreshControl, SectionList, Text, TouchableOpacity, View } from "react-native";
+import { Feather, Ionicons } from '@expo/vector-icons';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { RefreshControl, SectionList, Text, TouchableOpacity, View } from 'react-native';
 
-import { styles } from "../style";
+import { styles } from '../style';
 import {
   loadActivities,
   pickAvatarTint,
@@ -10,9 +10,9 @@ import {
   saveActivities,
   splitSections,
   timeAgo,
-} from "../util";
+} from '../util';
 
-import type { Activity } from "../types";
+import type { Activity } from '../types';
 
 export default function NotificationsScreen() {
   const [list, setList] = useState<Activity[]>([]);
@@ -60,8 +60,7 @@ export default function NotificationsScreen() {
       <TouchableOpacity
         activeOpacity={0.85}
         onPress={() => toggleRead(item.id)}
-        style={[styles.row, unread ? styles.rowUnread : styles.rowRead]}
-      >
+        style={[styles.row, unread ? styles.rowUnread : styles.rowRead]}>
         <View style={[styles.avatar, pickAvatarTint(item.category)]}>
           <Feather name={pickIconName(item.category)} size={18} />
         </View>
@@ -77,7 +76,7 @@ export default function NotificationsScreen() {
           )}
         </View>
 
-        <View style={{ alignItems: "flex-end", gap: 6 }}>
+        <View style={{ alignItems: 'flex-end', gap: 6 }}>
           {!!item.amountText && <Text style={styles.amount}>{item.amountText}</Text>}
           <View style={styles.rightMeta}>
             {unread && <View style={styles.unreadDot} />}
@@ -104,11 +103,10 @@ export default function NotificationsScreen() {
           accessibilityRole="button"
           onPress={markAllRead}
           disabled={unreadCount === 0}
-          style={[styles.markAllBtn, unreadCount === 0 && { opacity: 0.5 }]}
-        >
+          style={[styles.markAllBtn, unreadCount === 0 && { opacity: 0.5 }]}>
           <Feather name="check-circle" size={18} />
           <Text style={styles.markAllText}>
-            Mark all as read{unreadCount ? ` (${unreadCount})` : ""}
+            Mark all as read{unreadCount ? ` (${unreadCount})` : ''}
           </Text>
         </TouchableOpacity>
       </View>

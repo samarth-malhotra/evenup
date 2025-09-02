@@ -1,4 +1,4 @@
-import { Dimensions, View } from "react-native";
+import { Dimensions, View } from 'react-native';
 import Svg, {
   Defs,
   G,
@@ -7,23 +7,23 @@ import Svg, {
   Rect,
   Stop,
   LinearGradient as SvgGradient,
-} from "react-native-svg";
+} from 'react-native-svg';
 
-import { COLORS } from "../../../theme/color";
+import { COLORS } from '../../../theme/color';
 
-const { width } = Dimensions.get("window");
+const { width } = Dimensions.get('window');
 
 export default function WaveHeader({
   height = 120, // keep it < 100
-  top = "#6C4CE6",
-  bottom = "#5336D3",
+  top = '#6C4CE6',
+  bottom = '#5336D3',
 }: {
   height?: number;
   top?: string;
   bottom?: string;
 }) {
   const H = Math.min(120, Math.max(90, height)); // safety: never >= 100
-  const backgroundColor = (COLORS as any)["bg"];
+  const backgroundColor = (COLORS as any)['bg'];
 
   // One curvy wave (closes to bottom so area below becomes white)
   const wave = (offset = 0) => `

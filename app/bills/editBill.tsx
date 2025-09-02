@@ -1,7 +1,7 @@
-import { View } from "react-native";
-import { Text } from "react-native-paper";
+import { View } from 'react-native';
+import { Text } from 'react-native-paper';
 
-import ThemedSafeArea from "@/lib/shared/components/ThemedSafeArea";
+import ThemedSafeArea from '@/lib/shared/components/ThemedSafeArea';
 
 export default function EditBillScreen() {
   return (
