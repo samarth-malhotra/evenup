@@ -1,14 +1,14 @@
 // components/ThemedSafeArea.tsx
-import { StatusBar } from "expo-status-bar";
-import React from "react";
-import { ScrollView, StyleSheet, View } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { StatusBar } from 'expo-status-bar';
+import React from 'react';
+import { ScrollView, StyleSheet, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { COLORS } from "../../../theme/color";
+import { COLORS } from '../../../theme/color';
 
-import type { ColorKey } from "../../../theme/color";
-import type { StyleProp, ViewStyle } from "react-native";
-import type { Edge } from "react-native-safe-area-context";
+import type { ColorKey } from '../../../theme/color';
+import type { StyleProp, ViewStyle } from 'react-native';
+import type { Edge } from 'react-native-safe-area-context';
 // import { COLORS, ColorKey } from "@/theme/colors";
 
 type Props = {
@@ -26,7 +26,7 @@ type Props = {
   /** Which edges get safe-area padding (default: top+bottom) */
   edges?: Readonly<Edge[]>;
   /** Status bar style for this screen */
-  statusBarStyle?: "light" | "dark" | "auto" | "inverted";
+  statusBarStyle?: 'light' | 'dark' | 'auto' | 'inverted';
   /** When true, sets StatusBar background to match bg on Android */
   statusBarBackgroundMatch?: boolean;
   /** (Optional) className for NativeWind; ignored if not installed */
@@ -35,13 +35,13 @@ type Props = {
 
 export default function ThemedSafeArea({
   children,
-  bg = "white",
+  bg = 'white',
   padding = 0,
   scroll = false,
   style,
   contentContainerStyle,
-  edges = ["top", "bottom"],
-  statusBarStyle = "auto",
+  edges = ['right', 'left'],
+  statusBarStyle = 'auto',
   statusBarBackgroundMatch = true,
   className,
 }: Props) {
@@ -58,12 +58,7 @@ export default function ThemedSafeArea({
   // const contentPadBottom = edges.includes("bottom") ? insets.bottom : 0;
 
   return (
-    <SafeAreaView
-      style={[{ backgroundColor }, styles.flex]}
-      edges={edges}
-      // @ts-expect-error allow className if nativewind is present
-      className={className}
-    >
+    <SafeAreaView style={[{ backgroundColor }, styles.flex]} edges={edges} className={className}>
       <StatusBar
         style={statusBarStyle}
         backgroundColor={statusBarBackgroundMatch ? (backgroundColor as string) : undefined}
@@ -78,8 +73,7 @@ export default function ThemedSafeArea({
           ]}
           style={containerStyle}
           keyboardShouldPersistTaps="handled"
-          showsVerticalScrollIndicator={false}
-        >
+          showsVerticalScrollIndicator={false}>
           {children}
         </ScrollView>
       ) : (
@@ -88,9 +82,7 @@ export default function ThemedSafeArea({
             containerStyle,
             // { paddingTop: contentPadTop, paddingBottom: contentPadBottom },
           ]}
-          // @ts-expect-error allow className if nativewind is present
-          className={className}
-        >
+          className={className}>
           {children}
         </View>
       )}
