@@ -32,7 +32,7 @@ export default function WaveHeader({ children }: { children?: React.ReactNode })
   `;
 
   return (
-    <View style={{ height: H - (children ? 60 : 30) }}>
+    <View style={{ height: H - (children ? 70 : 30) }}>
       <Svg width={width} height={'100%'}>
         <Defs>
           {/* background gradient */}
@@ -59,7 +59,7 @@ export default function WaveHeader({ children }: { children?: React.ReactNode })
         <G mask="url(#fadeMask)">
           {/* Main decorative wave */}
           <Path d={wave(0.0)} fill="#FFFFFF" fillOpacity={0.22} />
-          <Path d={wave(0.07)} fill={backgroundColor} />
+          <Path d={wave(0.05)} fill={backgroundColor} />
         </G>
       </Svg>
 

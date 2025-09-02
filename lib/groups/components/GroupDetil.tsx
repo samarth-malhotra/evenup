@@ -1,4 +1,3 @@
-// app/(tabs)/groups/[id].tsx
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import clsx from 'clsx';
 import { useLocalSearchParams, useNavigation, useRouter } from 'expo-router';
@@ -7,10 +6,11 @@ import { FlatList, Pressable, Text, TouchableOpacity, View } from 'react-native'
 
 import AppHeader from '@/lib/shared/components/AppHeader';
 import ThemedSafeArea from '@/lib/shared/components/ThemedSafeArea';
-import WaveHeader from '@/lib/shared/components/WaveHeader';
 import { COLORS } from '@/theme/color';
 
-// ---------------- Types (keep in sync with your data layer) ----------------
+import { computeBalances, currency, selectExpenses, selectGroup, selectMemberById } from '../util';
+
+// ---------------- Types ----------------
 export type Member = {
   id: string;
   name: string;
@@ -21,11 +21,11 @@ export type Expense = {
   id: string;
   groupId: string;
   title: string;
-  amount: number; // positive amount in group's currency
-  paidBy: string; // member id
-  date: string; // ISO date string
-  category?: string; // e.g. food, travel
-  splits: Record<string, number>; // memberId -> share amount
+  amount: number;
+  paidBy: string;
+  date: string;
+  category?: string;
+  splits: Record<string, number>;
 };
 
 // ---------------- Screen ----------------
@@ -34,16 +34,14 @@ export default function GroupDetailScreen() {
   const navigation = useNavigation();
   const router = useRouter();
 
-  // You likely have a currentUser in state/context; hardcode or wire up here
-  const currentUserId = 'me'; // TODO: replace with selector from auth/user store
-
+  const currentUserId = 'me';
   const group = selectGroup(id);
   const rawExpenses = selectExpenses(id);
 
-  const expenses = useMemo(() => {
-    // Ascending by date (oldest first)
-    return [...rawExpenses].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
-  }, [rawExpenses]);
+  const expenses = useMemo(
+    () => [...rawExpenses].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()),
+    [rawExpenses]
+  );
 
   const { youOwe, friendsOweYou, total } = useMemo(
     () => computeBalances(id, currentUserId),
@@ -52,63 +50,25 @@ export default function GroupDetailScreen() {
 
   // ---------------- Header ----------------
   useLayoutEffect(() => {
-    // If you set `header`, React Navigation replaces the entire header — so the default back button,
-    // title, and right actions disappear. To *keep* the default back + title while getting your
-    // wavy look, use `headerBackground` instead of `header`.
-    navigation.setOptions({
-      headerShown: true,
-      // headerTitle: group?.name ?? 'Group',
-      headerBackTitleVisible: false,
-
-      // headerRight: () => (
-      //   <Pressable
-      //     onPress={() => router.push({ pathname: '/groups/[id]/settings', params: { id } })}
-      //     className="mr-3"
-      //     accessibilityLabel="Group settings">
-      //     <Ionicons name="settings-sharp" size={22} />
-      //   </Pressable>
-      // ),
-
-      // Keep default header layout (back button, spacing, gestures), but paint your waves behind it
-      header: () => (
-        <WaveHeader>
-          <View className="h-12 flex-row items-center justify-between align-middle">
-            <Text className="text-3xl font-semibold tracking-wider color-white">{group?.name}</Text>
-            <Pressable
-              onPress={handleSettleUp}
-              className="flex-row items-center gap-2 rounded-full bg-green-600 px-3 py-1.5"
-              accessibilityLabel="Settle up">
-              <MaterialCommunityIcons name="hand-coin" size={16} color="#fff" />
-              <Text className="font-medium text-white">Settle up</Text>
-            </Pressable>
-          </View>
-        </WaveHeader>
-      ),
-      // If your WaveHeader sits under a translucent bar, uncomment:
-      // headerTransparent: true,
-    });
-  }, [navigation, group?.name, id]);
-
-  useLayoutEffect(() => {
     navigation.setOptions({
       headerShown: true,
       header: () => (
         <AppHeader
-          title={`${group?.name}`}
+          title={group?.name ?? 'Group'}
           showBackButton
           rightActions={
             <Pressable
               onPress={handleSettleUp}
-              className="flex-row items-center gap-2 rounded-full bg-green-600 px-3 py-1.5"
+              className="flex-row items-center gap-1.5 rounded-full bg-green-600 px-3 py-1.5"
               accessibilityLabel="Settle up">
               <MaterialCommunityIcons name="hand-coin" size={16} color="#fff" />
-              <Text className="font-medium text-white">Settle up</Text>
+              <Text className="text-sm font-medium text-white">Settle</Text>
             </Pressable>
           }
         />
       ),
     });
-  }, [navigation]);
+  }, [navigation, group?.name]);
 
   // ---------------- Handlers ----------------
   const handleSettleUp = () => {
@@ -141,11 +101,27 @@ export default function GroupDetailScreen() {
 
   // ---------------- Render ----------------
   return (
-    <ThemedSafeArea className="flex-1">
+    <ThemedSafeArea className="flex-1 bg-gray-50">
+      {/* Group Info */}
+      {/* <View className="px-4 pt-3">
+        <View className="flex-row items-center gap-3 rounded-2xl border border-gray-100 bg-white p-4 shadow-sm">
+          <Image
+            source={{ uri: group?.img ?? 'https://picsum.photos/200?random=11' }}
+            className="h-12 w-12 rounded-full"
+          />
+          <View className="flex-1">
+            <Text className="text-lg font-semibold text-gray-900">{group?.name}</Text>
+            <Text className="text-sm text-gray-500">
+              {group?.subtitle ?? '3 members · Active recently'}
+            </Text>
+          </View>
+        </View>
+      </View> */}
+
       {/* Summary */}
       <View className="px-4 pt-3">
-        <View className="rounded-2xl border border-gray-100 bg-white p-4 shadow-sm dark:border-gray-800 dark:bg-neutral-900">
-          <View className="mt-4 flex-row gap-3">
+        <View className="rounded-2xl border border-gray-100 bg-white p-4 shadow-sm">
+          <View className="flex-row gap-3">
             <Stat label="Total" value={formatMoney(total)} />
             <Stat label="You owe" value={formatMoney(youOwe)} tone="danger" />
             <Stat label="Friends owe you" value={formatMoney(friendsOweYou)} tone="success" />
@@ -155,10 +131,10 @@ export default function GroupDetailScreen() {
 
       {/* Transactions Header */}
       <View className="mb-2 mt-5 flex-row items-center justify-between px-4">
-        <Text className="text-base font-semibold">All transactions</Text>
+        <Text className="text-base font-semibold">Transactions</Text>
         <View className="flex-row items-center gap-1">
-          <Ionicons name="arrow-up" size={14} />
-          <Text className="text-xs text-gray-600">Ascending by date</Text>
+          <Ionicons name="arrow-down" size={14} />
+          <Text className="text-xs text-gray-600">Latest first</Text>
         </View>
       </View>
 
@@ -171,27 +147,27 @@ export default function GroupDetailScreen() {
           const rel = relationFor(item);
           return (
             <Pressable onPress={() => router.push(`/groups/${id}/transactions/${item.id}`)}>
-              {/* existing transaction card UI */}
-              <View className="shadow-xs mb-3 flex-row items-center gap-3 rounded-2xl border border-gray-100 bg-white p-3 dark:border-gray-800 dark:bg-neutral-900">
+              <View className="mb-3 flex-row items-center gap-3 rounded-2xl border border-gray-100 bg-white p-3 shadow-sm">
                 <View
                   className={clsx(
                     'h-10 w-10 items-center justify-center rounded-full',
-                    rel.tone === 'lent' && 'bg-green-100 dark:bg-green-900/30',
-                    rel.tone === 'borrowed' && 'bg-red-100 dark:bg-red-900/30',
-                    rel.tone === 'neutral' && 'bg-gray-100 dark:bg-neutral-800'
+                    rel.tone === 'lent' && 'bg-green-100',
+                    rel.tone === 'borrowed' && 'bg-red-100',
+                    rel.tone === 'neutral' && 'bg-gray-100'
                   )}>
                   <MaterialCommunityIcons
                     name={item.paidBy === currentUserId ? 'cash-fast' : 'cash-multiple'}
                     size={20}
+                    color="#374151"
                   />
                 </View>
 
                 <View className="flex-1">
                   <View className="flex-row items-center justify-between">
-                    <Text className="font-medium" numberOfLines={1}>
+                    <Text className="font-medium text-gray-900" numberOfLines={1}>
                       {item.title}
                     </Text>
-                    <Text className="font-semibold">{formatMoney(item.amount)}</Text>
+                    <Text className="font-semibold text-gray-800">{formatMoney(item.amount)}</Text>
                   </View>
                   <View className="mt-0.5 flex-row items-center justify-between">
                     <View className="flex-row items-center gap-2">
@@ -211,7 +187,7 @@ export default function GroupDetailScreen() {
       <TouchableOpacity
         activeOpacity={0.9}
         onPress={handleAddExpense}
-        className="absolute bottom-8 right-5 h-14 w-14 items-center justify-center rounded-full shadow-lg"
+        className="absolute bottom-8 right-5 h-14 w-14 items-center justify-center rounded-full shadow-md"
         style={{ backgroundColor: COLORS?.primary ?? '#6366F1' }}
         accessibilityLabel="Add expense">
         <Ionicons name="add" size={28} color="#fff" />
@@ -234,13 +210,12 @@ function Stat({
     <View
       className={clsx(
         'flex-1 rounded-xl border p-3',
-        tone === 'success' &&
-          'border-green-100 bg-green-50 dark:border-green-900 dark:bg-green-900/20',
-        tone === 'danger' && 'border-red-100 bg-red-50 dark:border-red-900 dark:bg-red-900/20',
-        !tone && 'border-indigo-100 bg-indigo-50 dark:border-indigo-900 dark:bg-indigo-900/20'
+        tone === 'success' && 'border-green-100 bg-green-50',
+        tone === 'danger' && 'border-red-100 bg-red-50',
+        !tone && 'border-indigo-100 bg-indigo-50'
       )}>
       <Text className="text-xs text-gray-500">{label}</Text>
-      <Text className="mt-1 text-lg font-semibold">{value}</Text>
+      <Text className="mt-1 text-lg font-semibold text-gray-900">{value}</Text>
     </View>
   );
 }
@@ -248,88 +223,13 @@ function Stat({
 function Badge({ label, tone }: { label: string; tone: 'lent' | 'borrowed' | 'neutral' }) {
   const toneCls =
     tone === 'lent'
-      ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300'
+      ? 'bg-green-100 text-green-700'
       : tone === 'borrowed'
-        ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300'
-        : 'bg-gray-100 text-gray-700 dark:bg-neutral-800 dark:text-gray-300';
+        ? 'bg-red-100 text-red-700'
+        : 'bg-gray-100 text-gray-600';
   return (
     <View className={clsx('rounded-full px-2.5 py-0.5', toneCls)}>
       <Text className="text-[10px] font-medium">{label}</Text>
     </View>
   );
 }
-
-// Remove these and use your real implementations
-export const selectGroup = (id?: string) =>
-  id ? { id, name: 'Goa Trip', currency: 'INR' } : undefined;
-export const selectExpenses = (groupId?: string): Expense[] =>
-  !groupId
-    ? []
-    : [
-        {
-          id: 'e1',
-          groupId,
-          title: 'Taxi from airport',
-          amount: 1200,
-          paidBy: 'u2',
-          date: new Date(Date.now() - 1000 * 60 * 60 * 24 * 10).toISOString(),
-          category: 'travel',
-          splits: { me: 400, u2: 400, u3: 400 },
-        },
-        {
-          id: 'e2',
-          groupId,
-          title: 'Lunch Day 1',
-          amount: 1800,
-          paidBy: 'me',
-          date: new Date(Date.now() - 1000 * 60 * 60 * 24 * 9).toISOString(),
-          category: 'food',
-          splits: { me: 600, u2: 600, u3: 600 },
-        },
-        {
-          id: 'e3',
-          groupId,
-          title: 'Beach shack snacks',
-          amount: 900,
-          paidBy: 'u3',
-          date: new Date(Date.now() - 1000 * 60 * 60 * 24 * 8).toISOString(),
-          category: 'food',
-          splits: { me: 300, u2: 300, u3: 300 },
-        },
-      ];
-
-export const selectMemberById = (memberId: string): Member | undefined => {
-  const book: Record<string, Member> = {
-    me: { id: 'me', name: 'You' },
-    u2: { id: 'u2', name: 'Anita' },
-    u3: { id: 'u3', name: 'Rohit' },
-  };
-  return book[memberId];
-};
-
-export const computeBalances = (groupId: string, currentUserId: string) => {
-  const list = selectExpenses(groupId);
-  const total = list.reduce((s, e) => s + e.amount, 0);
-  let youOwe = 0;
-  let friendsOweYou = 0;
-  for (const e of list) {
-    const myShare = e.splits[currentUserId] ?? 0;
-    if (e.paidBy === currentUserId) {
-      friendsOweYou += e.amount - myShare;
-    } else {
-      youOwe += myShare;
-    }
-  }
-  return { total, youOwe, friendsOweYou };
-};
-
-export const currency = (code?: string) => {
-  switch (code) {
-    case 'INR':
-      return '₹';
-    case 'USD':
-      return '$';
-    default:
-      return '₹';
-  }
-};
