@@ -1,15 +1,16 @@
-import { Ionicons, Feather } from "@expo/vector-icons";
-import React, { useEffect, useMemo, useState, useCallback } from "react";
-import {
-  SectionList,
-  View,
-  Text,
-  TouchableOpacity,
-  RefreshControl,
-} from "react-native";
+import { Feather, Ionicons } from "@expo/vector-icons";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { RefreshControl, SectionList, Text, TouchableOpacity, View } from "react-native";
 
 import { styles } from "../style";
-import { loadActivities, pickIconName, saveActivities, splitSections, timeAgo, pickAvatarTint } from "../utili";
+import {
+  loadActivities,
+  pickAvatarTint,
+  pickIconName,
+  saveActivities,
+  splitSections,
+  timeAgo,
+} from "../util";
 
 import type { Activity } from "../types";
 
@@ -59,20 +60,14 @@ export default function NotificationsScreen() {
       <TouchableOpacity
         activeOpacity={0.85}
         onPress={() => toggleRead(item.id)}
-        style={[
-          styles.row,
-          unread ? styles.rowUnread : styles.rowRead,
-        ]}
+        style={[styles.row, unread ? styles.rowUnread : styles.rowRead]}
       >
         <View style={[styles.avatar, pickAvatarTint(item.category)]}>
           <Feather name={pickIconName(item.category)} size={18} />
         </View>
 
         <View style={{ flex: 1 }}>
-          <Text
-            numberOfLines={2}
-            style={[styles.title, unread && styles.titleUnread]}
-          >
+          <Text numberOfLines={2} style={[styles.title, unread && styles.titleUnread]}>
             {item.title}
           </Text>
           {!!item.subtitle && (
@@ -83,12 +78,10 @@ export default function NotificationsScreen() {
         </View>
 
         <View style={{ alignItems: "flex-end", gap: 6 }}>
-          {!!item.amountText && (
-            <Text style={styles.amount}>{item.amountText}</Text>
-          )}
+          {!!item.amountText && <Text style={styles.amount}>{item.amountText}</Text>}
           <View style={styles.rightMeta}>
             {unread && <View style={styles.unreadDot} />}
-            <Text >{timeAgo(item.createdAt)}</Text>
+            <Text>{timeAgo(item.createdAt)}</Text>
           </View>
         </View>
       </TouchableOpacity>
@@ -136,11 +129,8 @@ export default function NotificationsScreen() {
             </View>
           ) : null
         }
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-        }
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
       />
     </>
   );
 }
-

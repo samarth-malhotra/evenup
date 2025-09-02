@@ -1,36 +1,13 @@
 {
+  "extends": "expo/tsconfig.base",
   "compilerOptions": {
-    "target": "ES2020",
-    "module": "ESNext",
-    "jsx": "react-jsx",
-    "moduleResolution": "Bundler",
-    "allowJs": true,
     "strict": true,
+    "jsx": "react-jsx",
+
     "baseUrl": ".",
     "paths": {
-      "@/*": [
-        "./*"
-      ]
+      "@/*": ["./*"]
     },
-    "types": [
-      "react",
-      "react-native"
-    ]
-  },
-  "include": [
-    "**/*.ts",
-    "**/*.tsx",
-    "**/*.js",
-    "**/*.jsx",
-    "tailwind.config.mjs",
-    "babel.config.mjs"
-  ],
-  "exclude": [
-    "node_modules",
-    "dist",
-    "build",
-    "babel.config.mjs",
-    "tailwind.config.mjs"
-  ],
-  "extends": "expo/tsconfig.base"
+    "types": ["react", "react-native", "nativewind/types", "expo-router"]
+  }
 }

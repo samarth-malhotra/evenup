@@ -1,16 +1,17 @@
 // app/_layout.tsx
-import { Stack } from "expo-router";
-import { useColorScheme } from "react-native";
-import { PaperProvider } from "react-native-paper";
-import { SafeAreaProvider } from "react-native-safe-area-context";
+import { Stack } from 'expo-router';
+import { useColorScheme } from 'react-native';
+import { PaperProvider } from 'react-native-paper';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 
-import { lightTheme, darkTheme } from "../theme/paper";
+import '../global.css';
+import { darkTheme, lightTheme } from '../theme/paper';
 
-export const unstable_settings = { initialRouteName: "(tabs)" };
+export const unstable_settings = { initialRouteName: '(tabs)' };
 
 export default function RootLayout() {
   const scheme = useColorScheme();
-  const theme = scheme === "dark" ? darkTheme : lightTheme;
+  const theme = scheme === 'dark' ? darkTheme : lightTheme;
 
   return (
     <PaperProvider theme={theme}>
@@ -24,28 +25,17 @@ export default function RootLayout() {
             name="notifications/index"
             options={{
               headerShown: true,
-              title: "Notifications",
-            }}
-          />
-          <Stack.Screen
-            name="addBills/index"
-            options={{
-              headerShown: true,
-              title: "Add Bills",
+              title: 'Notifications',
             }}
           />
           <Stack.Screen
             name="summary/index"
             options={{
               headerShown: true,
-              title: "Summary",
+              title: 'Summary',
             }}
           />
-          <Stack.Screen
-            name="group"
-            options={{ headerShown: true, title: "Group" }}
-          />
-          
+          <Stack.Screen name="group" options={{ headerShown: true, title: 'Group' }} />
         </Stack>
       </SafeAreaProvider>
     </PaperProvider>

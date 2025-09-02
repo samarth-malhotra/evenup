@@ -1,7 +1,7 @@
 // WalletSummary.tsx
-import { useMemo, useState } from "react";
-import { FlatList, StyleSheet, Text, View } from "react-native";
-import { BarChart } from "react-native-gifted-charts";
+import { useMemo, useState } from 'react';
+import { FlatList, StyleSheet, Text, View } from 'react-native';
+import { BarChart } from 'react-native-gifted-charts';
 
 // ---------- Helpers ----------
 type Txn = {
@@ -11,36 +11,36 @@ type Txn = {
   amount: number; // + = credit, - = debit
 };
 
-const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun"] as const;
+const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'] as const;
 
 // simple ₹ formatter
 const formatRs = (n: number) =>
   `₹${Math.abs(n)
     .toString()
-    .replace(/\B(?=(\d{3})+(?!\d))/g, ",")}`;
+    .replace(/\B(?=(\d{3})+(?!\d))/g, ',')}`;
 
 // "18 Jun · 14:20"
 const formatWhen = (iso: string) => {
   const d = new Date(iso);
   const day = d.getDate();
   const mon = MONTHS[d.getMonth()];
-  const hh = String(d.getHours()).padStart(2, "0");
-  const mm = String(d.getMinutes()).padStart(2, "0");
+  const hh = String(d.getHours()).padStart(2, '0');
+  const mm = String(d.getMinutes()).padStart(2, '0');
   return `${day} ${mon} · ${hh}:${mm}`;
 };
 
 // ---------- Mock data (lots) ----------
 const NAMES = [
-  "Anisha Singh",
-  "Alok Mehra",
-  "Rohit Verma",
-  "Priya Nair",
-  "Neha Kapoor",
-  "Kunal Shah",
-  "Meera Iyer",
-  "Amit Kulkarni",
-  "Isha Rao",
-  "Vikas Gupta",
+  'Anisha Singh',
+  'Alok Mehra',
+  'Rohit Verma',
+  'Priya Nair',
+  'Neha Kapoor',
+  'Kunal Shah',
+  'Meera Iyer',
+  'Amit Kulkarni',
+  'Isha Rao',
+  'Vikas Gupta',
 ];
 
 function rand(min: number, max: number) {
@@ -68,7 +68,7 @@ export default function WalletSummary() {
   // sort txns by date desc for the list
   const txns = useMemo(
     () => [...MOCK_TXNS].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()),
-    [],
+    []
   );
 
   // aggregate monthly totals from the SAME dataset
@@ -101,9 +101,9 @@ export default function WalletSummary() {
         value: monthlyTotals[i],
         label,
         barWidth: 28,
-        frontColor: i === 4 ? "#6C5CE7" : "rgba(108,92,231,0.28)", // highlight May
+        frontColor: i === 4 ? '#6C5CE7' : 'rgba(108,92,231,0.28)', // highlight May
       })),
-    [monthlyTotals],
+    [monthlyTotals]
   );
 
   return (
@@ -123,17 +123,17 @@ export default function WalletSummary() {
         // axis + grid (unchanged)
         yAxisThickness={1}
         yAxisColor="#E5E7EB"
-        yAxisTextStyle={{ color: "#9AA0A6", fontSize: 10 }}
+        yAxisTextStyle={{ color: '#9AA0A6', fontSize: 10 }}
         yAxisLabelTexts={yTicks}
         rulesColor="#E9E9EF"
         rulesType="dashed"
         dashWidth={6}
         dashGap={6}
         xAxisThickness={0}
-        xAxisLabelTextStyle={{ color: "#6B7280", fontSize: 12, marginTop: 6 }}
-        onPress={(_, index) => setSelected((p) => (p === index ? null : index))}
+        xAxisLabelTextStyle={{ color: '#6B7280', fontSize: 12, marginTop: 6 }}
+        onPress={(_: any, index: number | null) => setSelected((p) => (p === index ? null : index))}
         focusedBarIndex={selected ?? -1}
-        renderTooltip={(item, index) =>
+        renderTooltip={(item: { value: any }, index: number) =>
           selected !== null ? (
             <View
               style={[
@@ -142,8 +142,7 @@ export default function WalletSummary() {
                 (index >= barData.length - 1 || index === barData.length - 2) && {
                   transform: [{ translateX: -24 }],
                 },
-              ]}
-            >
+              ]}>
               <Text style={styles.tooltipText}>{formatRs(item?.value ?? 0)}</Text>
             </View>
           ) : null
@@ -166,7 +165,7 @@ export default function WalletSummary() {
                 <Text style={styles.date}>{formatWhen(item.date)}</Text>
               </View>
               <Text style={[styles.amount, isNegative ? styles.neg : styles.pos]}>
-                {isNegative ? "-" : "+"}
+                {isNegative ? '-' : '+'}
                 {formatRs(item.amount)}
               </Text>
             </View>
@@ -178,24 +177,24 @@ export default function WalletSummary() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#fff", paddingHorizontal: 16 },
-  title: { fontSize: 22, fontWeight: "800", marginTop: 8, marginBottom: 10 },
+  container: { flex: 1, backgroundColor: '#fff', paddingHorizontal: 16 },
+  title: { fontSize: 22, fontWeight: '800', marginTop: 8, marginBottom: 10 },
   row: {
-    flexDirection: "row",
-    justifyContent: "space-between",
+    flexDirection: 'row',
+    justifyContent: 'space-between',
     paddingVertical: 14,
   },
-  separator: { height: 1, backgroundColor: "#EEE" },
-  name: { fontSize: 16, fontWeight: "600" },
-  date: { fontSize: 13, color: "#80848F", marginTop: 2 },
-  amount: { fontSize: 16, fontWeight: "800" },
-  pos: { color: "#14A44D" },
-  neg: { color: "#D93025" },
+  separator: { height: 1, backgroundColor: '#EEE' },
+  name: { fontSize: 16, fontWeight: '600' },
+  date: { fontSize: 13, color: '#80848F', marginTop: 2 },
+  amount: { fontSize: 16, fontWeight: '800' },
+  pos: { color: '#14A44D' },
+  neg: { color: '#D93025' },
   tooltip: {
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 8,
-    backgroundColor: "#6C5CE7",
+    backgroundColor: '#6C5CE7',
   },
-  tooltipText: { color: "white", fontWeight: "700" },
+  tooltipText: { color: 'white', fontWeight: '700' },
 });
