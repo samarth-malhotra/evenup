@@ -1,9 +1,10 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useState } from 'react';
 import { FlatList, KeyboardAvoidingView, Pressable, Text, TextInput, View } from 'react-native';
+
 // import { ThemedSafeArea } from "@/components/ThemedSafeArea";
 import ThemedSafeArea from '@/lib/shared/components/ThemedSafeArea';
-import { useState } from 'react';
 
 // Mock data - replace with store/API
 const mockTransaction = {

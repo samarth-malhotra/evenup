@@ -1,6 +1,7 @@
-import ThemedSafeArea from '@/lib/shared/components/ThemedSafeArea';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Pressable, ScrollView, Text, View } from 'react-native';
+
+import ThemedSafeArea from '@/lib/shared/components/ThemedSafeArea';
 // import { ThemedSafeArea } from "@/components/ThemedSafeArea";
 
 export default function GroupSettingsScreen() {
