@@ -1,12 +1,10 @@
 import { Ionicons } from '@expo/vector-icons';
+import { useNavigation } from '@react-navigation/native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useLayoutEffect, useState } from 'react';
 import { FlatList, KeyboardAvoidingView, Pressable, Text, TextInput, View } from 'react-native';
 
-// import { ThemedSafeArea } from "@/components/ThemedSafeArea";
 import AppHeader from '@/lib/shared/components/AppHeader';
-import ThemedSafeArea from '@/lib/shared/components/ThemedSafeArea';
-import { useNavigation } from '@react-navigation/native';
 
 // Mock data - replace with store/API
 const mockTransaction = {
@@ -30,6 +28,7 @@ export default function TransactionDetail() {
   const { id, txId } = useLocalSearchParams<{ id: string; txId: string }>();
   const router = useRouter();
   const [comment, setComment] = useState('');
+  const navigation = useNavigation();
 
   const handleAddComment = () => {
     if (!comment.trim()) return;
@@ -41,7 +40,6 @@ export default function TransactionDetail() {
   const handleEdit = () => {
     router.push(`/groups/${id}/transactions/edit`);
   };
-  const navigation = useNavigation();
 
   useLayoutEffect(() => {
     navigation.setOptions({
@@ -51,28 +49,30 @@ export default function TransactionDetail() {
   }, [navigation]);
 
   return (
-    <ThemedSafeArea className="flex-1 bg-white dark:bg-black">
+    <>
       {/* Summary */}
-      <View className="border-b border-gray-200 p-4 dark:border-gray-800">
-        <Text className="text-lg font-semibold">{mockTransaction.title}</Text>
-        <Text className="text-gray-500">
+      <View className="m-4 rounded-2xl bg-white p-5 shadow-sm">
+        <Text className="text-lg font-semibold text-gray-900">{mockTransaction.title}</Text>
+        <Text className="mt-0.5 text-sm text-gray-500">
           {mockTransaction.date} • Paid by {mockTransaction.paidBy}
         </Text>
-        <Text className="mt-2 text-2xl font-bold">₹{mockTransaction.amount}</Text>
+        <Text className="mt-3 text-3xl font-bold text-indigo-600">₹{mockTransaction.amount}</Text>
         <Pressable
           onPress={handleEdit}
-          className="mt-3 self-start rounded-full bg-indigo-600 px-4 py-2">
-          <Text className="font-medium text-white">Edit Transaction</Text>
+          className="mt-4 self-start rounded-full bg-indigo-600 px-4 py-2">
+          <Text className="text-sm font-medium text-white">Edit Transaction</Text>
         </Pressable>
       </View>
 
       {/* Participants */}
-      <View className="border-b border-gray-200 p-4 dark:border-gray-800">
-        <Text className="mb-2 text-base font-semibold">Participants</Text>
+      <View className="mx-4 mb-4 rounded-2xl bg-white p-5 shadow-sm">
+        <Text className="mb-3 text-base font-semibold text-gray-900">Participants</Text>
         {mockTransaction.participants.map((p) => (
-          <View key={p.id} className="flex-row justify-between py-1">
-            <Text>{p.name}</Text>
-            <Text className="font-medium">₹{p.owes}</Text>
+          <View
+            key={p.id}
+            className="flex-row items-center justify-between border-b border-gray-100 py-2 last:border-0">
+            <Text className="text-gray-800">{p.name}</Text>
+            <Text className="font-semibold text-gray-900">₹{p.owes}</Text>
           </View>
         ))}
       </View>
@@ -85,9 +85,11 @@ export default function TransactionDetail() {
             keyExtractor={(c) => c.id}
             renderItem={({ item }) => (
               <View className="mb-3 px-4">
-                <Text className="font-medium">{item.user}</Text>
-                <Text className="text-gray-600 dark:text-gray-300">{item.message}</Text>
-                <Text className="text-xs text-gray-400">{item.date}</Text>
+                <View className="rounded-2xl bg-gray-100 p-3">
+                  <Text className="text-sm font-semibold text-gray-800">{item.user}</Text>
+                  <Text className="mt-1 text-base text-gray-700">{item.message}</Text>
+                  <Text className="mt-1 text-xs text-gray-400">{item.date}</Text>
+                </View>
               </View>
             )}
             contentContainerStyle={{ paddingVertical: 8 }}
@@ -95,18 +97,19 @@ export default function TransactionDetail() {
         </View>
 
         {/* Input */}
-        <View className="flex-row items-center border-t border-gray-200 bg-white p-2 dark:border-gray-800 dark:bg-black">
+        <View className="flex-row items-center border-t border-gray-200 bg-white p-3">
           <TextInput
             value={comment}
             onChangeText={setComment}
             placeholder="Add a comment..."
-            className="flex-1 rounded-lg border border-gray-300 px-3 py-2 dark:border-gray-700"
+            placeholderTextColor="#9CA3AF"
+            className="flex-1 rounded-full bg-gray-50 px-4 py-2 text-base text-gray-800"
           />
-          <Pressable onPress={handleAddComment} className="ml-2 rounded-full bg-indigo-600 p-2">
+          <Pressable onPress={handleAddComment} className="ml-2 rounded-full bg-indigo-600 p-3">
             <Ionicons name="send" size={20} color="white" />
           </Pressable>
         </View>
       </KeyboardAvoidingView>
-    </ThemedSafeArea>
+    </>
   );
 }

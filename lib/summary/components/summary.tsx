@@ -1,9 +1,10 @@
 // WalletSummary.tsx
-import AppHeader from '@/lib/shared/components/AppHeader';
 import { useNavigation } from 'expo-router';
 import { useLayoutEffect, useMemo, useState } from 'react';
 import { FlatList, StyleSheet, Text, View } from 'react-native';
 import { BarChart } from 'react-native-gifted-charts';
+
+import AppHeader from '@/lib/shared/components/AppHeader';
 
 // ---------- Helpers ----------
 type Txn = {
@@ -189,7 +190,7 @@ export default function WalletSummary() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#fff', paddingHorizontal: 16 },
+  container: { flex: 1, paddingHorizontal: 16 },
   title: { fontSize: 22, fontWeight: '800', marginTop: 8, marginBottom: 10 },
   row: {
     flexDirection: 'row',
