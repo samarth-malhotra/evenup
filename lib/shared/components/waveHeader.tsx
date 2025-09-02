@@ -19,7 +19,6 @@ export default function WaveHeader({ children }: { children?: React.ReactNode })
   const backgroundColor = (COLORS as any)['bg'];
   const top = '#6C4CE6';
   const bottom = '#5336D3';
-  console.log('height: ', H);
 
   // One curvy wave (closes to bottom so area below becomes white)
   const wave = (offset = 0) => `

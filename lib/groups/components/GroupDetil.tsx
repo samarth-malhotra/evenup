@@ -5,6 +5,7 @@ import { useLocalSearchParams, useNavigation, useRouter } from 'expo-router';
 import { useLayoutEffect, useMemo } from 'react';
 import { FlatList, Pressable, Text, TouchableOpacity, View } from 'react-native';
 
+import AppHeader from '@/lib/shared/components/AppHeader';
 import ThemedSafeArea from '@/lib/shared/components/ThemedSafeArea';
 import WaveHeader from '@/lib/shared/components/WaveHeader';
 import { COLORS } from '@/theme/color';
@@ -56,23 +57,58 @@ export default function GroupDetailScreen() {
     // wavy look, use `headerBackground` instead of `header`.
     navigation.setOptions({
       headerShown: true,
-      headerTitle: group?.name ?? 'Group',
+      // headerTitle: group?.name ?? 'Group',
       headerBackTitleVisible: false,
-      headerRight: () => (
-        <Pressable
-          onPress={() => router.push({ pathname: '/groups/[id]/settings', params: { id } })}
-          className="mr-3"
-          accessibilityLabel="Group settings">
-          <Ionicons name="settings-sharp" size={22} />
-        </Pressable>
-      ),
+
+      // headerRight: () => (
+      //   <Pressable
+      //     onPress={() => router.push({ pathname: '/groups/[id]/settings', params: { id } })}
+      //     className="mr-3"
+      //     accessibilityLabel="Group settings">
+      //     <Ionicons name="settings-sharp" size={22} />
+      //   </Pressable>
+      // ),
 
       // Keep default header layout (back button, spacing, gestures), but paint your waves behind it
-      headerBackground: () => <WaveHeader height={200} />,
+      header: () => (
+        <WaveHeader>
+          <View className="h-12 flex-row items-center justify-between align-middle">
+            <Text className="text-3xl font-semibold tracking-wider color-white">{group?.name}</Text>
+            <Pressable
+              onPress={handleSettleUp}
+              className="flex-row items-center gap-2 rounded-full bg-green-600 px-3 py-1.5"
+              accessibilityLabel="Settle up">
+              <MaterialCommunityIcons name="hand-coin" size={16} color="#fff" />
+              <Text className="font-medium text-white">Settle up</Text>
+            </Pressable>
+          </View>
+        </WaveHeader>
+      ),
       // If your WaveHeader sits under a translucent bar, uncomment:
       // headerTransparent: true,
     });
   }, [navigation, group?.name, id]);
+
+  useLayoutEffect(() => {
+    navigation.setOptions({
+      headerShown: true,
+      header: () => (
+        <AppHeader
+          title={`${group?.name}`}
+          showBackButton
+          rightActions={
+            <Pressable
+              onPress={handleSettleUp}
+              className="flex-row items-center gap-2 rounded-full bg-green-600 px-3 py-1.5"
+              accessibilityLabel="Settle up">
+              <MaterialCommunityIcons name="hand-coin" size={16} color="#fff" />
+              <Text className="font-medium text-white">Settle up</Text>
+            </Pressable>
+          }
+        />
+      ),
+    });
+  }, [navigation]);
 
   // ---------------- Handlers ----------------
   const handleSettleUp = () => {
@@ -105,21 +141,10 @@ export default function GroupDetailScreen() {
 
   // ---------------- Render ----------------
   return (
-    <ThemedSafeArea className="flex-1 bg-white dark:bg-black">
+    <ThemedSafeArea className="flex-1">
       {/* Summary */}
       <View className="px-4 pt-3">
         <View className="rounded-2xl border border-gray-100 bg-white p-4 shadow-sm dark:border-gray-800 dark:bg-neutral-900">
-          <View className="flex-row items-center justify-between">
-            <Text className="text-lg font-semibold">{group?.name}</Text>
-            <Pressable
-              onPress={handleSettleUp}
-              className="flex-row items-center gap-2 rounded-full bg-green-600 px-3 py-1.5"
-              accessibilityLabel="Settle up">
-              <MaterialCommunityIcons name="hand-coin" size={16} color="#fff" />
-              <Text className="font-medium text-white">Settle up</Text>
-            </Pressable>
-          </View>
-
           <View className="mt-4 flex-row gap-3">
             <Stat label="Total" value={formatMoney(total)} />
             <Stat label="You owe" value={formatMoney(youOwe)} tone="danger" />

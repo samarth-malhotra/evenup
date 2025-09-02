@@ -1,13 +1,23 @@
-import { Ionicons } from '@expo/vector-icons';
-import { router } from 'expo-router';
-import { useMemo, useState } from 'react';
-import { FlatList, Image, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
+import { router, useNavigation } from 'expo-router';
+import { useLayoutEffect, useMemo, useState } from 'react';
+import {
+  FlatList,
+  Image,
+  Pressable,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 
-import WaveHeader from '@/lib/shared/components/WaveHeader';
-
+import AppHeader from '@/lib/shared/components/AppHeader';
 import { groups } from '../mocks/groupList';
 
 export default function GroupList() {
+  const navigation = useNavigation();
+
   const [q, setQ] = useState('');
 
   const filtered = useMemo(() => {
@@ -16,75 +26,80 @@ export default function GroupList() {
     return groups.filter((g) => g.name.toLowerCase().includes(t));
   }, [q]);
 
+  useLayoutEffect(() => {
+    navigation.setOptions({
+      headerShown: true,
+      header: () => (
+        <AppHeader
+          title="Groups"
+          showBackButton={false}
+          rightActions={
+            <Pressable
+              onPress={() => router.push('/(tabs)/groups/new')}
+              className="flex-row items-center gap-2 rounded-full bg-green-600 px-3 py-1.5"
+              accessibilityLabel="New Group">
+              <MaterialCommunityIcons name="group" size={16} color="#fff" />
+              <Text className="font-medium text-white">New Group</Text>
+            </Pressable>
+          }
+        />
+      ),
+    });
+  }, [navigation]);
+
   return (
-    <View style={{ flex: 1, backgroundColor: '#fff' }}>
-      {/* Header with wave + "New Group" pill */}
-      <View style={{ position: 'relative' }}>
-        <WaveHeader />
-        <TouchableOpacity
-          onPress={() => router.push('/(tabs)/groups/new')}
-          style={styles.newBtn}
-          activeOpacity={0.9}>
-          <Text style={styles.newBtnText}>New Group</Text>
-        </TouchableOpacity>
-      </View>
-
-      <View style={{ paddingHorizontal: 16 }}>
-        <Text style={styles.title}>Groups</Text>
-
-        {/* Search */}
-        <View style={styles.searchWrap}>
-          <Ionicons name="search" size={18} color="#9CA3AF" />
-          <TextInput
-            placeholder="Search"
-            placeholderTextColor="#9CA3AF"
-            value={q}
-            onChangeText={setQ}
-            style={styles.searchInput}
-          />
-        </View>
-
-        {/* List */}
-        <FlatList
-          data={filtered}
-          keyExtractor={(i) => i.id}
-          contentContainerStyle={{ paddingBottom: 24 }}
-          ItemSeparatorComponent={() => <View style={{ height: 10 }} />}
-          renderItem={({ item }) => (
-            <TouchableOpacity
-              activeOpacity={0.85}
-              style={styles.card}
-              onPress={() => router.push(`/(tabs)/groups/${item.id}`)}>
-              <Image source={{ uri: item.img }} style={styles.avatar} />
-              <Text style={styles.cardTitle} numberOfLines={1}>
-                {item.name}
-              </Text>
-              <View
-                style={[
-                  styles.badge,
-                  item.type === 'owe'
-                    ? styles.badgeOwe
-                    : item.type === 'owed'
-                      ? styles.badgeOwed
-                      : styles.badgeSettled,
-                ]}>
-                <Text
-                  style={[
-                    styles.badgeText,
-                    item.type === 'owe'
-                      ? styles.badgeTextOwe
-                      : item.type === 'owed'
-                        ? styles.badgeTextOwed
-                        : styles.badgeTextSettled,
-                  ]}
-                  numberOfLines={1}>
-                  {item.badge}
-                </Text>
-              </View>
-            </TouchableOpacity>
-          )}
+    <View className="flex-1 px-4">
+      <View style={styles.searchWrap}>
+        <Ionicons name="search" size={18} color="#9CA3AF" />
+        <TextInput
+          placeholder="Search"
+          placeholderTextColor="#9CA3AF"
+          value={q}
+          onChangeText={setQ}
+          style={styles.searchInput}
         />
       </View>
+
+      {/* List */}
+      <FlatList
+        data={filtered}
+        keyExtractor={(i) => i.id}
+        contentContainerStyle={{ paddingBottom: 24 }}
+        ItemSeparatorComponent={() => <View style={{ height: 10 }} />}
+        renderItem={({ item }) => (
+          <TouchableOpacity
+            activeOpacity={0.85}
+            style={styles.card}
+            onPress={() => router.push(`/(tabs)/groups/${item.id}`)}>
+            <Image source={{ uri: item.img }} style={styles.avatar} />
+            <Text style={styles.cardTitle} numberOfLines={1}>
+              {item.name}
+            </Text>
+            <View
+              style={[
+                styles.badge,
+                item.type === 'owe'
+                  ? styles.badgeOwe
+                  : item.type === 'owed'
+                    ? styles.badgeOwed
+                    : styles.badgeSettled,
+              ]}>
+              <Text
+                style={[
+                  styles.badgeText,
+                  item.type === 'owe'
+                    ? styles.badgeTextOwe
+                    : item.type === 'owed'
+                      ? styles.badgeTextOwed
+                      : styles.badgeTextSettled,
+                ]}
+                numberOfLines={1}>
+                {item.badge}
+              </Text>
+            </View>
+          </TouchableOpacity>
+        )}
+      />
     </View>
   );
 }

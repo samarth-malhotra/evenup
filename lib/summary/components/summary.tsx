@@ -1,5 +1,7 @@
 // WalletSummary.tsx
-import { useMemo, useState } from 'react';
+import AppHeader from '@/lib/shared/components/AppHeader';
+import { useNavigation } from 'expo-router';
+import { useLayoutEffect, useMemo, useState } from 'react';
 import { FlatList, StyleSheet, Text, View } from 'react-native';
 import { BarChart } from 'react-native-gifted-charts';
 
@@ -63,6 +65,8 @@ const MOCK_TXNS: Txn[] = Array.from({ length: 60 }).map((_, i) => {
 
 // ---------- Component ----------
 export default function WalletSummary() {
+  const navigation = useNavigation();
+
   const [selected, setSelected] = useState<number | null>(null);
 
   // sort txns by date desc for the list
@@ -105,6 +109,14 @@ export default function WalletSummary() {
       })),
     [monthlyTotals]
   );
+
+  useLayoutEffect(() => {
+    navigation.setOptions({
+      headerShown: true,
+      headerBackTitleVisible: false,
+      header: () => <AppHeader title="Summary" showBackButton />,
+    });
+  }, [navigation]);
 
   return (
     <View style={styles.container}>

@@ -35,7 +35,7 @@ type Props = {
 
 export default function ThemedSafeArea({
   children,
-  bg = 'white',
+  bg = 'bg',
   padding = 0,
   scroll = false,
   style,
