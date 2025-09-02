@@ -1,11 +1,15 @@
 // app/bills/addBill.tsx
+import AppHeader from '@/lib/shared/components/AppHeader';
 import { MaterialIcons } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import dayjs from 'dayjs';
-import { useState } from 'react';
+import { useNavigation } from 'expo-router';
+import { useLayoutEffect, useState } from 'react';
 import { Pressable, ScrollView, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
 export default function AddBillScreen() {
+  const navigation = useNavigation();
+
   const [title, setTitle] = useState('');
   const [amount, setAmount] = useState('');
   const [date, setDate] = useState(new Date());
@@ -17,6 +21,13 @@ export default function AddBillScreen() {
     console.log({ title, amount, date, paidBy, participants });
     // TODO: integrate save logic
   };
+
+  useLayoutEffect(() => {
+    navigation.setOptions({
+      headerShown: true,
+      header: () => <AppHeader title="Add Bill" showBackButton />,
+    });
+  }, [navigation]);
 
   return (
     <>

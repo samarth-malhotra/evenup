@@ -3,7 +3,7 @@ import ThemedSafeArea from '@/lib/shared/components/ThemedSafeArea';
 
 function Notifications() {
   return (
-    <ThemedSafeArea bg="white" statusBarStyle="dark" scroll={false} padding={0}>
+    <ThemedSafeArea scroll={false} padding={0}>
       <NotificationsScreen />
     </ThemedSafeArea>
   );

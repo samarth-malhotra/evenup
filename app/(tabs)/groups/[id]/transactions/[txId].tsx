@@ -1,10 +1,12 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useState } from 'react';
+import { useLayoutEffect, useState } from 'react';
 import { FlatList, KeyboardAvoidingView, Pressable, Text, TextInput, View } from 'react-native';
 
 // import { ThemedSafeArea } from "@/components/ThemedSafeArea";
+import AppHeader from '@/lib/shared/components/AppHeader';
 import ThemedSafeArea from '@/lib/shared/components/ThemedSafeArea';
+import { useNavigation } from '@react-navigation/native';
 
 // Mock data - replace with store/API
 const mockTransaction = {
@@ -39,6 +41,14 @@ export default function TransactionDetail() {
   const handleEdit = () => {
     router.push(`/groups/${id}/transactions/edit`);
   };
+  const navigation = useNavigation();
+
+  useLayoutEffect(() => {
+    navigation.setOptions({
+      headerShown: true,
+      header: () => <AppHeader title="Transaction Details" showBackButton />,
+    });
+  }, [navigation]);
 
   return (
     <ThemedSafeArea className="flex-1 bg-white dark:bg-black">

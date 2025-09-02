@@ -4,7 +4,7 @@ import ThemedSafeArea from '@/lib/shared/components/ThemedSafeArea';
 
 function GroupDetailScreen() {
   return (
-    <ThemedSafeArea bg="bg" statusBarStyle="dark">
+    <ThemedSafeArea>
       <GroupDetil />
     </ThemedSafeArea>
   );

@@ -1,5 +1,5 @@
 import { Feather, Ionicons, MaterialIcons } from '@expo/vector-icons';
-import { Link, router } from 'expo-router';
+import { Link, router, useNavigation } from 'expo-router';
 import {
   Image,
   Pressable,
@@ -11,8 +11,9 @@ import {
 } from 'react-native';
 
 import { groups } from '@/lib/groups/mocks/groupList';
+import AppHeader from '@/lib/shared/components/AppHeader';
 import ThemedSafeArea from '@/lib/shared/components/ThemedSafeArea';
-import WaveHeader from '@/lib/shared/components/WaveHeader';
+import { useLayoutEffect } from 'react';
 
 const COLORS = {
   bg: '#F5F3FF',
@@ -56,20 +57,28 @@ const quickLinks = [
 ];
 
 export default function HomeScreen() {
-  return (
-    <ThemedSafeArea bg="bg" statusBarStyle="dark" scroll edges={['left', 'right']}>
-      <ScrollView contentContainerStyle={{ paddingBottom: 32 }}>
-        {/* Wave Header */}
-        <WaveHeader height={200} />
-        <View className="flex-1 items-center justify-center">
-          <View className="h-24 w-24 rounded-xl bg-red-500" />
-        </View>
-        <TouchableOpacity
-          onPress={() => router.push('/notifications')}
-          style={{ position: 'absolute', top: 22, right: 12 }}>
-          <Ionicons name="notifications" size={28} color="#fff" />
-        </TouchableOpacity>
+  const navigation = useNavigation();
 
+  useLayoutEffect(() => {
+    navigation.setOptions({
+      headerShown: true,
+      header: () => (
+        <AppHeader
+          title="Hi, Rohann 👋"
+          showBackButton={false}
+          rightActions={
+            <TouchableOpacity onPress={() => router.push('/notifications')} className="p-2">
+              <MaterialIcons name="notifications" size={24} color="white" />
+            </TouchableOpacity>
+          }
+        />
+      ),
+    });
+  }, [navigation]);
+
+  return (
+    <ThemedSafeArea scroll edges={['left', 'right']}>
+      <ScrollView contentContainerStyle={{ paddingBottom: 32 }}>
         <View
           style={{
             paddingInline: 16,
@@ -78,9 +87,6 @@ export default function HomeScreen() {
             borderBottomRightRadius: 28,
             overflow: 'hidden',
           }}>
-          <Text style={styles.hello}>
-            Hi, <Text style={{ fontWeight: '800' }}>Rohann</Text> 👋
-          </Text>
           {/* your two summary cards */}
           <View style={{ flexDirection: 'row', gap: 14 }}>
             <SummaryCard title="You owe" amount="₹ 1,250" amountColor="#FF6B3D" />
@@ -179,8 +185,8 @@ const styles = StyleSheet.create({
   avatar: { width: 72, height: 72, borderRadius: 36, backgroundColor: '#fff' },
   hello: {
     fontSize: 28,
-    color: '#000',
-    marginBottom: 14,
+    color: '#fff',
+    // marginBottom: 14,
     letterSpacing: 0.2,
   },
   summaryRow: { flexDirection: 'row', gap: 14 },
