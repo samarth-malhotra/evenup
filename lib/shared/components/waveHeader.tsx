@@ -32,7 +32,7 @@ export default function WaveHeader({ children }: { children?: React.ReactNode })
   `;
 
   return (
-    <View style={{ height: H - (children ? 70 : 30) }}>
+    <View className="mb-4" style={{ height: H - (children ? 70 : 30) }}>
       <Svg width={width} height={'100%'}>
         <Defs>
           {/* background gradient */}

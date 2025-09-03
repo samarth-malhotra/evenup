@@ -26,7 +26,7 @@ export default function GroupList() {
           showBackButton={false}
           rightActions={
             <Pressable
-              onPress={() => router.push(`/(tabs)/groups/[id]/new-member`)}
+              onPress={() => router.push(`/(tabs)/groups/new`)}
               accessibilityLabel="New Group">
               <MaterialCommunityIcons name="account-multiple-plus" size={28} color="#fff" />
             </Pressable>
@@ -37,7 +37,7 @@ export default function GroupList() {
   }, [navigation]);
 
   return (
-    <View className="flex-1 px-4 pt-2">
+    <View className="flex-1 px-4">
       {/* Search */}
       <View className="mb-4 h-11 flex-row items-center rounded-full border border-gray-200 bg-white px-3">
         <Ionicons name="search" size={18} color="#9CA3AF" />
