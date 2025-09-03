@@ -1,275 +1,214 @@
-import { Feather, Ionicons } from '@expo/vector-icons';
-import { router, useLocalSearchParams } from 'expo-router';
-import { useMemo } from 'react';
-import { FlatList, Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
+import clsx from 'clsx';
+import { useLocalSearchParams, useNavigation, useRouter } from 'expo-router';
+import { useLayoutEffect, useMemo } from 'react';
+import { FlatList, Pressable, Text, TouchableOpacity, View } from 'react-native';
 
-import WaveHeader from '@/lib/shared/components/WaveHeader';
+import AppHeader from '@/lib/shared/components/AppHeader';
+import ThemedSafeArea from '@/lib/shared/components/ThemedSafeArea';
+import { COLORS } from '@/theme/color';
 
-// --- mock groups & expenses (replace with API) ---
-const GROUPS = [
-  {
-    id: '1',
-    name: 'Office Friends',
-    members: ['Rohan', 'Juhi', 'Aadi'],
-    avatar: 'https://i.pravatar.cc/96?img=5',
-  },
-  {
-    id: '2',
-    name: 'College Buddies',
-    members: ['Riya', 'Sam', 'Kavya'],
-    avatar: 'https://i.pravatar.cc/96?img=14',
-  },
-  {
-    id: '3',
-    name: 'Family Trip',
-    members: ['Mom', 'Dad', 'Sis'],
-    avatar: 'https://i.pravatar.cc/96?img=28',
-  },
-  {
-    id: '4',
-    name: 'Weekend Getaway',
-    members: ['Dev', 'Neha', 'Raj'],
-    avatar: 'https://i.pravatar.cc/96?img=31',
-  },
-  {
-    id: '5',
-    name: 'School Reunion',
-    members: ['You', 'Classmates'],
-    avatar: 'https://i.pravatar.cc/96?img=47',
-  },
-];
+import { computeBalances, currency, selectExpenses, selectGroup, selectMemberById } from '../util';
 
-const EXPENSES: Record<
-  string,
-  { id: string; title: string; by: string; amount: number; date: string }[]
-> = {
-  '1': [
-    { id: 'e1', title: 'Dinner at BBQ', by: 'Rohan', amount: 850, date: 'Today' },
-    { id: 'e2', title: 'Cab back home', by: 'Juhi', amount: 260, date: 'Yesterday' },
-  ],
-  '2': [{ id: 'e3', title: 'Movie tickets', by: 'Sam', amount: 600, date: '2d ago' }],
-  '3': [{ id: 'e4', title: 'Fuel', by: 'Dad', amount: 1200, date: '3d ago' }],
-  '4': [{ id: 'e5', title: 'Resort booking', by: 'Dev', amount: 5200, date: '5d ago' }],
-  '5': [],
+// ---------------- Types ----------------
+export type Member = {
+  id: string;
+  name: string;
+  avatar?: string;
 };
 
-export default function GroupDetail() {
+export type Expense = {
+  id: string;
+  groupId: string;
+  title: string;
+  amount: number;
+  paidBy: string;
+  date: string;
+  category?: string;
+  splits: Record<string, number>;
+};
+
+// ---------------- Screen ----------------
+export default function GroupDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const group = useMemo(() => GROUPS.find((g) => g.id === id) ?? GROUPS[0], [id]);
-  const items = EXPENSES[group.id] ?? [];
+  const navigation = useNavigation();
+  const router = useRouter();
 
-  return (
-    <View style={{ flex: 1, backgroundColor: '#fff' }}>
-      {/* Header */}
-      <View style={{ position: 'relative' }}>
-        <WaveHeader />
-        {/* back + actions */}
-        <View style={styles.headerBar}>
-          <TouchableOpacity onPress={() => router.back()} style={styles.iconBtn}>
-            <Ionicons name="chevron-back" size={22} color="#fff" />
-          </TouchableOpacity>
-          <View style={{ flexDirection: 'row', gap: 8 }}>
-            <TouchableOpacity style={styles.iconBtn}>
-              <Feather name="user-plus" size={18} color="#fff" />
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.iconBtn}>
-              <Feather name="more-horizontal" size={18} color="#fff" />
-            </TouchableOpacity>
-          </View>
-        </View>
+  const currentUserId = 'me';
+  const group = selectGroup(id);
+  const rawExpenses = selectExpenses(id);
 
-        {/* group card floating */}
-        <View style={styles.groupCard}>
-          <Image source={{ uri: group.avatar }} style={styles.groupAvatar} />
-          <View style={{ flex: 1 }}>
-            <Text style={styles.groupName} numberOfLines={1}>
-              {group.name}
-            </Text>
-            <Text style={styles.groupMembers} numberOfLines={1}>
-              {group.members.join(' • ')}
-            </Text>
-          </View>
-          <TouchableOpacity style={styles.pillOutline}>
-            <Text style={styles.pillOutlineText}>Settle Up</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
+  const expenses = useMemo(
+    () => [...rawExpenses].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()),
+    [rawExpenses]
+  );
 
-      {/* Balances summary */}
-      <View style={styles.summaryRow}>
-        <View style={[styles.summaryCard]}>
-          <Text style={styles.summaryLabel}>Total</Text>
-          <Text style={[styles.summaryAmount, { color: '#sss' }]}>₹ 4,250</Text>
-        </View>
-        <View style={[styles.summaryCard]}>
-          <Text style={styles.summaryLabel}>You owe</Text>
-          <Text style={[styles.summaryAmount, { color: '#EA580C' }]}>₹ 1,250</Text>
-        </View>
-        <View style={[styles.summaryCard]}>
-          <Text style={styles.summaryLabel}>Friends owe</Text>
-          <Text style={[styles.summaryAmount, { color: '#059669' }]}>₹ 3,400</Text>
-        </View>
-      </View>
+  const { youOwe, friendsOweYou, total } = useMemo(
+    () => computeBalances(id, currentUserId),
+    [id, currentUserId, rawExpenses]
+  );
 
-      {/* Recent expenses */}
-      <View style={{ paddingHorizontal: 16, marginTop: 4, flex: 1 }}>
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Recent activity</Text>
-          <TouchableOpacity onPress={() => router.push('/(tabs)/home/expenseDetails')}>
-            <Text style={styles.sectionAction}>View all</Text>
-          </TouchableOpacity>
-        </View>
-
-        <FlatList
-          data={items}
-          keyExtractor={(i) => i.id}
-          ItemSeparatorComponent={() => <View style={{ height: 10 }} />}
-          contentContainerStyle={{ paddingBottom: 24 }}
-          renderItem={({ item }) => (
-            <View style={styles.expenseCard}>
-              <View style={styles.expenseIcon}>
-                <Feather name="tag" size={16} />
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.expenseTitle} numberOfLines={1}>
-                  {item.title}
-                </Text>
-                <Text style={styles.expenseSub}>
-                  {item.by} • {item.date}
-                </Text>
-              </View>
-              <Text style={styles.expenseAmount}>₹ {item.amount}</Text>
-            </View>
-          )}
-          ListEmptyComponent={
-            <View style={{ alignItems: 'center', paddingVertical: 32 }}>
-              <Text style={{ color: '#9CA3AF', fontWeight: '600' }}>No expenses yet</Text>
-            </View>
+  // ---------------- Header ----------------
+  useLayoutEffect(() => {
+    navigation.setOptions({
+      headerShown: true,
+      header: () => (
+        <AppHeader
+          title={group?.name ?? 'Group'}
+          showBackButton
+          rightActions={
+            <Pressable onPress={handleSettleUp} accessibilityLabel="Settle up">
+              <MaterialCommunityIcons name="hand-coin" size={28} color="#fff" />
+            </Pressable>
           }
         />
+      ),
+    });
+  }, [navigation, group?.name]);
+
+  // ---------------- Handlers ----------------
+  const handleSettleUp = () => {
+    router.push({ pathname: `/groups/${id}/settle-up`, params: { groupId: id as string } });
+  };
+
+  const handleAddExpense = () => {
+    router.push({ pathname: '/bills/addBill', params: { groupId: id as string } });
+  };
+
+  // ---------------- UI helpers ----------------
+  const formatMoney = (n: number) => `${currency(group?.currency)}${n.toFixed(2)}`;
+  const formatDate = (iso: string) => new Date(iso).toLocaleDateString();
+
+  const relationFor = (e: Expense) => {
+    if (e.paidBy === currentUserId) return { label: 'You lent', tone: 'lent' as const };
+    const myShare = e.splits[currentUserId] ?? 0;
+    if (myShare > 0) return { label: 'You borrowed', tone: 'borrowed' as const };
+    return { label: 'Not involved', tone: 'neutral' as const };
+  };
+
+  const PaidBy = ({ id }: { id: string }) => {
+    const m: Member | undefined = selectMemberById(id);
+    return (
+      <Text className="text-xs text-gray-500">
+        Paid by {m?.id === currentUserId ? 'You' : (m?.name ?? '—')}
+      </Text>
+    );
+  };
+
+  // ---------------- Render ----------------
+  return (
+    <ThemedSafeArea className="flex-1">
+      <View className="px-4">
+        <View className="rounded-2xl border border-gray-100 bg-white p-4 shadow-sm">
+          <View className="flex-row gap-3">
+            <Stat label="Total" value={formatMoney(total)} />
+            <Stat label="You owe" value={formatMoney(youOwe)} tone="danger" />
+            <Stat label="Friends owe you" value={formatMoney(friendsOweYou)} tone="success" />
+          </View>
+        </View>
       </View>
 
-      {/* bottom actions */}
-      <View style={styles.bottomBar}>
-        <TouchableOpacity style={[styles.cta, { backgroundColor: '#6C4CE6' }]}>
-          <Text style={styles.ctaText}>Add Expense</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={[styles.cta, styles.ctaGhost]}>
-          <Text style={[styles.ctaText, { color: '#111827' }]}>Split by Item</Text>
-        </TouchableOpacity>
+      {/* Transactions Header */}
+      <View className="mb-2 mt-5 flex-row items-center justify-between px-4">
+        <Text className="text-base font-semibold">Transactions</Text>
+        <View className="flex-row items-center gap-1">
+          <Ionicons name="arrow-down" size={14} />
+          <Text className="text-xs text-gray-600">Latest first</Text>
+        </View>
       </View>
+
+      {/* Transactions List */}
+      <FlatList
+        data={expenses}
+        keyExtractor={(e) => e.id}
+        contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 120 }}
+        renderItem={({ item }) => {
+          const rel = relationFor(item);
+          return (
+            <Pressable onPress={() => router.push(`/groups/${id}/transactions/${item.id}`)}>
+              <View className="mb-3 flex-row items-center gap-3 rounded-2xl border border-gray-100 bg-white p-3 shadow-sm">
+                <View
+                  className={clsx(
+                    'h-10 w-10 items-center justify-center rounded-full',
+                    rel.tone === 'lent' && 'bg-green-100',
+                    rel.tone === 'borrowed' && 'bg-red-100',
+                    rel.tone === 'neutral' && 'bg-gray-100'
+                  )}>
+                  <MaterialCommunityIcons
+                    name={item.paidBy === currentUserId ? 'cash-fast' : 'cash-multiple'}
+                    size={20}
+                    color="#374151"
+                  />
+                </View>
+
+                <View className="flex-1">
+                  <View className="flex-row items-center justify-between">
+                    <Text className="font-medium text-gray-900" numberOfLines={1}>
+                      {item.title}
+                    </Text>
+                    <Text className="font-semibold text-gray-800">{formatMoney(item.amount)}</Text>
+                  </View>
+                  <View className="mt-0.5 flex-row items-center justify-between">
+                    <View className="flex-row items-center gap-2">
+                      <Text className="text-xs text-gray-500">{formatDate(item.date)}</Text>
+                      <PaidBy id={item.paidBy} />
+                    </View>
+                    <Badge tone={rel.tone} label={rel.label} />
+                  </View>
+                </View>
+              </View>
+            </Pressable>
+          );
+        }}
+      />
+
+      {/* Floating Action Button */}
+      <TouchableOpacity
+        activeOpacity={0.9}
+        onPress={handleAddExpense}
+        className="absolute bottom-8 right-5 h-14 w-14 items-center justify-center rounded-full shadow-md"
+        style={{ backgroundColor: COLORS?.primary ?? '#6366F1' }}
+        accessibilityLabel="Add expense">
+        <Ionicons name="add" size={28} color="#fff" />
+      </TouchableOpacity>
+    </ThemedSafeArea>
+  );
+}
+
+// ---------------- UI Bits ----------------
+function Stat({
+  label,
+  value,
+  tone,
+}: {
+  label: string;
+  value: string;
+  tone?: 'success' | 'danger';
+}) {
+  return (
+    <View
+      className={clsx(
+        'flex-1 rounded-xl border p-3',
+        tone === 'success' && 'border-green-100 bg-green-50',
+        tone === 'danger' && 'border-red-100 bg-red-50',
+        !tone && 'border-indigo-100 bg-indigo-50'
+      )}>
+      <Text className="text-xs text-gray-500">{label}</Text>
+      <Text className="mt-1 text-lg font-semibold text-gray-900">{value}</Text>
     </View>
   );
 }
 
-const styles = StyleSheet.create({
-  headerBar: {
-    position: 'absolute',
-    top: 10,
-    left: 12,
-    right: 12,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  iconBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: 'rgba(255,255,255,0.18)',
-  },
-  groupCard: {
-    position: 'absolute',
-    left: 16,
-    right: 16,
-    bottom: -28,
-    backgroundColor: '#fff',
-    borderRadius: 16,
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 12,
-    shadowColor: '#000',
-    shadowOpacity: 0.06,
-    shadowRadius: 8,
-    elevation: 2,
-  },
-  groupAvatar: { width: 48, height: 48, borderRadius: 24, marginRight: 12 },
-  groupName: { fontSize: 18, fontWeight: '800', color: '#111827' },
-  groupMembers: { color: '#6B7280', marginTop: 2 },
-  pillOutline: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 999,
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-  },
-  pillOutlineText: { fontWeight: '700', color: '#111827' },
-
-  summaryRow: { flexDirection: 'row', gap: 12, paddingHorizontal: 16, marginTop: 40 },
-  summaryCard: {
-    flex: 1,
-    backgroundColor: '#fff',
-    borderRadius: 16,
-    padding: 14,
-    shadowColor: '#000',
-    shadowOpacity: 0.05,
-    shadowRadius: 6,
-    elevation: 1,
-  },
-  summaryLabel: { color: '#6B7280', marginBottom: 6 },
-  summaryAmount: { fontSize: 22, fontWeight: '800' },
-
-  sectionHeader: {
-    marginTop: 14,
-    marginBottom: 8,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  sectionTitle: { fontSize: 16, fontWeight: '800', color: '#111827' },
-  sectionAction: { color: '#6C4CE6', fontWeight: '700' },
-
-  expenseCard: {
-    backgroundColor: '#fff',
-    borderRadius: 14,
-    padding: 12,
-    flexDirection: 'row',
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOpacity: 0.04,
-    shadowRadius: 5,
-    elevation: 1,
-  },
-  expenseIcon: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: '#F3F4F6',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 10,
-  },
-  expenseTitle: { fontWeight: '700', color: '#111827' },
-  expenseSub: { color: '#6B7280', marginTop: 2 },
-  expenseAmount: { fontWeight: '800' },
-
-  bottomBar: {
-    flexDirection: 'row',
-    gap: 12,
-    padding: 16,
-    borderTopWidth: 1,
-    borderTopColor: '#F1F5F9',
-    backgroundColor: '#fff',
-  },
-  cta: {
-    flex: 1,
-    height: 44,
-    borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  ctaText: { color: '#fff', fontWeight: '800' },
-  ctaGhost: { backgroundColor: '#F3F4F6' },
-});
+function Badge({ label, tone }: { label: string; tone: 'lent' | 'borrowed' | 'neutral' }) {
+  const toneCls =
+    tone === 'lent'
+      ? 'bg-green-100 text-green-700'
+      : tone === 'borrowed'
+        ? 'bg-red-100 text-red-700'
+        : 'bg-gray-100 text-gray-600';
+  return (
+    <View className={clsx('rounded-full px-2.5 py-0.5', toneCls)}>
+      <Text className="text-[10px] font-medium">{label}</Text>
+    </View>
+  );
+}

@@ -1,9 +1,9 @@
 import { useLocalSearchParams, useNavigation, useRouter } from 'expo-router';
+import { useLayoutEffect } from 'react';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 
 import AppHeader from '@/lib/shared/components/AppHeader';
 import ThemedSafeArea from '@/lib/shared/components/ThemedSafeArea';
-import { useLayoutEffect } from 'react';
 // import { ThemedSafeArea } from "@/components/ThemedSafeArea";
 
 export default function GroupSettingsScreen() {
@@ -19,7 +19,7 @@ export default function GroupSettingsScreen() {
     });
   }, [navigation]);
   return (
-    <ThemedSafeArea className="flex-1 bg-white dark:bg-black">
+    <ThemedSafeArea className="flex-1">
       <ScrollView contentContainerStyle={{ padding: 16 }}>
         <Text className="mb-4 text-lg font-semibold">Group Settings</Text>
 

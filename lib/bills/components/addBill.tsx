@@ -3,9 +3,10 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import dayjs from 'dayjs';
 import { useNavigation } from 'expo-router';
 import { useLayoutEffect, useState } from 'react';
-import { Pressable, ScrollView, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Pressable, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
 import AppHeader from '@/lib/shared/components/AppHeader';
+import ThemedSafeArea from '@/lib/shared/components/ThemedSafeArea';
 
 export default function AddBillScreen() {
   const navigation = useNavigation();
@@ -31,9 +32,7 @@ export default function AddBillScreen() {
 
   return (
     <>
-      <ScrollView
-        contentContainerStyle={{ padding: 16, paddingBottom: 100 }}
-        showsVerticalScrollIndicator={false}>
+      <ThemedSafeArea scroll padding={16}>
         {/* Bill Info */}
         <View className="mb-5 rounded-2xl bg-white p-5 shadow-sm">
           <Text className="mb-4 text-base font-semibold text-gray-700">Bill Info</Text>
@@ -98,7 +97,7 @@ export default function AddBillScreen() {
           </Pressable>
           {/* TODO: Replace with multi-select modal */}
         </View>
-      </ScrollView>
+      </ThemedSafeArea>
 
       {/* Floating Save Button */}
       <View className="absolute bottom-4 left-4 right-4">
