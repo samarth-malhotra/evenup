@@ -1,11 +1,16 @@
 // WalletSummary.tsx
 import { Ionicons } from '@expo/vector-icons';
-import { useMemo, useState } from 'react';
-import { FlatList, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import * as FileSystem from 'expo-file-system';
+import * as Sharing from 'expo-sharing';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { FlatList, Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { BarChart } from 'react-native-gifted-charts';
 import DateTimePickerModal from 'react-native-modal-datetime-picker';
 
-// ---------- Categories ----------
+/* -------------------------------------------------------------------------- */
+/* Types & constants                                                          */
+/* -------------------------------------------------------------------------- */
+
 const CATEGORY_ICONS = {
   groceries: 'cart-outline',
   kitchen: 'restaurant-outline',
@@ -19,15 +24,14 @@ type CategoryKey = keyof typeof CATEGORY_ICONS;
 type Txn = {
   id: string;
   name: string;
-  date: string; // ISO string
+  date: string; // ISO
   amount: number; // + = you received, - = you owe
-  group?: string;
+  group: string;
   category: CategoryKey;
 };
 
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'] as const;
 
-// ---------- Helpers ----------
 const formatRs = (n: number) =>
   `₹${Math.abs(n)
     .toString()
@@ -42,7 +46,10 @@ const formatWhen = (iso: string) => {
   return `${day} ${mon} · ${hh}:${mm}`;
 };
 
-// ---------- Mock API JSON (all with groups) ----------
+/* -------------------------------------------------------------------------- */
+/* Data (all with groups, Jan–Jun)                                            */
+/* -------------------------------------------------------------------------- */
+
 const MOCK_TXNS: Txn[] = [
   // January
   {
@@ -93,7 +100,6 @@ const MOCK_TXNS: Txn[] = [
     group: 'Delhi Friends',
     category: 'bills',
   },
-
   // February
   {
     id: '7',
@@ -143,7 +149,6 @@ const MOCK_TXNS: Txn[] = [
     group: 'Mumbai Team',
     category: 'bills',
   },
-
   // March
   {
     id: '13',
@@ -193,7 +198,6 @@ const MOCK_TXNS: Txn[] = [
     group: 'Hyderabad Group',
     category: 'travel',
   },
-
   // April
   {
     id: '19',
@@ -243,7 +247,6 @@ const MOCK_TXNS: Txn[] = [
     group: 'Chennai Club',
     category: 'kitchen',
   },
-
   // May
   {
     id: '25',
@@ -293,7 +296,6 @@ const MOCK_TXNS: Txn[] = [
     group: 'Delhi Friends',
     category: 'entertainment',
   },
-
   // June
   {
     id: '31',
@@ -345,55 +347,65 @@ const MOCK_TXNS: Txn[] = [
   },
 ];
 
-// ---------- Component ----------
-export default function WalletSummary() {
-  const [selected, setSelected] = useState<number | null>(null); // already used for tooltip
-  const [monthFilter, setMonthFilter] = useState<number | null>(null); // <-- new state
+/* -------------------------------------------------------------------------- */
+/* Component                                                                   */
+/* -------------------------------------------------------------------------- */
 
-  // Date range state
+export default function WalletSummary() {
+  const listRef = useRef<FlatList<Txn>>(null);
+
+  // chart / filters
+  const [selectedBar, setSelectedBar] = useState<number | null>(null);
+  const [monthFilter, setMonthFilter] = useState<number | null>(null);
+
+  // date range
   const [startDate, setStartDate] = useState<Date | null>(null);
   const [endDate, setEndDate] = useState<Date | null>(null);
   const [picker, setPicker] = useState<{ mode: 'start' | 'end' | null }>({ mode: null });
 
-  // Filtered transactions by date range + month filter
+  // filtered txns (date + month)
   const txns = useMemo(() => {
     return [...MOCK_TXNS]
       .filter((t) => {
         const d = new Date(t.date);
         if (startDate && d < startDate) return false;
         if (endDate && d > endDate) return false;
-        if (monthFilter !== null && d.getMonth() !== monthFilter) return false; // <-- month filter
+        if (monthFilter !== null && d.getMonth() !== monthFilter) return false;
         return true;
       })
       .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
   }, [startDate, endDate, monthFilter]);
 
-  // Totals
+  // scroll to top when filters change
+  useEffect(() => {
+    listRef.current?.scrollToOffset({ offset: 0, animated: true });
+  }, [monthFilter, startDate, endDate]);
+
+  // totals
   const totals = useMemo(() => {
     let owe = 0,
-      get = 0;
+      get = 0,
+      spent = 0;
     for (const t of txns) {
+      spent += Math.abs(t.amount);
       if (t.amount < 0) owe += Math.abs(t.amount);
       else get += t.amount;
     }
-    return { owe, get };
+    return { owe, get, spent };
   }, [txns]);
 
-  // Aggregate monthly totals
+  // monthly totals for chart
   const monthlyTotals = useMemo(() => {
     const arr = new Array(6).fill(0);
     for (const t of txns) {
       const m = new Date(t.date).getMonth();
-      if (m <= 5) {
-        arr[m] += Math.abs(t.amount);
-      }
+      if (m <= 5) arr[m] += Math.abs(t.amount);
     }
     return arr;
   }, [txns]);
 
   const max = Math.max(...monthlyTotals, 0);
   const yMax = Math.max(1000, Math.ceil((max * 1.2) / 1000) * 1000);
-
   const yTicks = useMemo(() => {
     const sections = 4;
     const step = Math.round(yMax / sections);
@@ -402,7 +414,7 @@ export default function WalletSummary() {
 
   const barData = useMemo(
     () =>
-      MONTHS.slice(0, 6).map((label, i) => ({
+      MONTHS.map((label, i) => ({
         value: monthlyTotals[i],
         label,
         barWidth: 28,
@@ -411,45 +423,86 @@ export default function WalletSummary() {
     [monthlyTotals]
   );
 
-  // useLayoutEffect(() => {
-  //   navigation.setOptions({
-  //     headerShown: true,
-  //     headerBackTitleVisible: false,
-  //     header: () => <AppHeader title="Summary" showBackButton />,
-  //   });
-  // }, [navigation]);
+  // csv download of *currently filtered* txns
+  const downloadReport = async () => {
+    try {
+      const header = 'Name,Group,Category,Date,Amount,Type\n';
+      const rows = txns
+        .map((t) => {
+          const type = t.amount < 0 ? 'You Owe' : 'You Received';
+          return `${t.name},"${t.group}",${t.category},${new Date(t.date).toLocaleString()},${formatRs(
+            t.amount
+          )},${type}`;
+        })
+        .join('\n');
+      const csv = header + rows;
+      const fileUri = FileSystem.documentDirectory + 'transactions_report.csv';
+      await FileSystem.writeAsStringAsync(fileUri, csv, {
+        encoding: FileSystem.EncodingType.UTF8,
+      });
+      await Sharing.shareAsync(fileUri);
+    } catch (e) {
+      console.error(e);
+    }
+  };
 
-  return (
-    <View style={styles.container}>
-      {/* ===== Summary Row ===== */}
-      <View style={styles.summaryRow}>
-        <View>
-          <Text style={styles.summaryLabel}>You Owe</Text>
-          <Text style={[styles.summaryValue, styles.neg]}>{formatRs(totals.owe)}</Text>
+  /* ------------------------------- Header UI ------------------------------ */
+
+  const Header = (
+    <View style={styles.headerWrap}>
+      {/* page title */}
+      <Text style={styles.pageTitle}>
+        Summary{monthFilter !== null ? ` (in ${MONTHS[monthFilter]})` : ''}
+      </Text>
+
+      {/* summary cards */}
+      <View style={styles.cardsRow}>
+        <View style={[styles.card, styles.shadow]}>
+          <Text style={styles.cardTitle}>Total Spent</Text>
+          <Text style={[styles.cardValue, { color: '#5B61FF' }]}>{formatRs(totals.spent)}</Text>
         </View>
-        <View>
-          <Text style={styles.summaryLabel}>You Will Get</Text>
-          <Text style={[styles.summaryValue, styles.pos]}>{formatRs(totals.get)}</Text>
+        <View style={[styles.card, styles.shadow]}>
+          <Text style={styles.cardTitle}>You Owe</Text>
+          <Text style={[styles.cardValue, { color: '#F97316' }]}>{formatRs(totals.owe)}</Text>
+        </View>
+        <View style={[styles.card, styles.shadow]}>
+          <Text style={styles.cardTitle}>Friends Owe</Text>
+          <Text style={[styles.cardValue, { color: '#10B981' }]}>{formatRs(totals.get)}</Text>
         </View>
       </View>
 
-      {/* ===== Date Range Picker ===== */}
-      <View style={styles.dateRow}>
-        <TouchableOpacity onPress={() => setPicker({ mode: 'start' })}>
-          <Text style={styles.dateBtn}>{startDate ? startDate.toDateString() : 'Start Date'}</Text>
-        </TouchableOpacity>
-        <TouchableOpacity onPress={() => setPicker({ mode: 'end' })}>
-          <Text style={styles.dateBtn}>{endDate ? endDate.toDateString() : 'End Date'}</Text>
-        </TouchableOpacity>
-        {(startDate || endDate) && (
-          <TouchableOpacity
-            onPress={() => {
-              setStartDate(null);
-              setEndDate(null);
-            }}>
-            <Text style={[styles.dateBtn, { color: '#6C5CE7' }]}>Clear</Text>
+      {/* date range + download */}
+      <View style={styles.controlsRow}>
+        <View style={styles.dateRow}>
+          <TouchableOpacity onPress={() => setPicker({ mode: 'start' })} style={styles.pillBtn}>
+            <Ionicons name="calendar-outline" size={16} color="#4B5563" />
+            <Text style={styles.pillText}>
+              {startDate ? startDate.toDateString() : 'Start Date'}
+            </Text>
           </TouchableOpacity>
-        )}
+          <TouchableOpacity onPress={() => setPicker({ mode: 'end' })} style={styles.pillBtn}>
+            <Ionicons name="calendar-outline" size={16} color="#4B5563" />
+            <Text style={styles.pillText}>{endDate ? endDate.toDateString() : 'End Date'}</Text>
+          </TouchableOpacity>
+          {(startDate || endDate) && (
+            <TouchableOpacity
+              onPress={() => {
+                setStartDate(null);
+                setEndDate(null);
+              }}
+              style={[styles.pillBtn, { backgroundColor: '#EEF2FF' }]}>
+              <Ionicons name="close-circle-outline" size={16} color="#6C5CE7" />
+              <Text style={[styles.pillText, { color: '#6C5CE7' }]}>Clear</Text>
+            </TouchableOpacity>
+          )}
+        </View>
+
+        <TouchableOpacity
+          onPress={downloadReport}
+          style={[styles.pillBtn, { backgroundColor: '#EEF2FF' }]}>
+          <Ionicons name="download-outline" size={16} color="#6C5CE7" />
+          <Text style={[styles.pillText, { color: '#6C5CE7' }]}>Download</Text>
+        </TouchableOpacity>
       </View>
 
       <DateTimePickerModal
@@ -463,142 +516,181 @@ export default function WalletSummary() {
         onCancel={() => setPicker({ mode: null })}
       />
 
-      {/* ===== Chart ===== */}
-      <BarChart
-        data={barData}
-        height={200}
-        maxValue={yMax}
-        noOfSections={4}
-        spacing={26}
-        initialSpacing={32}
-        endSpacing={52}
-        labelWidth={36}
-        barBorderRadius={10}
-        yAxisThickness={1}
-        yAxisColor="#E5E7EB"
-        yAxisTextStyle={{ color: '#9AA0A6', fontSize: 10 }}
-        yAxisLabelTexts={yTicks}
-        rulesColor="#E9E9EF"
-        rulesType="dashed"
-        dashWidth={6}
-        dashGap={6}
-        xAxisThickness={0}
-        xAxisLabelTextStyle={{ color: '#6B7280', fontSize: 12, marginTop: 6 }}
-        onPress={(_, index) => {
-          setSelected((p) => (p === index ? null : index));
-          setMonthFilter(index); // <-- set month filter
-        }}
-        focusedBarIndex={selected ?? -1}
-        renderTooltip={(item: { value: any }, index: number) =>
-          selected !== null ? (
-            <View
-              style={[
-                styles.tooltip,
-                (index >= barData.length - 1 || index === barData.length - 2) && {
-                  transform: [{ translateX: -24 }],
-                },
-              ]}>
-              <Text style={styles.tooltipText}>{formatRs(item?.value ?? 0)}</Text>
+      {/* chart card */}
+      <View style={[styles.chartCard, styles.shadow]}>
+        <BarChart
+          data={barData}
+          height={200}
+          maxValue={yMax}
+          noOfSections={4}
+          spacing={26}
+          initialSpacing={32}
+          endSpacing={52}
+          labelWidth={36}
+          barBorderRadius={10}
+          yAxisThickness={1}
+          yAxisColor="#E5E7EB"
+          yAxisTextStyle={{ color: '#9AA0A6', fontSize: 10 }}
+          yAxisLabelTexts={yTicks}
+          rulesColor="#E9E9EF"
+          rulesType="dashed"
+          dashWidth={6}
+          dashGap={6}
+          xAxisThickness={0}
+          xAxisLabelTextStyle={{ color: '#6B7280', fontSize: 12, marginTop: 6 }}
+          onPress={(_, index) => {
+            setSelectedBar((p) => (p === index ? null : index));
+            setMonthFilter(index);
+          }}
+          focusedBarIndex={selectedBar ?? -1}
+          renderTooltip={(item) => (
+            <View style={styles.tooltip}>
+              <Text style={styles.tooltipText}>{formatRs((item as any)?.value ?? 0)}</Text>
             </View>
-          ) : null
-        }
-        isAnimated
-      />
+          )}
+          isAnimated
+        />
 
-      {/* ===== Reset Filter Button ===== */}
-      {monthFilter !== null && (
-        <TouchableOpacity
-          style={styles.resetBtn}
-          onPress={() => {
-            setMonthFilter(null);
-            setSelected(null);
-          }}>
-          <Text style={styles.resetText}>Reset Filter</Text>
-        </TouchableOpacity>
-      )}
+        {monthFilter !== null && (
+          <TouchableOpacity
+            style={styles.resetBtn}
+            onPress={() => {
+              setMonthFilter(null);
+              setSelectedBar(null);
+            }}>
+            <Ionicons name="refresh-outline" size={14} color="#6C5CE7" />
+            <Text style={[styles.pillText, { color: '#6C5CE7', marginLeft: 6 }]}>Reset</Text>
+          </TouchableOpacity>
+        )}
+      </View>
 
-      {/* ===== Transactions ===== */}
-      <Text style={styles.title}>
-        {monthFilter !== null ? `Transactions for ${MONTHS[monthFilter]}` : 'All Transactions'}
+      <Text style={styles.sectionTitle}>
+        {monthFilter !== null ? `Transactions for ${MONTHS[monthFilter]}` : 'Transactions'}
       </Text>
-
-      <FlatList
-        data={txns}
-        keyExtractor={(it) => it.id}
-        ItemSeparatorComponent={() => <View style={styles.separator} />}
-        renderItem={({ item }) => {
-          const isNegative = item.amount < 0;
-          return (
-            <View style={styles.row}>
-              <Ionicons
-                name={CATEGORY_ICONS[item.category]}
-                size={24}
-                color="#6C5CE7"
-                style={{ marginRight: 12 }}
-              />
-              <View style={{ flex: 1 }}>
-                <Text style={styles.name}>{item.name}</Text>
-                {item.group && (
-                  <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                    <Ionicons name="people" size={14} color="#6B7280" style={{ marginRight: 4 }} />
-                    <Text style={styles.group}>{item.group}</Text>
-                  </View>
-                )}
-                <Text style={styles.date}>{formatWhen(item.date)}</Text>
-              </View>
-              <Text style={[styles.amount, isNegative ? styles.neg : styles.pos]}>
-                {isNegative
-                  ? `You owe ${formatRs(item.amount)}`
-                  : `You received ${formatRs(item.amount)}`}
-              </Text>
-            </View>
-          );
-        }}
-      />
     </View>
+  );
+
+  /* ------------------------------- Render -------------------------------- */
+
+  return (
+    <FlatList
+      ref={listRef}
+      style={{ flex: 1, backgroundColor: '#F6F4FF' }}
+      contentContainerStyle={{ paddingBottom: 32 }}
+      data={txns}
+      keyExtractor={(it) => it.id}
+      ListHeaderComponent={Header}
+      ItemSeparatorComponent={() => <View style={styles.separator} />}
+      renderItem={({ item }) => {
+        const isNegative = item.amount < 0;
+        return (
+          <View style={[styles.txnRow]}>
+            <View style={[styles.iconCircle]}>
+              <Ionicons name={CATEGORY_ICONS[item.category]} size={18} color="#6C5CE7" />
+            </View>
+
+            <View style={{ flex: 1 }}>
+              <Text style={styles.name}>{item.name}</Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 2 }}>
+                <Ionicons name="people" size={14} color="#6B7280" style={{ marginRight: 4 }} />
+                <Text style={styles.group}>{item.group}</Text>
+              </View>
+              <Text style={styles.date}>{formatWhen(item.date)}</Text>
+            </View>
+
+            <Text style={[styles.amount, isNegative ? styles.neg : styles.pos]}>
+              {isNegative
+                ? `You owe ${formatRs(item.amount)}`
+                : `You received ${formatRs(item.amount)}`}
+            </Text>
+          </View>
+        );
+      }}
+      ListEmptyComponent={
+        <Text style={{ color: '#6B7280', paddingHorizontal: 16, paddingVertical: 12 }}>
+          No transactions
+        </Text>
+      }
+      nestedScrollEnabled
+      initialNumToRender={12}
+      windowSize={7}
+      removeClippedSubviews={Platform.OS === 'android'}
+      showsVerticalScrollIndicator={false}
+    />
   );
 }
 
-// ---------- Styles ----------
+/* -------------------------------------------------------------------------- */
+/* Styles                                                                      */
+/* -------------------------------------------------------------------------- */
+
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#fff', paddingHorizontal: 16 },
-  summaryRow: {
+  headerWrap: {
+    paddingHorizontal: 16,
+    paddingTop: 12,
+  },
+  pageTitle: {
+    fontSize: 22,
+    fontWeight: '800',
+    color: '#111827',
+    marginBottom: 10,
+  },
+
+  /* summary cards row */
+  cardsRow: {
+    flexDirection: 'row',
+    gap: 12,
+    marginBottom: 14,
+  },
+  card: {
+    flex: 1,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 14,
+  },
+  cardTitle: { color: '#6B7280', fontSize: 12, marginBottom: 6 },
+  cardValue: { fontSize: 18, fontWeight: '800' },
+
+  /* date + download */
+  controlsRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginTop: 12,
-    marginBottom: 16,
+    alignItems: 'center',
+    marginBottom: 12,
   },
-  summaryLabel: { fontSize: 14, color: '#6B7280' },
-  summaryValue: { fontSize: 20, fontWeight: '700' },
   dateRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 12,
     alignItems: 'center',
+    gap: 8,
+    flexShrink: 1,
   },
-  dateBtn: {
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-    borderWidth: 1,
-    borderColor: '#DDD',
-    borderRadius: 8,
-    color: '#333',
-    marginRight: 8,
-  },
-  title: { fontSize: 22, fontWeight: '800', marginTop: 8, marginBottom: 10 },
-  row: {
+  pillBtn: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingVertical: 14,
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 20,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+  },
+  pillText: { marginLeft: 6, color: '#4B5563', fontSize: 13, fontWeight: '600' },
+
+  /* chart card */
+  chartCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 12,
+    marginBottom: 14,
+  },
+  resetBtn: {
+    alignSelf: 'flex-end',
+    marginTop: 8,
+    backgroundColor: '#EEF2FF',
+    borderRadius: 20,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    flexDirection: 'row',
     alignItems: 'center',
   },
-  separator: { height: 1, backgroundColor: '#EEE' },
-  name: { fontSize: 16, fontWeight: '600' },
-  group: { fontSize: 13, color: '#6B7280' },
-  date: { fontSize: 13, color: '#80848F', marginTop: 2 },
-  amount: { fontSize: 14, fontWeight: '700', textAlign: 'right', maxWidth: 140 },
-  pos: { color: '#14A44D' },
-  neg: { color: '#D93025' },
   tooltip: {
     paddingHorizontal: 8,
     paddingVertical: 4,
@@ -606,18 +698,53 @@ const styles = StyleSheet.create({
     backgroundColor: '#6C5CE7',
   },
   tooltipText: { color: 'white', fontWeight: '700' },
-  resetBtn: {
-    alignSelf: 'flex-end',
-    marginTop: 8,
-    marginBottom: 4,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 6,
-    backgroundColor: '#F3F4F6',
+
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: '800',
+    color: '#111827',
+    paddingHorizontal: 16,
+    marginTop: 6,
+    marginBottom: 6,
   },
-  resetText: {
-    fontSize: 13,
-    color: '#6C5CE7',
-    fontWeight: '600',
+
+  /* transactions list */
+  txnRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    backgroundColor: '#FFFFFF',
+  },
+  separator: { height: 10, backgroundColor: '#F6F4FF' },
+  iconCircle: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    backgroundColor: '#F1F0FF',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 12,
+  },
+  name: { fontSize: 16, fontWeight: '700', color: '#111827' },
+  group: { fontSize: 13, color: '#6B7280' },
+  date: { fontSize: 12, color: '#9CA3AF', marginTop: 2 },
+  amount: { fontSize: 13, fontWeight: '800', textAlign: 'right', maxWidth: 140 },
+  pos: { color: '#10B981' },
+  neg: { color: '#EF4444' },
+
+  /* subtle shadow like iOS cards */
+  shadow: {
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.08,
+        shadowRadius: 6,
+      },
+      android: {
+        elevation: 2,
+      },
+    }),
   },
 });
