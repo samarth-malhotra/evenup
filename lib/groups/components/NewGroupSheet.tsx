@@ -1,30 +1,45 @@
 // app/groups/new.tsx
 import { MaterialIcons } from '@expo/vector-icons';
-import { useNavigation } from 'expo-router';
-import { useLayoutEffect, useState } from 'react';
-import {
-  Image,
-  Pressable,
-  ScrollView,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
-} from 'react-native';
+import { BottomSheetBackdrop, BottomSheetModal, BottomSheetScrollView } from '@gorhom/bottom-sheet';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { Image, Platform, Pressable, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
-import AppHeader from '@/lib/shared/components/AppHeader';
+import type { BottomSheetModal as BottomSheetModalType } from '@gorhom/bottom-sheet';
 
-export default function NewGroupScreen() {
-  const navigation = useNavigation();
+type Props = {
+  open: boolean;
+  onClose: () => void;
+  onCreate?: (payload: { name: string; image: string | null; members: string[] }) => void;
+};
+
+export default function NewGroupSheet({ open, onClose, onCreate }: Props) {
+  const sheetRef = useRef<BottomSheetModalType>(null);
+
   const [name, setName] = useState('');
   const [image, setImage] = useState<string | null>(null);
-
   // Always include creator ("You") as default
   const [members, setMembers] = useState<string[]>(['You', 'Anita', 'Rohit']);
 
+  // present / dismiss with the prop
+  useEffect(() => {
+    if (open) sheetRef.current?.present();
+    else sheetRef.current?.dismiss();
+  }, [open]);
+
+  const renderBackdrop = (props: any) => (
+    <BottomSheetBackdrop
+      {...props}
+      appearsOnIndex={0}
+      disappearsOnIndex={-1}
+      opacity={0.4}
+      pressBehavior="close"
+    />
+  );
+
   const handleCreate = () => {
-    console.log({ name, image, members });
-    // TODO: integrate create group API/store
+    const payload = { name: name.trim(), image, members };
+    onCreate?.(payload);
+    onClose();
   };
 
   const removeMember = (member: string) => {
@@ -32,18 +47,34 @@ export default function NewGroupScreen() {
     setMembers((prev) => prev.filter((m) => m !== member));
   };
 
-  useLayoutEffect(() => {
-    navigation.setOptions({
-      headerShown: true,
-      header: () => <AppHeader title="Create Group" showBackButton />,
-    });
-  }, [navigation]);
+  // Cap height by leaving a top inset (~8% of screen). When content is short, sheet hugs it.
+  // When long, it grows up to the cap and the inner scroll view takes over.
+  const topInsetPx = useMemo(() => {
+    // RN doesn't expose window.innerHeight; but Gorhom accepts a number in px as distance from top.
+    // On native, pass a constant ~8% of typical phone height (60px-72px works well).
+    // If you want it stricter, make it 0 for full height cap.
+    return 56;
+  }, []);
 
   return (
-    <>
-      <ScrollView
-        contentContainerStyle={{ padding: 16, paddingBottom: 100 }}
-        showsVerticalScrollIndicator={false}>
+    <BottomSheetModal
+      ref={sheetRef}
+      enableDynamicSizing
+      topInset={topInsetPx}
+      enablePanDownToClose
+      onDismiss={onClose}
+      backdropComponent={renderBackdrop}
+      android_keyboardInputMode="adjustResize"
+      keyboardBehavior={Platform.select({ ios: 'interactive', android: 'fillParent' })}
+      keyboardBlurBehavior="restore"
+      handleIndicatorStyle={{ backgroundColor: '#D1D5DB' }}>
+      <BottomSheetScrollView
+        keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="on-drag"
+        contentContainerStyle={{ padding: 16, paddingBottom: 24 }}>
+        {/* Title */}
+        <Text className="mb-3 text-center text-lg font-semibold text-gray-900">Create Group</Text>
+
         {/* Group Info */}
         <View className="mb-5 rounded-2xl bg-white p-5 shadow-sm">
           <Text className="mb-4 text-base font-semibold text-gray-700">Group Info</Text>
@@ -71,12 +102,14 @@ export default function NewGroupScreen() {
             placeholder="Group name (e.g. Goa Trip)"
             placeholderTextColor="#9CA3AF"
             className="rounded-xl bg-gray-50 px-4 py-3 text-base text-gray-800"
+            returnKeyType="done"
           />
         </View>
 
         {/* Members */}
         <View className="mb-5 rounded-2xl bg-white p-5 shadow-sm">
           <Text className="mb-4 text-base font-semibold text-gray-700">Members</Text>
+
           <Pressable
             onPress={() => console.log('TODO: open members picker')}
             className="flex-row items-center justify-between rounded-xl bg-gray-50 px-4 py-3">
@@ -102,16 +135,14 @@ export default function NewGroupScreen() {
             </View>
           )}
         </View>
-      </ScrollView>
 
-      {/* Create Button */}
-      <View className="absolute bottom-4 left-4 right-4">
+        {/* Create Button */}
         <TouchableOpacity
           onPress={handleCreate}
           className="rounded-full bg-indigo-600 py-4 shadow-lg active:bg-indigo-700">
           <Text className="text-center text-lg font-semibold text-white">Create Group</Text>
         </TouchableOpacity>
-      </View>
-    </>
+      </BottomSheetScrollView>
+    </BottomSheetModal>
   );
 }

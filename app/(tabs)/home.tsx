@@ -3,7 +3,7 @@ import ThemedSafeArea from '@/lib/shared/components/ThemedSafeArea';
 
 function Home() {
   return (
-    <ThemedSafeArea bg="bg" statusBarStyle="dark" scroll>
+    <ThemedSafeArea scroll>
       <HomeScreen />
     </ThemedSafeArea>
   );
