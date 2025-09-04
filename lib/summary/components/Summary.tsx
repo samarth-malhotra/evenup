@@ -577,14 +577,14 @@ export default function WalletSummary() {
           dashGap={6}
           xAxisThickness={0}
           xAxisLabelTextStyle={{ color: '#6B7280', fontSize: 12, marginTop: 6 }}
-          onPress={(_, index) => {
+          onPress={(_: any, index: any) => {
             setSelectedBar((p) => (p === index ? null : index));
             setMonthFilter(index);
           }}
           focusedBarIndex={selectedBar ?? -1}
-          renderTooltip={(item) => (
+          renderTooltip={(item: any) => (
             <View style={styles.tooltip}>
-              <Text style={styles.tooltipText}>{formatRs((item as any)?.value ?? 0)}</Text>
+              <Text style={styles.tooltipText}>{formatRs(item?.value ?? 0)}</Text>
             </View>
           )}
           isAnimated
@@ -695,9 +695,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: '#FFFFFF',
     borderRadius: 20,
-    paddingHorizontal: 12,
+    paddingHorizontal: 10,
     paddingVertical: 8,
-    marginRight: 8,
+    marginRight: 6,
   },
   pillFlexible: {
     flexShrink: 1,
