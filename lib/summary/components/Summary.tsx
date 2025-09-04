@@ -470,8 +470,6 @@ export default function WalletSummary() {
 
   const Header = (
     <View style={styles.headerWrap}>
-      <Text style={styles.pageTitle}>Summary</Text>
-
       {/* summary cards */}
       <View style={styles.cardsRow}>
         <View style={[styles.card, styles.shadow]}>
@@ -521,7 +519,7 @@ export default function WalletSummary() {
               }}
               style={[styles.pillBtn, { backgroundColor: '#EEF2FF' }]}>
               <Ionicons name="refresh-outline" size={16} color="#6C5CE7" />
-              <Text style={[styles.pillText, { color: '#6C5CE7' }]}>Reset Dates</Text>
+              <Text style={[styles.pillText, { color: '#6C5CE7' }]}>Reset</Text>
             </TouchableOpacity>
           )}
 
@@ -533,7 +531,7 @@ export default function WalletSummary() {
               }}
               style={[styles.pillBtn, { backgroundColor: '#EEF2FF' }]}>
               <Ionicons name="refresh-outline" size={16} color="#6C5CE7" />
-              <Text style={[styles.pillText, { color: '#6C5CE7' }]}>Reset Month</Text>
+              <Text style={[styles.pillText, { color: '#6C5CE7' }]}>Reset</Text>
             </TouchableOpacity>
           )}
         </ScrollView>
