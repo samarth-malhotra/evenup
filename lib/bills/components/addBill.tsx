@@ -1,11 +1,16 @@
-// app/bills/addBill.tsx
 import { MaterialIcons } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import dayjs from 'dayjs';
-import { useState } from 'react';
-import { Pressable, ScrollView, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { useNavigation } from 'expo-router';
+import { useLayoutEffect, useState } from 'react';
+import { Pressable, Text, TextInput, TouchableOpacity, View } from 'react-native';
+
+import AppHeader from '@/lib/shared/components/AppHeader';
+import ThemedSafeArea from '@/lib/shared/components/ThemedSafeArea';
 
 export default function AddBillScreen() {
+  const navigation = useNavigation();
+
   const [title, setTitle] = useState('');
   const [amount, setAmount] = useState('');
   const [date, setDate] = useState(new Date());
@@ -18,39 +23,44 @@ export default function AddBillScreen() {
     // TODO: integrate save logic
   };
 
+  useLayoutEffect(() => {
+    navigation.setOptions({
+      headerShown: true,
+      header: () => <AppHeader title="Add Bill" showBackButton />,
+    });
+  }, [navigation]);
+
   return (
     <>
-      <ScrollView
-        contentContainerStyle={{ padding: 16, paddingBottom: 100 }}
-        showsVerticalScrollIndicator={false}>
+      <ThemedSafeArea scroll padding={16}>
         {/* Bill Info */}
-        <View className="mb-4 rounded-2xl bg-white p-4 shadow-sm">
-          <Text className="mb-3 text-lg font-semibold">Bill Info</Text>
+        <View className="mb-5 rounded-2xl bg-white p-5 shadow-sm">
+          <Text className="mb-4 text-base font-semibold text-gray-700">Bill Info</Text>
 
-          <Text className="mb-1 text-sm text-gray-600">Title</Text>
           <TextInput
             value={title}
             onChangeText={setTitle}
-            placeholder="E.g. Dinner at BBQ Nation"
-            className="mb-3 rounded-xl border border-gray-300 px-4 py-3"
+            placeholder="Title (e.g. Dinner at BBQ Nation)"
+            placeholderTextColor="#9CA3AF"
+            className="mb-3 rounded-xl bg-gray-50 px-4 py-3 text-base text-gray-800"
           />
 
-          <Text className="mb-1 text-sm text-gray-600">Amount</Text>
           <TextInput
             value={amount}
             onChangeText={setAmount}
-            placeholder="₹ 0.00"
+            placeholder="Amount (₹ 0.00)"
+            placeholderTextColor="#9CA3AF"
             keyboardType="numeric"
-            className="mb-3 rounded-xl border border-gray-300 px-4 py-3"
+            className="mb-3 rounded-xl bg-gray-50 px-4 py-3 text-base text-gray-800"
           />
 
-          <Text className="mb-1 text-sm text-gray-600">Date</Text>
           <Pressable
             onPress={() => setShowDatePicker(true)}
-            className="flex-row items-center justify-between rounded-xl border border-gray-300 px-4 py-3">
-            <Text>{dayjs(date).format('DD MMM YYYY')}</Text>
-            <MaterialIcons name="calendar-today" size={20} color="gray" />
+            className="flex-row items-center justify-between rounded-xl bg-gray-50 px-4 py-3">
+            <Text className="text-base text-gray-800">{dayjs(date).format('DD MMM YYYY')}</Text>
+            <MaterialIcons name="calendar-today" size={20} color="#6B7280" />
           </Pressable>
+
           {showDatePicker && (
             <DateTimePicker
               value={date}
@@ -65,34 +75,35 @@ export default function AddBillScreen() {
         </View>
 
         {/* Payment Details */}
-        <View className="mb-4 rounded-2xl bg-white p-4 shadow-sm">
-          <Text className="mb-3 text-lg font-semibold">Payment</Text>
+        <View className="mb-5 rounded-2xl bg-white p-5 shadow-sm">
+          <Text className="mb-4 text-base font-semibold text-gray-700">Payment</Text>
 
-          <Text className="mb-1 text-sm text-gray-600">Paid By</Text>
-          <Pressable className="flex-row items-center justify-between rounded-xl border border-gray-300 px-4 py-3">
-            <Text className={paidBy ? 'text-black' : 'text-gray-400'}>
+          <Pressable className="flex-row items-center justify-between rounded-xl bg-gray-50 px-4 py-3">
+            <Text className={paidBy ? 'text-gray-800' : 'text-gray-400'}>
               {paidBy || 'Select person'}
             </Text>
-            <MaterialIcons name="expand-more" size={24} color="gray" />
+            <MaterialIcons name="expand-more" size={24} color="#6B7280" />
           </Pressable>
-          {/* TODO: Replace with actual dropdown/members modal */}
+          {/* TODO: Replace with dropdown/members modal */}
         </View>
 
         {/* Participants */}
-        <View className="mb-4 rounded-2xl bg-white p-4 shadow-sm">
-          <Text className="mb-3 text-lg font-semibold">Participants</Text>
+        <View className="mb-5 rounded-2xl bg-white p-5 shadow-sm">
+          <Text className="mb-4 text-base font-semibold text-gray-700">Participants</Text>
 
-          <Pressable className="flex-row items-center justify-between rounded-xl border border-gray-300 px-4 py-3">
+          <Pressable className="flex-row items-center justify-between rounded-xl bg-gray-50 px-4 py-3">
             <Text className="text-gray-400">Select group members</Text>
-            <MaterialIcons name="group-add" size={22} color="gray" />
+            <MaterialIcons name="group-add" size={22} color="#6B7280" />
           </Pressable>
           {/* TODO: Replace with multi-select modal */}
         </View>
-      </ScrollView>
+      </ThemedSafeArea>
 
       {/* Floating Save Button */}
       <View className="absolute bottom-4 left-4 right-4">
-        <TouchableOpacity onPress={handleSave} className="rounded-2xl bg-blue-500 py-4 shadow-md">
+        <TouchableOpacity
+          onPress={handleSave}
+          className="rounded-full bg-blue-600 py-4 shadow-lg active:bg-blue-700">
           <Text className="text-center text-lg font-semibold text-white">Save Bill</Text>
         </TouchableOpacity>
       </View>

@@ -3,7 +3,7 @@ import Summary from '@/lib/summary/components/summary';
 
 export default function GroupsScreen() {
   return (
-    <ThemedSafeArea bg="white" statusBarStyle="dark" scroll={false} padding={0}>
+    <ThemedSafeArea scroll={false} padding={0}>
       <Summary />
     </ThemedSafeArea>
   );

@@ -1,6 +1,8 @@
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useLocalSearchParams, useNavigation, useRouter } from 'expo-router';
+import { useLayoutEffect } from 'react';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 
+import AppHeader from '@/lib/shared/components/AppHeader';
 import ThemedSafeArea from '@/lib/shared/components/ThemedSafeArea';
 // import { ThemedSafeArea } from "@/components/ThemedSafeArea";
 
@@ -8,8 +10,16 @@ export default function GroupSettingsScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
 
+  const navigation = useNavigation();
+
+  useLayoutEffect(() => {
+    navigation.setOptions({
+      headerShown: true,
+      header: () => <AppHeader title="Group Settings" showBackButton />,
+    });
+  }, [navigation]);
   return (
-    <ThemedSafeArea className="flex-1 bg-white dark:bg-black">
+    <ThemedSafeArea className="flex-1">
       <ScrollView contentContainerStyle={{ padding: 16 }}>
         <Text className="mb-4 text-lg font-semibold">Group Settings</Text>
 

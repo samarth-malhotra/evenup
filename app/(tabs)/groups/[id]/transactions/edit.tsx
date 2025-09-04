@@ -1,7 +1,8 @@
-import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useState } from 'react';
+import { useLocalSearchParams, useNavigation, useRouter } from 'expo-router';
+import { useLayoutEffect, useState } from 'react';
 import { Pressable, Text, TextInput } from 'react-native';
 
+import AppHeader from '@/lib/shared/components/AppHeader';
 import ThemedSafeArea from '@/lib/shared/components/ThemedSafeArea';
 // import { ThemedSafeArea } from "@/components/ThemedSafeArea";
 
@@ -18,6 +19,15 @@ export default function EditTransaction() {
     console.log('Saving:', { id, txId, title, amount });
     router.back();
   };
+
+  const navigation = useNavigation();
+
+  useLayoutEffect(() => {
+    navigation.setOptions({
+      headerShown: true,
+      header: () => <AppHeader title="Edit Transaction" showBackButton />,
+    });
+  }, [navigation]);
 
   return (
     <ThemedSafeArea className="flex-1 bg-white p-4 dark:bg-black">

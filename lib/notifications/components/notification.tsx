@@ -1,6 +1,9 @@
 import { Feather, Ionicons } from '@expo/vector-icons';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useNavigation } from 'expo-router';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useState } from 'react';
 import { RefreshControl, SectionList, Text, TouchableOpacity, View } from 'react-native';
+
+import AppHeader from '@/lib/shared/components/AppHeader';
 
 import { styles } from '../style';
 import {
@@ -21,6 +24,15 @@ export default function NotificationsScreen() {
 
   const unreadCount = useMemo(() => list.filter((a) => !a.read).length, [list]);
   const sections = useMemo(() => splitSections(list), [list]);
+
+  const navigation = useNavigation();
+
+  useLayoutEffect(() => {
+    navigation.setOptions({
+      headerShown: true,
+      header: () => <AppHeader title="Notifications" showBackButton />,
+    });
+  }, [navigation]);
 
   useEffect(() => {
     (async () => {
@@ -97,7 +109,7 @@ export default function NotificationsScreen() {
     <>
       {/* Top bar */}
       <View style={styles.topBar}>
-        <Text style={styles.screenTitle}>Notifications</Text>
+        {/* <Text style={styles.screenTitle}>Notifications</Text> */}
 
         <TouchableOpacity
           accessibilityRole="button"

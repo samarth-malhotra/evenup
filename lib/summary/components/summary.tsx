@@ -411,6 +411,14 @@ export default function WalletSummary() {
     [monthlyTotals]
   );
 
+  useLayoutEffect(() => {
+    navigation.setOptions({
+      headerShown: true,
+      headerBackTitleVisible: false,
+      header: () => <AppHeader title="Summary" showBackButton />,
+    });
+  }, [navigation]);
+
   return (
     <View style={styles.container}>
       {/* ===== Summary Row ===== */}

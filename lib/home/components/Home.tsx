@@ -1,38 +1,39 @@
 import { Feather, Ionicons, MaterialIcons } from '@expo/vector-icons';
-import { Link, router } from 'expo-router';
-import {
-  Image,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-} from 'react-native';
+import { Link, router, useNavigation } from 'expo-router';
+import { useLayoutEffect } from 'react';
+import { Image, Pressable, ScrollView, Text, TouchableOpacity, View } from 'react-native';
 
 import { groups } from '@/lib/groups/mocks/groupList';
+import AppHeader from '@/lib/shared/components/AppHeader';
 import ThemedSafeArea from '@/lib/shared/components/ThemedSafeArea';
-import WaveHeader from '@/lib/shared/components/WaveHeader';
 
-const COLORS = {
-  bg: '#F5F3FF',
-  purple: '#6C4CE6',
-  purpleDark: '#5336D3',
-  card: '#FFFFFF',
-  text: '#1A1A1A',
-  subtext: '#6B7280',
-  owe: '#FF6B3D',
-  owed: '#10B981',
-  chip: '#F3F4F6',
-  divider: '#E5E7EB',
-};
+// Mock data for settlements
+const pendingSettlements = [
+  { id: '1', name: 'Ravi', amount: '₹300', type: 'owed' }, // they owe you
+  { id: '2', name: 'Amit', amount: '₹150', type: 'owe' }, // you owe
+];
 
-// const groups = [
-//   { id: "1", name: "Office Friends", color: "#FFE4D6" },
-//   { id: "2", name: "College Buddies", color: "#E6EBFF" },
-//   { id: "3", name: "Family Trip", color: "#FFEADF" },
-//   { id: "4", name: "Gym Gang", color: "#EAFDF2" },
-// ];
+// Mock recent activity
+const recentActivity = [
+  {
+    id: '1',
+    title: 'Paid ₹500 to Office Friends',
+    sub: '2 days ago',
+    avatar: 'https://i.pravatar.cc/150?img=1',
+  },
+  {
+    id: '2',
+    title: 'Added ₹1,200 for Family Trip',
+    sub: '5 days ago',
+    avatar: 'https://i.pravatar.cc/150?img=2',
+  },
+  {
+    id: '3',
+    title: 'Settled ₹350 with Rahul',
+    sub: '1 week ago',
+    avatar: 'https://i.pravatar.cc/150?img=3',
+  },
+];
 
 const quickLinks = [
   {
@@ -51,78 +52,131 @@ const quickLinks = [
     id: 'settle',
     label: 'Create Group',
     icon: <Feather name="plus" size={22} />,
-    link: '/bills/editBill',
+    link: '/(tabs)/groups/new',
   },
 ];
 
 export default function HomeScreen() {
-  return (
-    <ThemedSafeArea bg="bg" statusBarStyle="dark" scroll edges={['left', 'right']}>
-      <ScrollView contentContainerStyle={{ paddingBottom: 32 }}>
-        {/* Wave Header */}
-        <WaveHeader height={200} />
-        <View className="flex-1 items-center justify-center">
-          <View className="h-24 w-24 rounded-xl bg-red-500" />
-        </View>
-        <TouchableOpacity
-          onPress={() => router.push('/notifications')}
-          style={{ position: 'absolute', top: 22, right: 12 }}>
-          <Ionicons name="notifications" size={28} color="#fff" />
-        </TouchableOpacity>
+  const navigation = useNavigation();
 
-        <View
-          style={{
-            paddingInline: 16,
-            paddingBottom: 4,
-            borderBottomLeftRadius: 28,
-            borderBottomRightRadius: 28,
-            overflow: 'hidden',
-          }}>
-          <Text style={styles.hello}>
-            Hi, <Text style={{ fontWeight: '800' }}>Rohann</Text> 👋
-          </Text>
-          {/* your two summary cards */}
-          <View style={{ flexDirection: 'row', gap: 14 }}>
-            <SummaryCard title="You owe" amount="₹ 1,250" amountColor="#FF6B3D" />
-            <SummaryCard title="Friends owe you" amount="₹ 3,400" amountColor="#10B981" />
+  useLayoutEffect(() => {
+    navigation.setOptions({
+      headerShown: true,
+      header: () => (
+        <AppHeader
+          title="Hi, Rohan 👋"
+          showBackButton={false}
+          rightActions={
+            <TouchableOpacity onPress={() => router.push('/notifications')} className="p-2">
+              <MaterialIcons name="notifications" size={24} color="white" />
+            </TouchableOpacity>
+          }
+        />
+      ),
+    });
+  }, [navigation]);
+
+  return (
+    <ThemedSafeArea scroll edges={['left', 'right']}>
+      <ScrollView contentContainerStyle={{ paddingBottom: 32 }}>
+        {/* Summary Row with 3 cards */}
+        <SectionHeader title="Summary (in August)" />
+        <View className="mb-4 flex-row gap-2 space-x-3 px-4">
+          <SummaryCard title="Total Spent" amount="₹ 4,500" amountColor="#4F46E5" />
+          <SummaryCard title="You Owe" amount="₹ 1,250" amountColor="#FF6B3D" />
+          <SummaryCard title="Friends Owe" amount="₹ 3,400" amountColor="#10B981" />
+        </View>
+
+        {/* Pending Settlements */}
+        <SectionHeader title="Pending Settlements" />
+        {pendingSettlements.length > 0 ? (
+          <View className="mb-4 px-4">
+            {pendingSettlements.map((p) => (
+              <View key={p.id} className="flex-row items-center border-b border-gray-200 py-3">
+                {/* Placeholder avatar – could be user’s initials or pic */}
+                <View className="mr-3 h-10 w-10 items-center justify-center rounded-full bg-indigo-100">
+                  <Text className="font-bold text-indigo-600">{p.name.charAt(0)}</Text>
+                </View>
+                <View className="flex-1">
+                  <Text className="text-base font-medium text-gray-900">
+                    {p.type === 'owe' ? `You owe ${p.name}` : `${p.name} owes you`}
+                  </Text>
+                </View>
+                <Text
+                  className={`text-base font-bold ${
+                    p.type === 'owe' ? 'text-orange-500' : 'text-green-600'
+                  }`}>
+                  {p.amount}
+                </Text>
+              </View>
+            ))}
           </View>
+        ) : (
+          <Text className="mb-4 px-4 italic text-gray-500">No pending settlements 🎉</Text>
+        )}
+
+        {/* Quick Links */}
+        <SectionHeader title="Quick links" />
+        <View className="mb-4 flex-row flex-wrap px-4">
+          {quickLinks.map((q) => (
+            <Link href={q.link} asChild key={q.id}>
+              <TouchableOpacity
+                className="mr-[3%] w-[23%] items-center justify-center rounded-2xl bg-white px-4 py-5 shadow-sm"
+                activeOpacity={0.85}>
+                <View className="mb-2 h-9 w-9 items-center justify-center rounded-lg bg-gray-100">
+                  {q.icon}
+                </View>
+                <Text className="text-center text-[15px] font-semibold text-gray-900">
+                  {q.label}
+                </Text>
+              </TouchableOpacity>
+            </Link>
+          ))}
         </View>
 
         {/* Groups */}
         <SectionHeader title="Groups" actionIcon />
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={{ paddingHorizontal: 20, gap: 18 }}>
-          {groups.map((g) => (
-            <Pressable
-              key={g.id}
-              style={{ alignItems: 'center' }}
-              onPress={() => router.push(`/(tabs)/groups/${g.id}`)}>
-              <View style={[styles.groupBubble]}>
-                <Image source={{ uri: g.img }} style={styles.avatar} />
-                {/* <Ionicons name="people" size={28} /> */}
-              </View>
-              <Text style={styles.groupLabel} numberOfLines={1}>
-                {g.name}
-              </Text>
-            </Pressable>
-          ))}
-        </ScrollView>
+        {groups.length > 0 ? (
+          <ScrollView
+            className="mb-4"
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={{ paddingHorizontal: 20, gap: 18 }}>
+            {groups.map((g) => (
+              <Pressable
+                key={g.id}
+                className="items-center"
+                onPress={() => router.push(`/(tabs)/groups/${g.id}`)}>
+                <View className="h-[72px] w-[72px] items-center justify-center rounded-full bg-white shadow">
+                  <Image source={{ uri: g.img }} className="h-[72px] w-[72px] rounded-full" />
+                </View>
+                <Text className="mt-2 w-[90px] text-center text-gray-900" numberOfLines={1}>
+                  {g.name}
+                </Text>
+              </Pressable>
+            ))}
+          </ScrollView>
+        ) : (
+          <Text className="mb-4 px-4 italic text-gray-500">
+            No groups yet 🚀 Create one to get started!
+          </Text>
+        )}
 
-        {/* Quick links */}
-        <SectionHeader title="Quick links" />
-        <View style={styles.quickGrid}>
-          {quickLinks.map((q) => (
-            <Link href={q.link} asChild key={q.id}>
-              <TouchableOpacity style={styles.quickItem} activeOpacity={0.85}>
-                <>
-                  <View style={styles.quickIcon}>{q.icon}</View>
-                  <Text style={styles.quickText}>{q.label}</Text>
-                </>
-              </TouchableOpacity>
-            </Link>
+        {/* Recent Activity */}
+        <SectionHeader title="Recent Activity" />
+        <View className="mb-4 px-4">
+          {recentActivity.map((a) => (
+            <View key={a.id} className="flex-row items-center border-b border-gray-200 py-3">
+              <Image source={{ uri: a.avatar }} className="mr-3 h-11 w-11 rounded-full" />
+              <View className="flex-1">
+                <Text className="text-base font-semibold text-gray-900">{a.title}</Text>
+                <Text className="text-sm text-gray-500">{a.sub}</Text>
+              </View>
+            </View>
           ))}
+          <TouchableOpacity onPress={() => router.push('/activity')} className="py-3">
+            <Text className="text-center font-semibold text-indigo-600">View All</Text>
+          </TouchableOpacity>
         </View>
       </ScrollView>
     </ThemedSafeArea>
@@ -139,148 +193,26 @@ function SummaryCard({
   amountColor: string;
 }) {
   return (
-    <View style={styles.summaryCard}>
-      <Text style={styles.summaryTitle}>{title}</Text>
-      <Text style={[styles.summaryAmount, { color: amountColor }]}>{amount}</Text>
+    <View className="flex-1 items-center rounded-xl bg-white px-3 py-3 shadow-sm">
+      <Text className="mb-1 text-sm font-semibold text-gray-500">{title}</Text>
+      <Text className="text-lg font-extrabold" style={{ color: amountColor }}>
+        {amount}
+      </Text>
     </View>
   );
 }
 
 function SectionHeader({ title, actionIcon = false }: { title: string; actionIcon?: boolean }) {
   return (
-    <View style={styles.sectionHeader}>
-      <Text style={styles.sectionTitle}>{title}</Text>
+    <View className="mb-2 flex-row items-center justify-between px-4">
+      <Text className="text-lg font-bold text-gray-900">{title}</Text>
       {actionIcon && (
         <Link href={'/groups'} asChild>
           <TouchableOpacity>
-            <Ionicons name="chevron-forward" size={22} color={COLORS.text} />
+            <Ionicons name="chevron-forward" size={22} color="#1A1A1A" />
           </TouchableOpacity>
         </Link>
       )}
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  headerWrap: { paddingBottom: 12 },
-  header: {
-    paddingTop: 8,
-    paddingBottom: 24,
-    paddingHorizontal: 20,
-    borderBottomLeftRadius: 28,
-    borderBottomRightRadius: 28,
-  },
-  headerTop: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  avatar: { width: 72, height: 72, borderRadius: 36, backgroundColor: '#fff' },
-  hello: {
-    fontSize: 28,
-    color: '#000',
-    marginBottom: 14,
-    letterSpacing: 0.2,
-  },
-  summaryRow: { flexDirection: 'row', gap: 14 },
-  summaryCard: {
-    flex: 1,
-    backgroundColor: COLORS.card,
-    borderRadius: 18,
-    paddingVertical: 16,
-    paddingHorizontal: 16,
-    shadowColor: '#000',
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 3 },
-    elevation: 2,
-    alignItems: 'center',
-  },
-  summaryTitle: {
-    color: COLORS.subtext,
-    fontSize: 16,
-    marginBottom: 6,
-    fontWeight: '800',
-  },
-  summaryAmount: { fontSize: 26, fontWeight: '800' },
-  sectionHeader: {
-    paddingHorizontal: 16,
-    marginTop: 16,
-    marginBottom: 10,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  sectionTitle: { fontSize: 18, fontWeight: '700', color: COLORS.text },
-  groupBubble: {
-    width: 72,
-    height: 72,
-    borderRadius: 36,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  groupLabel: {
-    marginTop: 8,
-    width: 90,
-    textAlign: 'center',
-    color: COLORS.text,
-  },
-  quickGrid: {
-    paddingHorizontal: 16,
-    flexDirection: 'row',
-    // flexWrap: "wrap",
-    // gap: 14,
-  },
-  quickItem: {
-    // maxWidth: "22%",
-    width: '23%',
-    backgroundColor: COLORS.card,
-    borderRadius: 18,
-    paddingVertical: 18,
-    paddingHorizontal: 16,
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOpacity: 0.06,
-    shadowRadius: 6,
-    elevation: 1,
-    marginRight: '3%',
-  },
-  quickIcon: {
-    width: 36,
-    height: 36,
-    borderRadius: 10,
-    backgroundColor: COLORS.chip,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 8,
-  },
-  quickText: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: COLORS.text,
-    textAlign: 'center',
-  },
-  activityRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 14,
-  },
-  activityAvatar: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 12,
-  },
-  activityTitle: { fontSize: 16, fontWeight: '600', color: COLORS.text },
-  activitySub: { color: COLORS.subtext, marginTop: 2 },
-  activityRightTitle: { color: COLORS.subtext, fontSize: 13 },
-  activityRightAmount: { fontWeight: '700', marginTop: 2 },
-  separator: {
-    height: 1,
-    backgroundColor: COLORS.divider,
-  },
-});
