@@ -3,7 +3,15 @@ import { Ionicons } from '@expo/vector-icons';
 import * as FileSystem from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { FlatList, Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import {
+  FlatList,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 import { BarChart } from 'react-native-gifted-charts';
 import DateTimePickerModal from 'react-native-modal-datetime-picker';
 
@@ -45,6 +53,15 @@ const formatWhen = (iso: string) => {
   const mm = String(d.getMinutes()).padStart(2, '0');
   return `${day} ${mon} · ${hh}:${mm}`;
 };
+
+const fmtShort = (d?: Date | null) =>
+  d
+    ? d.toLocaleDateString(undefined, {
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric',
+      })
+    : '';
 
 /* -------------------------------------------------------------------------- */
 /* Data (all with groups, Jan–Jun)                                            */
@@ -363,6 +380,9 @@ export default function WalletSummary() {
   const [endDate, setEndDate] = useState<Date | null>(null);
   const [picker, setPicker] = useState<{ mode: 'start' | 'end' | null }>({ mode: null });
 
+  // should the download shrink to icon-only?
+  const showReset = !!startDate || !!endDate || monthFilter !== null;
+
   // filtered txns (date + month)
   const txns = useMemo(() => {
     return [...MOCK_TXNS]
@@ -450,10 +470,7 @@ export default function WalletSummary() {
 
   const Header = (
     <View style={styles.headerWrap}>
-      {/* page title */}
-      <Text style={styles.pageTitle}>
-        Summary{monthFilter !== null ? ` (in ${MONTHS[monthFilter]})` : ''}
-      </Text>
+      <Text style={styles.pageTitle}>Summary</Text>
 
       {/* summary cards */}
       <View style={styles.cardsRow}>
@@ -471,19 +488,31 @@ export default function WalletSummary() {
         </View>
       </View>
 
-      {/* date range + download */}
+      {/* date controls + resets + download */}
       <View style={styles.controlsRow}>
-        <View style={styles.dateRow}>
-          <TouchableOpacity onPress={() => setPicker({ mode: 'start' })} style={styles.pillBtn}>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.dateRow}
+          style={{ flex: 1 }}>
+          <TouchableOpacity
+            onPress={() => setPicker({ mode: 'start' })}
+            style={[styles.pillBtn, styles.pillFlexible]}>
             <Ionicons name="calendar-outline" size={16} color="#4B5563" />
-            <Text style={styles.pillText}>
-              {startDate ? startDate.toDateString() : 'Start Date'}
+            <Text style={styles.pillText} numberOfLines={1}>
+              {startDate ? fmtShort(startDate) : 'Start Date'}
             </Text>
           </TouchableOpacity>
-          <TouchableOpacity onPress={() => setPicker({ mode: 'end' })} style={styles.pillBtn}>
+
+          <TouchableOpacity
+            onPress={() => setPicker({ mode: 'end' })}
+            style={[styles.pillBtn, styles.pillFlexible]}>
             <Ionicons name="calendar-outline" size={16} color="#4B5563" />
-            <Text style={styles.pillText}>{endDate ? endDate.toDateString() : 'End Date'}</Text>
+            <Text style={styles.pillText} numberOfLines={1}>
+              {endDate ? fmtShort(endDate) : 'End Date'}
+            </Text>
           </TouchableOpacity>
+
           {(startDate || endDate) && (
             <TouchableOpacity
               onPress={() => {
@@ -491,17 +520,29 @@ export default function WalletSummary() {
                 setEndDate(null);
               }}
               style={[styles.pillBtn, { backgroundColor: '#EEF2FF' }]}>
-              <Ionicons name="close-circle-outline" size={16} color="#6C5CE7" />
-              <Text style={[styles.pillText, { color: '#6C5CE7' }]}>Clear</Text>
+              <Ionicons name="refresh-outline" size={16} color="#6C5CE7" />
+              <Text style={[styles.pillText, { color: '#6C5CE7' }]}>Reset Dates</Text>
             </TouchableOpacity>
           )}
-        </View>
 
-        <TouchableOpacity
-          onPress={downloadReport}
-          style={[styles.pillBtn, { backgroundColor: '#EEF2FF' }]}>
-          <Ionicons name="download-outline" size={16} color="#6C5CE7" />
-          <Text style={[styles.pillText, { color: '#6C5CE7' }]}>Download</Text>
+          {monthFilter !== null && (
+            <TouchableOpacity
+              onPress={() => {
+                setMonthFilter(null);
+                setSelectedBar(null);
+              }}
+              style={[styles.pillBtn, { backgroundColor: '#EEF2FF' }]}>
+              <Ionicons name="refresh-outline" size={16} color="#6C5CE7" />
+              <Text style={[styles.pillText, { color: '#6C5CE7' }]}>Reset Month</Text>
+            </TouchableOpacity>
+          )}
+        </ScrollView>
+
+        <TouchableOpacity onPress={downloadReport} style={styles.downloadBtn}>
+          <Ionicons name="download-outline" size={18} color="#6C5CE7" />
+          {!showReset && (
+            <Text style={[styles.pillText, { color: '#6C5CE7', marginLeft: 6 }]}>Download</Text>
+          )}
         </TouchableOpacity>
       </View>
 
@@ -550,18 +591,6 @@ export default function WalletSummary() {
           )}
           isAnimated
         />
-
-        {monthFilter !== null && (
-          <TouchableOpacity
-            style={styles.resetBtn}
-            onPress={() => {
-              setMonthFilter(null);
-              setSelectedBar(null);
-            }}>
-            <Ionicons name="refresh-outline" size={14} color="#6C5CE7" />
-            <Text style={[styles.pillText, { color: '#6C5CE7', marginLeft: 6 }]}>Reset</Text>
-          </TouchableOpacity>
-        )}
       </View>
 
       <Text style={styles.sectionTitle}>
@@ -654,15 +683,14 @@ const styles = StyleSheet.create({
   /* date + download */
   controlsRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
+    justifyContent: 'space-between',
     marginBottom: 12,
   },
   dateRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
-    flexShrink: 1,
+    paddingRight: 8,
   },
   pillBtn: {
     flexDirection: 'row',
@@ -671,8 +699,25 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     paddingHorizontal: 12,
     paddingVertical: 8,
+    marginRight: 8,
+  },
+  pillFlexible: {
+    flexShrink: 1,
+    maxWidth: 150,
   },
   pillText: { marginLeft: 6, color: '#4B5563', fontSize: 13, fontWeight: '600' },
+
+  downloadBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#EEF2FF',
+    borderRadius: 20,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    marginLeft: 8,
+    minWidth: 40, // stay tappable when text is hidden
+  },
 
   /* chart card */
   chartCard: {
@@ -680,16 +725,6 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     padding: 12,
     marginBottom: 14,
-  },
-  resetBtn: {
-    alignSelf: 'flex-end',
-    marginTop: 8,
-    backgroundColor: '#EEF2FF',
-    borderRadius: 20,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    flexDirection: 'row',
-    alignItems: 'center',
   },
   tooltip: {
     paddingHorizontal: 8,
@@ -729,7 +764,7 @@ const styles = StyleSheet.create({
   name: { fontSize: 16, fontWeight: '700', color: '#111827' },
   group: { fontSize: 13, color: '#6B7280' },
   date: { fontSize: 12, color: '#9CA3AF', marginTop: 2 },
-  amount: { fontSize: 13, fontWeight: '800', textAlign: 'right', maxWidth: 140 },
+  amount: { fontSize: 13, fontWeight: '800', textAlign: 'right', maxWidth: 160 },
   pos: { color: '#10B981' },
   neg: { color: '#EF4444' },
 
