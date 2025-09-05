@@ -58,9 +58,14 @@ export default function GroupDetailScreen() {
           title={group?.name ?? 'Group'}
           showBackButton
           rightActions={
-            <Pressable onPress={handleSettleUp} accessibilityLabel="Settle up">
-              <MaterialCommunityIcons name="hand-coin" size={28} color="#fff" />
-            </Pressable>
+            <View className="flex-row gap-4">
+              <Pressable onPress={handleSettleUp} accessibilityLabel="Settle up">
+                <MaterialCommunityIcons name="hand-coin" size={28} color="#fff" />
+              </Pressable>
+              <Pressable onPress={handleSetting} accessibilityLabel="Settings">
+                <MaterialCommunityIcons name="account-cog-outline" size={28} color="#fff" />
+              </Pressable>
+            </View>
           }
         />
       ),
@@ -72,8 +77,8 @@ export default function GroupDetailScreen() {
     router.push({ pathname: `/groups/${id}/settle-up`, params: { groupId: id as string } });
   };
 
-  const handleAddExpense = () => {
-    router.push({ pathname: '/bills/addBill', params: { groupId: id as string } });
+  const handleSetting = () => {
+    router.push({ pathname: `/groups/${id}/settings`, params: { groupId: id as string } });
   };
 
   // ---------------- UI helpers ----------------

@@ -13,6 +13,11 @@ type Props = {
   /** Optional: cap height by keeping top inset. e.g. 0.08 = max ~92% screen */
   topInsetPct?: number; // default 0.08
   contentContainerStyle?: ViewStyle;
+  /**
+   * If true -> DO NOT wrap children inside BottomSheetScrollView.
+   * Use this when children are a VirtualizedList (BottomSheetFlatList / FlatList).
+   */
+  avoidScrollView?: boolean;
 };
 
 export default function BottomSheet({
@@ -21,9 +26,10 @@ export default function BottomSheet({
   children,
   topInsetPct = 0.08,
   contentContainerStyle,
+  avoidScrollView = false,
 }: Props) {
-  //   const snapPoints = useMemo(() => ['60%', '92%'], []);
   const ref = useRef<BottomSheetModalType>(null);
+
   const renderBackdrop = (props: any) => (
     <BottomSheetBackdrop
       {...props}
@@ -34,7 +40,6 @@ export default function BottomSheet({
     />
   );
 
-  // Present/dismiss imperatively
   useEffect(() => {
     if (open) ref.current?.present();
     else ref.current?.dismiss();
@@ -58,20 +63,23 @@ export default function BottomSheet({
       keyboardBehavior={Platform.select({ ios: 'interactive', android: 'fillParent' })}
       keyboardBlurBehavior="restore"
       handleIndicatorStyle={{ backgroundColor: '#D1D5DB' }}>
-      {/* <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'position' : undefined}
-        keyboardVerticalOffset={0}>
-      </KeyboardAvoidingView> */}
-      <BottomSheetScrollView
-        keyboardShouldPersistTaps="handled"
-        keyboardDismissMode="on-drag"
-        contentContainerStyle={[
-          { paddingTop: 12, paddingBottom: 16, paddingHorizontal: 16 },
-          contentContainerStyle,
-        ]}>
-        {children}
-      </BottomSheetScrollView>
-      {/* Put ALL your content inside; it will scroll only if capped */}
+      {/*
+        If avoidScrollView === true, render children directly so callers
+        can render a BottomSheetFlatList (VirtualizedList) without being wrapped.
+      */}
+      {avoidScrollView ? (
+        <>{children}</>
+      ) : (
+        <BottomSheetScrollView
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="on-drag"
+          contentContainerStyle={[
+            { paddingTop: 12, paddingBottom: 16, paddingHorizontal: 16 },
+            contentContainerStyle,
+          ]}>
+          {children}
+        </BottomSheetScrollView>
+      )}
     </BottomSheetModal>
   );
 }

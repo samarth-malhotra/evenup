@@ -27,7 +27,7 @@ export default function RootLayout() {
 
               {/* Non-tab sections still work via push/link */}
               <Stack.Screen
-                name="notifications/index"
+                name="notifications"
                 options={{
                   headerShown: true,
                   title: 'Notifications',

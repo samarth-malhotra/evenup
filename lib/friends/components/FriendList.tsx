@@ -14,7 +14,7 @@ export default function FriendList() {
   useLayoutEffect(() => {
     navigation.setOptions({
       headerShown: true,
-      header: () => <AppHeader title="Friends" showBackButton />,
+      header: () => <AppHeader title="Friends" showBackButton={false} />,
     });
   }, [navigation]);
 

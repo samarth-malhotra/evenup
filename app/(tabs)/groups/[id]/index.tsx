@@ -1,4 +1,3 @@
-// import GroupDetail from "@/lib/groups/components/GroupDetail";
 import GroupDetail from '@/lib/groups/components/GroupDetail';
 import ThemedSafeArea from '@/lib/shared/components/ThemedSafeArea';
 

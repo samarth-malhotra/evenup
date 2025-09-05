@@ -4,6 +4,7 @@ import { useCallback, useLayoutEffect, useState } from 'react';
 import { Image, Pressable, ScrollView, Text, TouchableOpacity, View } from 'react-native';
 
 import AddBillSheet from '@/lib/bills/components/AddBillSheet';
+import NewGroupSheet from '@/lib/groups/components/BottomSheet/NewGroupSheet';
 import { groups } from '@/lib/groups/mocks/groupList';
 import AppHeader from '@/lib/shared/components/AppHeader';
 import ThemedSafeArea from '@/lib/shared/components/ThemedSafeArea';
@@ -53,13 +54,14 @@ const quickLinks = [
     id: 'group',
     label: 'Create Group',
     icon: <Feather name="plus" size={22} />,
-    link: '/(tabs)/groups/new',
+    // link: '/(tabs)/groups/new',
   },
 ];
 
 export default function HomeScreen() {
   const navigation = useNavigation();
   const [addOpen, setAddOpen] = useState(false);
+  const [openNewGroupSheet, setOpenNewGroupSheet] = useState(false);
   const openPaidByPicker = useCallback(async () => 'Anita', []);
   const openParticipantsPicker = useCallback(async () => ['You', 'Anita', 'Rohit'], []);
 
@@ -123,12 +125,13 @@ export default function HomeScreen() {
         <SectionHeader title="Quick links" />
         <View className="mb-4 flex-row flex-wrap px-4">
           {quickLinks.map((q) => (
-            // <Link href={q.link} asChild key={q.id}>
             <TouchableOpacity
               key={q.id}
               onPress={() => {
                 if (q.id === 'add') {
                   setAddOpen(true);
+                } else if (q.id === 'group') {
+                  setOpenNewGroupSheet(true);
                 } else {
                   router.push(q.link!);
                 }
@@ -140,7 +143,6 @@ export default function HomeScreen() {
               </View>
               <Text className="text-center text-[15px] font-semibold text-gray-900">{q.label}</Text>
             </TouchableOpacity>
-            // </Link>
           ))}
         </View>
 
@@ -189,6 +191,7 @@ export default function HomeScreen() {
           </TouchableOpacity>
         </View>
       </ScrollView>
+      {/* Add New Bill */}
       <AddBillSheet
         open={addOpen}
         onClose={() => setAddOpen(false)}
@@ -198,6 +201,15 @@ export default function HomeScreen() {
         }}
         onSelectPaidBy={openPaidByPicker}
         onSelectParticipants={openParticipantsPicker}
+      />
+      {/* Create New Group Bottom Sheet */}
+      <NewGroupSheet
+        open={openNewGroupSheet}
+        onClose={() => setOpenNewGroupSheet(false)}
+        onCreate={(payload) => {
+          // handle create here
+          console.log('create group', payload);
+        }}
       />
     </ThemedSafeArea>
   );

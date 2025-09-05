@@ -6,7 +6,7 @@ import { FlatList, Image, Pressable, Text, TextInput, TouchableOpacity, View } f
 import AppHeader from '@/lib/shared/components/AppHeader';
 
 import { groups } from '../mocks/groupList';
-import NewGroupSheet from './NewGroupSheet';
+import NewGroupSheet from './BottomSheet/NewGroupSheet';
 
 export default function GroupList() {
   const navigation = useNavigation();

@@ -3,7 +3,7 @@ import ThemedSafeArea from '@/lib/shared/components/ThemedSafeArea';
 
 function index() {
   return (
-    <ThemedSafeArea bg="bg" statusBarStyle="dark">
+    <ThemedSafeArea>
       <GroupList />
     </ThemedSafeArea>
   );

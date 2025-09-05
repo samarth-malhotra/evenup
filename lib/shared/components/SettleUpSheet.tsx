@@ -7,23 +7,23 @@ import BottomSheet from '@/lib/shared/components/BottomSheet';
 
 import type { BottomSheetModal as BottomSheetModalType } from '@gorhom/bottom-sheet';
 
-type Relation = 'owe' | 'owed' | string;
-
 type Props = {
   open: boolean;
   onClose: () => void;
-  friendName: string;
-  relation: Relation; // 'owe' → you pay friend; otherwise friend pays you
+  payerLabel?: string; // shown left of arrow
+  payeeLabel?: string; // shown right of arrow
+  contextLabel?: string; // e.g. Group: Road Trip
   amountStr: string;
   onChangeAmount: (v: string) => void;
   onConfirm: () => void;
 };
 
-export default function FriendSettleUpSheet({
+export default function SettleUpSheet({
   open,
   onClose,
-  friendName,
-  relation,
+  payerLabel,
+  payeeLabel,
+  contextLabel,
   amountStr,
   onChangeAmount,
   onConfirm,
@@ -35,9 +35,6 @@ export default function FriendSettleUpSheet({
     else sheetRef.current?.dismiss();
   }, [open]);
 
-  const payer = relation === 'owe' ? 'You' : friendName;
-  const payee = relation === 'owe' ? friendName : 'You';
-
   const numericAmount = (() => {
     const n = parseFloat((amountStr || '').replace(/[^\d.]/g, ''));
     return Number.isFinite(n) ? n : 0;
@@ -45,10 +42,14 @@ export default function FriendSettleUpSheet({
 
   return (
     <BottomSheet open={open} onClose={onClose}>
-      <Text className="text-center text-lg font-semibold text-gray-900">Confirm Settlementtt</Text>
+      <Text className="text-center text-lg font-semibold text-gray-900">Confirm settlement</Text>
+
+      {contextLabel && (
+        <Text className="mt-1 text-center text-xs text-gray-500">{contextLabel}</Text>
+      )}
 
       <Text className="mt-2 text-center text-sm text-gray-700">
-        {payer} → {payee}
+        {payerLabel ?? 'You'} → {payeeLabel ?? 'Friend'}
       </Text>
 
       <View className="mt-4 rounded-2xl bg-gray-50 p-3">
@@ -69,7 +70,7 @@ export default function FriendSettleUpSheet({
       </View>
 
       <Text className="mt-2 text-center text-xs text-gray-500">
-        Preview: {payer} paying {payee} · ₹{numericAmount || 0}
+        Preview: {payerLabel ?? 'You'} paying {payeeLabel ?? 'Friend'} · ₹{numericAmount || 0}
       </Text>
 
       <Text className="mt-4 text-center text-xs text-gray-500">
