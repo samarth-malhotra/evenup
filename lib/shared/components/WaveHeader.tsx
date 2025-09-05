@@ -15,7 +15,7 @@ import { COLORS } from '../../../theme/color';
 const { width } = Dimensions.get('window');
 
 export default function WaveHeader({ children }: { children?: React.ReactNode }) {
-  const H = children ? 180 : 90;
+  const H = children ? 160 : 90;
   const backgroundColor = (COLORS as any)['white'];
   const top = '#6C4CE6';
   const bottom = '#5336D3';
@@ -32,7 +32,7 @@ export default function WaveHeader({ children }: { children?: React.ReactNode })
   `;
 
   return (
-    <View className="mb-4" style={{ height: H - (children ? 70 : 30) }}>
+    <View className="" style={{ height: H - (children ? 60 : 30) }}>
       <Svg width={width} height={'100%'}>
         <Defs>
           {/* background gradient */}
@@ -63,7 +63,7 @@ export default function WaveHeader({ children }: { children?: React.ReactNode })
         </G>
       </Svg>
 
-      <View className="absolute inset-0 top-9 px-4">{children}</View>
+      <View className="absolute inset-0 top-11 px-4">{children}</View>
     </View>
   );
 }

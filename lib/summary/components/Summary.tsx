@@ -1,8 +1,9 @@
 // WalletSummary.tsx
 import { Ionicons } from '@expo/vector-icons';
 import * as FileSystem from 'expo-file-system';
+import { useNavigation } from 'expo-router';
 import * as Sharing from 'expo-sharing';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import {
   FlatList,
   Platform,
@@ -14,6 +15,8 @@ import {
 } from 'react-native';
 import { BarChart } from 'react-native-gifted-charts';
 import DateTimePickerModal from 'react-native-modal-datetime-picker';
+
+import AppHeader from '@/lib/shared/components/AppHeader';
 
 /* -------------------------------------------------------------------------- */
 /* Types & constants                                                          */
@@ -370,6 +373,13 @@ const MOCK_TXNS: Txn[] = [
 
 export default function WalletSummary() {
   const listRef = useRef<FlatList<Txn>>(null);
+  const navigation = useNavigation();
+  useLayoutEffect(() => {
+    navigation.setOptions({
+      headerShown: true,
+      header: () => <AppHeader title="Summary" showBackButton />,
+    });
+  }, [navigation]);
 
   // chart / filters
   const [selectedBar, setSelectedBar] = useState<number | null>(null);
@@ -602,7 +612,7 @@ export default function WalletSummary() {
   return (
     <FlatList
       ref={listRef}
-      style={{ flex: 1, backgroundColor: '#F6F4FF' }}
+      style={{ flex: 1 }}
       contentContainerStyle={{ paddingBottom: 32 }}
       data={txns}
       keyExtractor={(it) => it.id}

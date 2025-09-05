@@ -3,7 +3,7 @@ import Summary from '@/lib/summary/components/Summary';
 
 export default function SummaryScreen() {
   return (
-    <ThemedSafeArea padding={0}>
+    <ThemedSafeArea>
       <Summary />
     </ThemedSafeArea>
   );
