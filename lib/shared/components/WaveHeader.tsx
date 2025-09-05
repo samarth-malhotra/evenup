@@ -16,7 +16,7 @@ const { width } = Dimensions.get('window');
 
 export default function WaveHeader({ children }: { children?: React.ReactNode }) {
   const H = children ? 180 : 90;
-  const backgroundColor = (COLORS as any)['bg'];
+  const backgroundColor = (COLORS as any)['white'];
   const top = '#6C4CE6';
   const bottom = '#5336D3';
 

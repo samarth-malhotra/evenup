@@ -1,9 +1,10 @@
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import clsx from 'clsx';
 import { useLocalSearchParams, useNavigation, useRouter } from 'expo-router';
-import { useLayoutEffect, useMemo } from 'react';
+import { useCallback, useLayoutEffect, useMemo, useState } from 'react';
 import { FlatList, Pressable, Text, TouchableOpacity, View } from 'react-native';
 
+import AddBillSheet from '@/lib/bills/components/AddBillSheet';
 import AppHeader from '@/lib/shared/components/AppHeader';
 import ThemedSafeArea from '@/lib/shared/components/ThemedSafeArea';
 import { COLORS } from '@/theme/color';
@@ -47,7 +48,7 @@ export default function GroupDetailScreen() {
     () => computeBalances(id, currentUserId),
     [id, currentUserId, rawExpenses]
   );
-
+  const [addOpen, setAddOpen] = useState(false);
   // ---------------- Header ----------------
   useLayoutEffect(() => {
     navigation.setOptions({
@@ -57,9 +58,14 @@ export default function GroupDetailScreen() {
           title={group?.name ?? 'Group'}
           showBackButton
           rightActions={
-            <Pressable onPress={handleSettleUp} accessibilityLabel="Settle up">
-              <MaterialCommunityIcons name="hand-coin" size={28} color="#fff" />
-            </Pressable>
+            <View className="flex-row gap-4">
+              <Pressable onPress={handleSettleUp} accessibilityLabel="Settle up">
+                <MaterialCommunityIcons name="hand-coin" size={28} color="#fff" />
+              </Pressable>
+              <Pressable onPress={handleSetting} accessibilityLabel="Settings">
+                <MaterialCommunityIcons name="account-cog-outline" size={28} color="#fff" />
+              </Pressable>
+            </View>
           }
         />
       ),
@@ -71,8 +77,8 @@ export default function GroupDetailScreen() {
     router.push({ pathname: `/groups/${id}/settle-up`, params: { groupId: id as string } });
   };
 
-  const handleAddExpense = () => {
-    router.push({ pathname: '/bills/addBill', params: { groupId: id as string } });
+  const handleSetting = () => {
+    router.push({ pathname: `/groups/${id}/settings`, params: { groupId: id as string } });
   };
 
   // ---------------- UI helpers ----------------
@@ -94,6 +100,8 @@ export default function GroupDetailScreen() {
       </Text>
     );
   };
+  const openPaidByPicker = useCallback(async () => 'Anita', []);
+  const openParticipantsPicker = useCallback(async () => ['You', 'Anita', 'Rohit'], []);
 
   // ---------------- Render ----------------
   return (
@@ -165,12 +173,23 @@ export default function GroupDetailScreen() {
       {/* Floating Action Button */}
       <TouchableOpacity
         activeOpacity={0.9}
-        onPress={handleAddExpense}
+        onPress={() => setAddOpen(true)}
         className="absolute bottom-8 right-5 h-14 w-14 items-center justify-center rounded-full shadow-md"
         style={{ backgroundColor: COLORS?.primary ?? '#6366F1' }}
         accessibilityLabel="Add expense">
         <Ionicons name="add" size={28} color="#fff" />
       </TouchableOpacity>
+
+      <AddBillSheet
+        open={addOpen}
+        onClose={() => setAddOpen(false)}
+        onSave={(payload) => {
+          // Persist bill
+          console.log('SAVE BILL', payload);
+        }}
+        onSelectPaidBy={openPaidByPicker}
+        onSelectParticipants={openParticipantsPicker}
+      />
     </ThemedSafeArea>
   );
 }

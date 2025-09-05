@@ -6,10 +6,12 @@ import { FlatList, Image, Pressable, Text, TextInput, TouchableOpacity, View } f
 import AppHeader from '@/lib/shared/components/AppHeader';
 
 import { groups } from '../mocks/groupList';
+import NewGroupSheet from './BottomSheet/NewGroupSheet';
 
 export default function GroupList() {
   const navigation = useNavigation();
   const [q, setQ] = useState('');
+  const [openNewGroupSheet, setOpenNewGroupSheet] = useState(false);
 
   const filtered = useMemo(() => {
     const t = q.trim().toLowerCase();
@@ -25,9 +27,7 @@ export default function GroupList() {
           title="Groups"
           showBackButton={false}
           rightActions={
-            <Pressable
-              onPress={() => router.push(`/(tabs)/groups/new`)}
-              accessibilityLabel="New Group">
+            <Pressable onPress={() => setOpenNewGroupSheet(true)} accessibilityLabel="New Group">
               <MaterialCommunityIcons name="account-multiple-plus" size={28} color="#fff" />
             </Pressable>
           }
@@ -95,6 +95,15 @@ export default function GroupList() {
             </View>
           </TouchableOpacity>
         )}
+      />
+      {/* Create New Group Bottom Sheet */}
+      <NewGroupSheet
+        open={openNewGroupSheet}
+        onClose={() => setOpenNewGroupSheet(false)}
+        onCreate={(payload) => {
+          // handle create here
+          console.log('create group', payload);
+        }}
       />
     </View>
   );
