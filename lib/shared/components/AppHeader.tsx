@@ -16,18 +16,18 @@ export default function AppHeader({ title, showBackButton = true, rightActions }
 
   return (
     <WaveHeader>
-      <View className="h-12 flex-row items-center justify-between">
-        <View className="flex-row items-center justify-between">
-          {/* Left */}
-          {showBackButton ? (
-            <TouchableOpacity onPress={() => navigation.goBack()} className="pr-4">
-              <MaterialIcons name="arrow-back" size={24} color="white" />
-            </TouchableOpacity>
-          ) : null}
+      <View className="flex-row items-baseline justify-between">
+        {/* Left */}
+        {showBackButton ? (
+          <TouchableOpacity onPress={() => navigation.goBack()} className="pr-4">
+            <MaterialIcons name="arrow-back" size={24} color="white" />
+          </TouchableOpacity>
+        ) : (
+          <View className="w-11"></View>
+        )}
 
-          {/* Title */}
-          <Text className="text-3xl font-semibold tracking-wider text-white">{title}</Text>
-        </View>
+        {/* Title */}
+        <Text className="text-2xl font-semibold tracking-wider text-white">{title}</Text>
 
         {/* Right Actions */}
         <View style={{ minWidth: 40, alignItems: 'flex-end' }}>{rightActions}</View>

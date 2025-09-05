@@ -41,7 +41,7 @@ export default function ThemedSafeArea({
   style,
   contentContainerStyle,
   edges = ['right', 'left'],
-  statusBarStyle = 'auto',
+  statusBarStyle = 'light',
   statusBarBackgroundMatch = true,
   className,
 }: Props) {

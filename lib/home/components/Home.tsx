@@ -73,7 +73,7 @@ export default function HomeScreen() {
           title="Hi, Rohan 👋"
           showBackButton={false}
           rightActions={
-            <TouchableOpacity onPress={() => router.push('/notifications')} className="p-2">
+            <TouchableOpacity onPress={() => router.push('/notifications')}>
               <MaterialIcons name="notifications" size={24} color="white" />
             </TouchableOpacity>
           }
@@ -92,34 +92,6 @@ export default function HomeScreen() {
           <SummaryCard title="You Owe" amount="₹ 1,250" amountColor="#FF6B3D" />
           <SummaryCard title="Friends Owe" amount="₹ 3,400" amountColor="#10B981" />
         </View>
-
-        {/* Pending Settlements */}
-        <SectionHeader title="Pending Settlements" />
-        {pendingSettlements.length > 0 ? (
-          <View className="mb-4 px-4">
-            {pendingSettlements.map((p) => (
-              <View key={p.id} className="flex-row items-center border-b border-gray-200 py-3">
-                {/* Placeholder avatar – could be user’s initials or pic */}
-                <View className="mr-3 h-10 w-10 items-center justify-center rounded-full bg-indigo-100">
-                  <Text className="font-bold text-indigo-600">{p.name.charAt(0)}</Text>
-                </View>
-                <View className="flex-1">
-                  <Text className="text-base font-medium text-gray-900">
-                    {p.type === 'owe' ? `You owe ${p.name}` : `${p.name} owes you`}
-                  </Text>
-                </View>
-                <Text
-                  className={`text-base font-bold ${
-                    p.type === 'owe' ? 'text-orange-500' : 'text-green-600'
-                  }`}>
-                  {p.amount}
-                </Text>
-              </View>
-            ))}
-          </View>
-        ) : (
-          <Text className="mb-4 px-4 italic text-gray-500">No pending settlements 🎉</Text>
-        )}
 
         {/* Quick Links */}
         <SectionHeader title="Quick links" />

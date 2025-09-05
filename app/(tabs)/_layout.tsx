@@ -1,6 +1,7 @@
 // app/(tabs)/_layout.tsx
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Tabs } from 'expo-router';
+import { TouchableOpacity } from 'react-native';
 import { useTheme } from 'react-native-paper';
 
 export default function TabsLayout() {
@@ -11,11 +12,34 @@ export default function TabsLayout() {
       screenOptions={{
         headerShown: false,
         tabBarActiveTintColor: theme.colors.primary,
-        tabBarInactiveTintColor:
-          // fallback if onSurfaceVariant is missing
-          (theme as any).colors?.onSurfaceVariant ?? theme.colors.onSurface,
+        tabBarInactiveTintColor: (theme as any).colors?.onSurfaceVariant ?? theme.colors.onSurface,
+
+        tabBarActiveBackgroundColor: 'transparent',
+        tabBarInactiveBackgroundColor: 'transparent',
+
         tabBarStyle: {
-          backgroundColor: (theme as any).colors?.elevation?.level2 ?? theme.colors.surface,
+          backgroundColor: 'white',
+          borderTopWidth: 0,
+          height: 80,
+        },
+        tabBarItemStyle: {
+          paddingVertical: 6,
+        },
+        tabBarLabelStyle: {
+          fontSize: 12,
+          marginBottom: 4,
+        },
+
+        // <<< add this: replace default touchable with a TouchableOpacity that has no press feedback
+        tabBarButton: (props: any) => {
+          // props contains onPress, accessibility, children, style, etc.
+          return (
+            <TouchableOpacity
+              {...props}
+              activeOpacity={1} // no fade on press
+              style={props.style}
+            />
+          );
         },
       }}>
       <Tabs.Screen
