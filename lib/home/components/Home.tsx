@@ -10,7 +10,6 @@ import AppHeader from '@/lib/shared/components/AppHeader';
 import { Avatar } from '@/lib/shared/components/Avatar';
 import Card from '@/lib/shared/components/Card';
 import SummaryCard from '@/lib/shared/components/SummaryCard';
-import ThemedSafeArea from '@/lib/shared/components/ThemedSafeArea';
 import { getColor } from '@/lib/shared/utils/color';
 import { formatRs } from '@/lib/shared/utils/utils';
 
@@ -84,7 +83,7 @@ export default function HomeScreen() {
   }, [navigation]);
 
   return (
-    <ThemedSafeArea scroll edges={['left', 'right']}>
+    <>
       <ScrollView contentContainerStyle={{ paddingBottom: 32 }}>
         {/* Summary Row with 3 cards */}
         <SectionHeader title="Summary (in August)" />
@@ -185,13 +184,13 @@ export default function HomeScreen() {
         }}
       />
       <TransactionsDemoScreen />
-    </ThemedSafeArea>
+    </>
   );
 }
 
 function SectionHeader({ title }: { title: string }) {
   return (
-    <View className="mb-2 flex-row items-center justify-between px-4">
+    <View className="mb-4 mt-2 flex-row items-center justify-between px-4">
       <Text className="text-lg font-bold text-gray-900">{title}</Text>
     </View>
   );

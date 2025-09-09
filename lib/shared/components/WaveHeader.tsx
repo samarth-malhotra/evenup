@@ -1,5 +1,6 @@
 import React from 'react';
 import { Dimensions, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, {
   Defs,
   G,
@@ -15,6 +16,7 @@ import { getColor } from '../utils/color';
 const { width } = Dimensions.get('window');
 
 export default function WaveHeader({ children }: { children?: React.ReactNode }) {
+  const insets = useSafeAreaInsets();
   const H = children ? 160 : 90;
   const backgroundColor = getColor('surface');
   const top = getColor('evenup-primary');
@@ -63,7 +65,14 @@ export default function WaveHeader({ children }: { children?: React.ReactNode })
         </G>
       </Svg>
 
-      <View className="absolute inset-0 top-9 px-4">{children}</View>
+      <View
+        className="absolute inset-0 px-4"
+        style={{
+          paddingTop: insets.top,
+          minHeight: H * 0.65,
+        }}>
+        {children}
+      </View>
     </View>
   );
 }

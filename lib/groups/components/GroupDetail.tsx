@@ -97,9 +97,9 @@ export default function GroupDetailScreen() {
       {/* Transactions List */}
       <FlatList
         className="px-4"
+        showsVerticalScrollIndicator={false}
         data={groupExpense}
         keyExtractor={(e) => e.id}
-        contentContainerStyle={{ paddingBottom: 120 }}
         renderItem={({ item }) => {
           return (
             <TransactionCard

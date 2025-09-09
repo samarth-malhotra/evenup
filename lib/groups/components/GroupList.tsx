@@ -56,6 +56,7 @@ export default function GroupList() {
       <FlatList
         data={filtered}
         keyExtractor={(i) => i.id}
+        showsVerticalScrollIndicator={false}
         renderItem={({ item }) => (
           <TransactionCard
             className="mx-2 mb-2"
