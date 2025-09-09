@@ -617,7 +617,7 @@ export default function WalletSummary() {
             title={item.name}
             subtitle={`${item.group} ${formatWhen(item.date)}`}
             avatarInitials="KS"
-            amount={item.amount}
+            amount={formatRs(item.amount)}
             status={isNegative ? 'you-owe' : 'friend-owe'}
             onPress={() => console.log('open expense')}
             icon={
@@ -646,7 +646,7 @@ export default function WalletSummary() {
 
 const styles = StyleSheet.create({
   headerWrap: {
-    paddingHorizontal: 16,
+    // paddingHorizontal: 16,
     paddingTop: 12,
   },
   pageTitle: {
@@ -729,7 +729,7 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '800',
     color: '#111827',
-    paddingHorizontal: 16,
+    // paddingHorizontal: 16,
     marginTop: 6,
     marginBottom: 6,
   },
