@@ -1,5 +1,5 @@
 import React from 'react';
-import { Image, Platform, Pressable, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Platform, Pressable, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 import { Avatar } from './Avatar';
 
@@ -136,24 +136,6 @@ const styles = StyleSheet.create({
 });
 
 /* --------------------------- Small Subcomponents --------------------------- */
-
-const AvatarCircle: React.FC<{ name: string; img?: string; icon: React.ReactNode }> = ({
-  name,
-  img,
-  icon,
-}) => {
-  return (
-    <View style={styles.avatar}>
-      {icon ? (
-        icon
-      ) : img ? (
-        <Image source={{ uri: img }} className="h-full w-full rounded-full" />
-      ) : (
-        <Avatar name={name} />
-      )}
-    </View>
-  );
-};
 
 const StatusPill: React.FC<{
   status?: TransactionStatus;
@@ -298,8 +280,8 @@ const TransactionCard: React.FC<TransactionCardProps> = ({
         compact ? { paddingVertical: 10, paddingHorizontal: 12 } : undefined,
       ]}>
       <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-        <AvatarCircle name={title} img={img} icon={icon} />
-
+        {/* <AvatarC name={title} img={img} icon={icon} /> */}
+        <Avatar name={title} imageUri={img} icon={icon} />
         <View style={{ flex: 1 }}>
           <View
             style={{

@@ -3,7 +3,7 @@ import { Feather, MaterialIcons } from '@expo/vector-icons';
 import { BottomSheetFlatList } from '@gorhom/bottom-sheet';
 import { useLocalSearchParams, useNavigation, useRouter } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
-import { FlatList, Image, Modal, Pressable, Text, TextInput, View } from 'react-native';
+import { FlatList, Image, Modal, Pressable, Switch, Text, TextInput, View } from 'react-native';
 
 import AppHeader from '@/lib/shared/components/AppHeader';
 import BottomSheet from '@/lib/shared/components/BottomSheet'; // your AutoBottomSheet with avoidScrollView prop
@@ -154,19 +154,12 @@ export default function GroupSettings() {
         </View>
 
         {/* clearer checkbox square */}
-        <Pressable
-          onPress={() => setSimplifiedDebts((v) => !v)}
-          className="p-2"
-          accessibilityRole="checkbox"
-          accessibilityState={{ checked: simplifiedDebts }}>
-          <View
-            className={`flex h-6 w-6 items-center justify-center rounded-md ${
-              simplifiedDebts ? 'bg-indigo-600' : 'bg-white'
-            } border ${simplifiedDebts ? 'border-indigo-600' : 'border-gray-300'}`}
-            style={{ shadowColor: '#000', shadowOpacity: 0.08, shadowRadius: 2, elevation: 1 }}>
-            {simplifiedDebts ? <Feather name="check" size={16} color="white" /> : <View />}
-          </View>
-        </Pressable>
+        <Switch
+          value={simplifiedDebts}
+          onValueChange={setSimplifiedDebts}
+          thumbColor={simplifiedDebts ? '#fff' : undefined}
+          trackColor={{ false: '#E5E7EB', true: '#6C5CE7' }}
+        />
       </View>
 
       {/* Leave / Delete */}
