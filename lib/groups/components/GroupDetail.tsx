@@ -78,15 +78,11 @@ export default function GroupDetailScreen() {
 
   // ---------------- Render ----------------
   return (
-    <ThemedSafeArea className="flex-1">
-      <View className="px-4">
-        <View className="rounded-2xl border border-gray-100 bg-white p-4 shadow-sm">
-          <View className="flex-row gap-3">
-            <SummaryCard title="Total Spent" value={formatRs(2000)} type="total" />
-            <SummaryCard title="You Owe" value={formatRs(1500)} type="you" />
-            <SummaryCard title="Friends Owe" value={formatRs(500)} type="friend" />
-          </View>
-        </View>
+    <ThemedSafeArea className="mt-2 flex-1 ">
+      <View className="flex-row justify-evenly gap-3 px-4">
+        <SummaryCard title="Total Spent" value={formatRs(2000)} type="total" />
+        <SummaryCard title="You Owe" value={formatRs(1500)} type="you" />
+        <SummaryCard title="Friends Owe" value={formatRs(500)} type="friend" />
       </View>
 
       {/* Transactions Header */}
@@ -100,9 +96,10 @@ export default function GroupDetailScreen() {
 
       {/* Transactions List */}
       <FlatList
+        className="px-4"
         data={groupExpense}
         keyExtractor={(e) => e.id}
-        contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 120 }}
+        contentContainerStyle={{ paddingBottom: 120 }}
         renderItem={({ item }) => {
           return (
             <TransactionCard

@@ -1,5 +1,5 @@
 import { Feather, Ionicons, MaterialIcons } from '@expo/vector-icons';
-import { Link, router, useNavigation } from 'expo-router';
+import { router, useNavigation } from 'expo-router';
 import { useCallback, useLayoutEffect, useState } from 'react';
 import { Image, Pressable, ScrollView, Text, TouchableOpacity, View } from 'react-native';
 
@@ -7,6 +7,7 @@ import AddBillSheet from '@/lib/bills/components/AddBillSheet';
 import CreateGroupSheet from '@/lib/groups/components/BottomSheet/CreateGroupSheet';
 import { groups } from '@/lib/groups/mocks/groupList';
 import AppHeader from '@/lib/shared/components/AppHeader';
+import { Avatar } from '@/lib/shared/components/Avatar';
 import Card from '@/lib/shared/components/Card';
 import SummaryCard from '@/lib/shared/components/SummaryCard';
 import ThemedSafeArea from '@/lib/shared/components/ThemedSafeArea';
@@ -95,12 +96,11 @@ export default function HomeScreen() {
 
         {/* Quick Links */}
         <SectionHeader title="Quick links" />
-        <View className="mb-4 flex-row flex-wrap px-4">
+        <View className="mb-4 flex-row justify-center gap-4 px-4">
           {quickLinks.map((q) => (
-            <Card
-              key={q.id}
-              className="mr-[3%] w-[23%] items-center justify-center rounded-2xl px-4 py-5">
+            <Card key={q.id} className="flex-1 rounded-2xl px-4  py-5">
               <TouchableOpacity
+                className="flex items-center justify-center"
                 onPress={() => {
                   if (q.id === 'add') {
                     setAddOpen(true);
@@ -123,23 +123,20 @@ export default function HomeScreen() {
         </View>
 
         {/* Groups */}
-        <SectionHeader title="Groups" actionIcon />
+        <SectionHeader title="Groups" />
         {groups.length > 0 ? (
-          <ScrollView
-            className="mb-4"
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={{ paddingHorizontal: 20, gap: 18 }}>
+          <ScrollView className="mb-4" horizontal showsHorizontalScrollIndicator={false}>
             {groups.map((g) => (
               <Pressable
                 key={g.id}
                 className="items-center"
                 onPress={() => router.push(`/(tabs)/groups/${g.id}`)}>
-                <View className="h-[72px] w-[72px] items-center justify-center rounded-full bg-white shadow">
+                {/* <View className="h-[72px] w-[72px] items-center justify-center rounded-full bg-white shadow">
                   <Image source={{ uri: g.img }} className="h-[72px] w-[72px] rounded-full" />
-                </View>
+                </View> */}
+                <Avatar name={g.title} imageUri={g.img} size={64} />
                 <Text className="mt-2 w-[90px] text-center text-gray-900" numberOfLines={1}>
-                  {g.name}
+                  {g.title}
                 </Text>
               </Pressable>
             ))}
@@ -192,36 +189,10 @@ export default function HomeScreen() {
   );
 }
 
-// function SummaryCard({
-//   title,
-//   amount,
-//   amountColor,
-// }: {
-//   title: string;
-//   amount: string;
-//   amountColor: string;
-// }) {
-//   return (
-//     <Card className="flex-1 items-center rounded-xl px-3 py-3">
-//       <Text className="mb-1 text-sm font-semibold text-gray-500">{title}</Text>
-//       <Text className="text-lg font-extrabold" style={{ color: amountColor }}>
-//         {amount}
-//       </Text>
-//     </Card>
-//   );
-// }
-
-function SectionHeader({ title, actionIcon = false }: { title: string; actionIcon?: boolean }) {
+function SectionHeader({ title }: { title: string }) {
   return (
     <View className="mb-2 flex-row items-center justify-between px-4">
       <Text className="text-lg font-bold text-gray-900">{title}</Text>
-      {actionIcon && (
-        <Link href={'/groups'} asChild>
-          <TouchableOpacity>
-            <Ionicons name="chevron-forward" size={22} color="#1A1A1A" />
-          </TouchableOpacity>
-        </Link>
-      )}
     </View>
   );
 }
