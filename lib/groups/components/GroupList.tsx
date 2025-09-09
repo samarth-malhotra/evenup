@@ -1,12 +1,14 @@
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { router, useNavigation } from 'expo-router';
 import { useLayoutEffect, useMemo, useState } from 'react';
-import { FlatList, Image, Pressable, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { FlatList, Pressable, TextInput, View } from 'react-native';
 
 import AppHeader from '@/lib/shared/components/AppHeader';
+import type { TransactionStatus } from '@/lib/shared/components/TransactionCard';
+import TransactionCard from '@/lib/shared/components/TransactionCard';
 
 import { groups } from '../mocks/groupList';
-import NewGroupSheet from './BottomSheet/NewGroupSheet';
+import NewGroupSheet from './BottomSheet/CreateGroupSheet';
 
 export default function GroupList() {
   const navigation = useNavigation();
@@ -16,7 +18,7 @@ export default function GroupList() {
   const filtered = useMemo(() => {
     const t = q.trim().toLowerCase();
     if (!t) return groups;
-    return groups.filter((g) => g.name.toLowerCase().includes(t));
+    return groups.filter((g) => g.title.toLowerCase().includes(t));
   }, [q]);
 
   useLayoutEffect(() => {
@@ -54,46 +56,17 @@ export default function GroupList() {
       <FlatList
         data={filtered}
         keyExtractor={(i) => i.id}
-        contentContainerStyle={{ paddingBottom: 32 }}
-        ItemSeparatorComponent={() => <View className="h-3.5" />}
         renderItem={({ item }) => (
-          <TouchableOpacity
-            activeOpacity={0.85}
-            className="flex-row items-center rounded-2xl bg-white px-3.5 py-3 shadow-sm"
-            onPress={() => router.push(`/(tabs)/groups/${item.id}`)}>
-            <Image source={{ uri: item.img }} className="mr-3 h-11 w-11 rounded-full" />
-            <View className="flex-1">
-              <Text className="text-[16px] font-semibold text-gray-900" numberOfLines={1}>
-                {item.name}
-              </Text>
-              {item.subtitle ? (
-                <Text className="mt-0.5 text-[13px] text-gray-500" numberOfLines={1}>
-                  {item.subtitle}
-                </Text>
-              ) : null}
-            </View>
-            {/* Badge */}
-            <View
-              className={`ml-2 self-center rounded-full px-2.5 py-1 ${
-                item.type === 'owe'
-                  ? 'bg-amber-100'
-                  : item.type === 'owed'
-                    ? 'bg-green-100'
-                    : 'bg-gray-100'
-              }`}>
-              <Text
-                className={`text-[12px] font-medium ${
-                  item.type === 'owe'
-                    ? 'text-amber-700'
-                    : item.type === 'owed'
-                      ? 'text-green-700'
-                      : 'text-gray-500'
-                }`}
-                numberOfLines={1}>
-                {item.badge}
-              </Text>
-            </View>
-          </TouchableOpacity>
+          <TransactionCard
+            className="mx-2 mb-2"
+            onPress={() => router.push(`/(tabs)/groups/${item.id}`)}
+            title={item.title}
+            subtitle={item.subtitle}
+            avatarInitials={item.avatarInitials}
+            img={item.img}
+            amount={item.amount}
+            status={item.status as TransactionStatus}
+          />
         )}
       />
       {/* Create New Group Bottom Sheet */}

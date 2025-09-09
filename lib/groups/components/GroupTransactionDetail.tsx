@@ -15,6 +15,7 @@ import {
 
 import AddBillSheet from '@/lib/bills/components/AddBillSheet';
 import AppHeader from '@/lib/shared/components/AppHeader';
+import TransactionCard from '@/lib/shared/components/TransactionCard';
 
 // ---------- MOCK (replace with real store/API) ----------
 const mockTransactionBase = {
@@ -129,8 +130,8 @@ export default function GroupTransactionDetail() {
   return (
     <>
       {/* Summary card */}
-      <View className="m-4 rounded-2xl bg-white p-5 shadow-sm">
-        <View className="flex-row items-start justify-between">
+      <View className="px-4">
+        <View className="mb-5 flex-row items-start justify-between">
           <View className="flex-1 pr-4">
             <Text className="text-lg font-semibold text-gray-900">{transaction.title}</Text>
 
@@ -152,79 +153,46 @@ export default function GroupTransactionDetail() {
             <Text className="mt-1 text-sm text-gray-500">Total</Text>
           </View>
         </View>
-      </View>
 
-      {/* Payer highlighted */}
-      {payer ? (
-        <View className="mx-4 mb-3 rounded-2xl bg-white p-3 shadow-sm">
-          <Text className="px-2 pb-2 text-base font-semibold text-gray-900">Payer</Text>
-          <View className="flex-row items-center justify-between px-2 py-2">
-            <View className="flex-row items-center">
-              <View className="mr-3 h-10 w-10 items-center justify-center rounded-full bg-indigo-300">
-                <Text className="font-semibold text-white">
-                  {payer.name
-                    .split(' ')
-                    .map((s: string) => s[0])
-                    .join('')
-                    .slice(0, 2)}
-                </Text>
-              </View>
-              <View>
-                <Text className="font-medium text-gray-800">{payer.name}</Text>
-                <Text className="text-xs text-indigo-700">Paid</Text>
-              </View>
-            </View>
-            <View className="items-end">
-              <Text className="font-semibold text-gray-900">₹{payer.owes}</Text>
-            </View>
+        {/* Payer highlighted */}
+        {payer ? (
+          <View className="mb-2">
+            <Text className="pb-2 text-base font-semibold text-gray-900">Payer</Text>
+            <TransactionCard
+              title="Anita"
+              subtitle="Paid"
+              avatarInitials="AN"
+              amount={800}
+              compact
+            />
           </View>
+        ) : null}
+
+        {/* Owes: show everyone who owes (all participants except payer) */}
+        <View className="mb-2">
+          <Text className="mb-3 text-base font-semibold text-gray-900">Owes</Text>
+
+          {oweList.length === 0 ? (
+            <Text className="text-sm text-gray-500">No participants owe anything.</Text>
+          ) : (
+            <>
+              <TransactionCard
+                title="You"
+                subtitle="You Owe"
+                avatarInitials="SH"
+                amount={400}
+                compact
+              />
+              <TransactionCard
+                title="Rahul"
+                subtitle="Participant"
+                avatarInitials="RA"
+                amount={400}
+                compact
+              />
+            </>
+          )}
         </View>
-      ) : null}
-
-      {/* Owes: show everyone who owes (all participants except payer) */}
-      <View className="mx-4 mb-4 rounded-2xl bg-white p-5 shadow-sm">
-        <Text className="mb-3 text-base font-semibold text-gray-900">Owes</Text>
-
-        {oweList.length === 0 ? (
-          <Text className="text-sm text-gray-500">No participants owe anything.</Text>
-        ) : (
-          oweList.map((p, idx) => (
-            <View
-              key={p.id}
-              className={`flex-row items-center justify-between py-3 ${
-                idx !== oweList.length - 1 ? 'border-b border-gray-100' : ''
-              }`}>
-              <View className="flex-row items-center">
-                <View className="mr-3 h-10 w-10 items-center justify-center rounded-full bg-gray-200">
-                  <Text className="font-semibold text-gray-700">
-                    {p.name
-                      .split(' ')
-                      .map((s: string) => s[0])
-                      .join('')
-                      .slice(0, 2)}
-                  </Text>
-                </View>
-
-                <View>
-                  <Text className="font-medium text-gray-800">{p.name}</Text>
-                  {/* relation label relative to current user */}
-                  {p.id === currentUserId && transaction.paidById !== currentUserId ? (
-                    <Text className="text-xs text-gray-500">You owe</Text>
-                  ) : transaction.paidById === currentUserId && p.id !== currentUserId ? (
-                    <Text className="text-xs text-gray-500">Owes you</Text>
-                  ) : (
-                    <Text className="text-xs text-gray-500">Participant</Text>
-                  )}
-                </View>
-              </View>
-
-              <View className="items-end">
-                <Text className="font-semibold text-gray-900">₹{p.owes}</Text>
-                {p.settled ? <Text className="mt-1 text-xs text-green-600">Settled</Text> : null}
-              </View>
-            </View>
-          ))
-        )}
       </View>
 
       {/* Comments + Input pinned at bottom */}

@@ -3,7 +3,7 @@ import ThemedSafeArea from '@/lib/shared/components/ThemedSafeArea';
 
 function FriendListScreen() {
   return (
-    <ThemedSafeArea>
+    <ThemedSafeArea scroll>
       <FriendList />
     </ThemedSafeArea>
   );

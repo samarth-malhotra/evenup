@@ -17,6 +17,9 @@ import { BarChart } from 'react-native-gifted-charts';
 import DateTimePickerModal from 'react-native-modal-datetime-picker';
 
 import AppHeader from '@/lib/shared/components/AppHeader';
+import SummaryCard from '@/lib/shared/components/SummaryCard';
+import TransactionCard from '@/lib/shared/components/TransactionCard';
+import { formatRs } from '@/lib/shared/utils/utils';
 
 /* -------------------------------------------------------------------------- */
 /* Types & constants                                                          */
@@ -42,11 +45,6 @@ type Txn = {
 };
 
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'] as const;
-
-const formatRs = (n: number) =>
-  `₹${Math.abs(n)
-    .toString()
-    .replace(/\B(?=(\d{3})+(?!\d))/g, ',')}`;
 
 const formatWhen = (iso: string) => {
   const d = new Date(iso);
@@ -482,18 +480,9 @@ export default function WalletSummary() {
     <View style={styles.headerWrap}>
       {/* summary cards */}
       <View style={styles.cardsRow}>
-        <View style={[styles.card, styles.shadow]}>
-          <Text style={styles.cardTitle}>Total Spent</Text>
-          <Text style={[styles.cardValue, { color: '#5B61FF' }]}>{formatRs(totals.spent)}</Text>
-        </View>
-        <View style={[styles.card, styles.shadow]}>
-          <Text style={styles.cardTitle}>You Owe</Text>
-          <Text style={[styles.cardValue, { color: '#F97316' }]}>{formatRs(totals.owe)}</Text>
-        </View>
-        <View style={[styles.card, styles.shadow]}>
-          <Text style={styles.cardTitle}>Friends Owe</Text>
-          <Text style={[styles.cardValue, { color: '#10B981' }]}>{formatRs(totals.get)}</Text>
-        </View>
+        <SummaryCard title="Total Spent" value={formatRs(totals.spent)} type="total" />
+        <SummaryCard title="You Owe" value={formatRs(totals.owe)} type="you" />
+        <SummaryCard title="Friends Owe" value={formatRs(totals.get)} type="friend" />
       </View>
 
       {/* date controls + resets + download */}
@@ -612,35 +601,29 @@ export default function WalletSummary() {
   return (
     <FlatList
       ref={listRef}
+      className="px-4"
       style={{ flex: 1 }}
-      contentContainerStyle={{ paddingBottom: 32 }}
+      contentContainerStyle={{ paddingBottom: 16 }}
       data={txns}
       keyExtractor={(it) => it.id}
       ListHeaderComponent={Header}
-      ItemSeparatorComponent={() => <View style={styles.separator} />}
+      // ItemSeparatorComponent={() => <View style={styles.separator} />}
       renderItem={({ item }) => {
         const isNegative = item.amount < 0;
         return (
-          <View style={[styles.txnRow]}>
-            <View style={[styles.iconCircle]}>
-              <Ionicons name={CATEGORY_ICONS[item.category]} size={18} color="#6C5CE7" />
-            </View>
-
-            <View style={{ flex: 1 }}>
-              <Text style={styles.name}>{item.name}</Text>
-              <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 2 }}>
-                <Ionicons name="people" size={14} color="#6B7280" style={{ marginRight: 4 }} />
-                <Text style={styles.group}>{item.group}</Text>
-              </View>
-              <Text style={styles.date}>{formatWhen(item.date)}</Text>
-            </View>
-
-            <Text style={[styles.amount, isNegative ? styles.neg : styles.pos]}>
-              {isNegative
-                ? `You owe ${formatRs(item.amount)}`
-                : `You received ${formatRs(item.amount)}`}
-            </Text>
-          </View>
+          <TransactionCard
+            compact
+            noShadow
+            title={item.name}
+            subtitle={`${item.group} ${formatWhen(item.date)}`}
+            avatarInitials="KS"
+            amount={item.amount}
+            status={isNegative ? 'you-owe' : 'friend-owe'}
+            onPress={() => console.log('open expense')}
+            icon={
+              <Ionicons name={CATEGORY_ICONS[item.category]} size={18} className="text-gray-800" />
+            }
+          />
         );
       }}
       ListEmptyComponent={
@@ -759,7 +742,7 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     backgroundColor: '#FFFFFF',
   },
-  separator: { height: 10, backgroundColor: '#F6F4FF' },
+  separator: { height: 0, backgroundColor: '#F6F4FF' },
   iconCircle: {
     width: 34,
     height: 34,
