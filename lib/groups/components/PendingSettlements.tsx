@@ -1,33 +1,115 @@
-// app/groups/[id]/pending-settlements.tsx
-import { useLocalSearchParams } from 'expo-router';
+// app/friends/[id].tsx
+import { useLocalSearchParams, useNavigation } from 'expo-router';
+import { useLayoutEffect, useMemo, useState } from 'react';
+import { FlatList, Text, View } from 'react-native';
 
-import SettlementScreen from '@/lib/shared/components/SettlementScreen';
+import AppHeader from '@/lib/shared/components/AppHeader';
+import SettleUpSheet from '@/lib/shared/components/SettleUpSheet';
+import SummaryCard from '@/lib/shared/components/SummaryCard';
+import TransactionCard from '@/lib/shared/components/TransactionCard';
+import { formatRs } from '@/lib/shared/utils/utils';
 
-// use your real selector/selectGroup to get group name/ pending list
-const mockPending = [
-  { id: 'u1', name: 'You → Rohit', amount: 500, relation: 'owe' },
-  { id: 'u2', name: 'Rohit → You', amount: 1200, relation: 'owed' },
-  { id: 'u3', name: 'Rohit → Anita', amount: 800, relation: 'friend-owes' },
-];
+import { pendingSettlements } from '../mocks/pendingSettlementsMock';
+
+export type GroupParticipant = {
+  id: string;
+  paidBy: string; // "You" or friend's name
+  name: string; // participant's name
+  amount: number; // contribution or owed amount
+  status: 'you-owe' | 'friend-owe'; // settlement status
+};
+export type TxItem = {
+  id: string;
+  name: string;
+  total: number;
+  youOwe: number;
+  friendOwe: number;
+  participants: GroupParticipant[];
+};
 
 export default function PendingSettlements() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  // Replace with selectGroup(id) in real code:
-  const groupName = `Mock Group ${id ?? ''}`;
+  const navigation = useNavigation();
+  const [sheetOpen, setSheetOpen] = useState(false);
+  const [amountStr, setAmountStr] = useState<string>('0');
+  const [activeItem, setActiveItem] = useState<TxItem | null>(null);
+
+  const item: TxItem | null = pendingSettlements[id] ?? null;
+
+  useLayoutEffect(() => {
+    navigation.setOptions({
+      headerShown: true,
+      header: () => <AppHeader title={`${item?.name}`} showBackButton />,
+    });
+  }, [navigation]);
+
+  const openSettleForTx = (tx: GroupParticipant) => {
+    // clear friend-level active item (or you can set a different state for activeTx)
+    setActiveItem(null);
+    setAmountStr(String(tx.amount ?? 0));
+    setSheetOpen(true);
+  };
+
+  const numericAmount = useMemo(() => {
+    const n = parseFloat(amountStr.replace(/[^\d.]/g, ''));
+    return isNaN(n) ? 0 : n;
+  }, [amountStr]);
+
+  const confirmSettle = () => {
+    const amt = numericAmount;
+    // if you are settling a transaction you might want to pass tx id,
+    // currently we do a generic handler - adapt as needed:
+    handleSettle({ id: activeItem?.id, amount: amt });
+    setSheetOpen(false);
+  };
+
+  if (!item) {
+    return (
+      <View className="flex-1 items-center justify-center bg-gray-50">
+        <Text className="text-gray-500">Friend not found</Text>
+      </View>
+    );
+  }
 
   const handleSettle = ({ id: txId, amount }: { id?: string; amount: number }) => {
-    console.log('Settle group item', txId, amount);
-    // implement settlement flow: mark transaction(s) settled
+    console.log('Settle friend', item.name, txId, amount);
+    // persist or update mock state here
   };
 
   return (
-    <SettlementScreen
-      mode="group"
-      title={groupName}
-      total={0}
-      relation="owe"
-      items={mockPending}
-      onSettleAction={handleSettle}
-    />
+    <>
+      <View className="mb-4 flex-row gap-2 space-x-3 px-4">
+        <SummaryCard title="Total" value={formatRs(2000)} type="total" />
+        <SummaryCard title="You Owe" value={formatRs(0)} type="you" />
+        <SummaryCard title="Friends Owe" value={formatRs(2000)} type="friend" />
+      </View>
+
+      <FlatList<GroupParticipant>
+        data={item.participants}
+        keyExtractor={(i) => i.id}
+        contentContainerStyle={{ padding: 16, paddingBottom: 140 }}
+        ItemSeparatorComponent={() => <View className="h-3" />}
+        renderItem={({ item }: { item: GroupParticipant }) => (
+          <TransactionCard
+            title={item.name}
+            subtitle={`Paid by ${item.paidBy}`}
+            avatarInitials={item.name?.[0] ?? 'U'}
+            amount={item.amount}
+            status={'settle'}
+            onSettle={() => openSettleForTx(item)}
+          />
+        )}
+      />
+      <SettleUpSheet
+        open={sheetOpen}
+        onClose={() => setSheetOpen(false)}
+        // payerLabel={activeItem?.relation === 'owe' ? 'You' : (activeItem?.name ?? 'You')}
+        // payeeLabel={activeItem?.relation === 'owe' ? (activeItem?.name ?? 'Friend') : 'You'}
+        // contextLabel={mode === 'group' ? `Group: ${title}` : undefined}
+        amountStr={'2000'}
+        onChangeAmount={setAmountStr}
+        onConfirm={confirmSettle}
+      />
+    </>
   );
 }

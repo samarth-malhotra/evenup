@@ -4,16 +4,16 @@ import { useCallback, useLayoutEffect, useState } from 'react';
 import { Image, Pressable, ScrollView, Text, TouchableOpacity, View } from 'react-native';
 
 import AddBillSheet from '@/lib/bills/components/AddBillSheet';
-import NewGroupSheet from '@/lib/groups/components/BottomSheet/NewGroupSheet';
+import CreateGroupSheet from '@/lib/groups/components/BottomSheet/CreateGroupSheet';
 import { groups } from '@/lib/groups/mocks/groupList';
 import AppHeader from '@/lib/shared/components/AppHeader';
+import Card from '@/lib/shared/components/Card';
+import SummaryCard from '@/lib/shared/components/SummaryCard';
 import ThemedSafeArea from '@/lib/shared/components/ThemedSafeArea';
+import { getColor } from '@/lib/shared/utils/color';
+import { formatRs } from '@/lib/shared/utils/utils';
 
-// Mock data for settlements
-const pendingSettlements = [
-  { id: '1', name: 'Ravi', amount: '₹300', type: 'owed' }, // they owe you
-  { id: '2', name: 'Amit', amount: '₹150', type: 'owe' }, // you owe
-];
+import TransactionsDemoScreen from './TransactionDemo';
 
 // Mock recent activity
 const recentActivity = [
@@ -61,7 +61,7 @@ const quickLinks = [
 export default function HomeScreen() {
   const navigation = useNavigation();
   const [addOpen, setAddOpen] = useState(false);
-  const [openNewGroupSheet, setOpenNewGroupSheet] = useState(false);
+  const [openCreateGroupSheet, setOpenCreateGroupSheet] = useState(false);
   const openPaidByPicker = useCallback(async () => 'Anita', []);
   const openParticipantsPicker = useCallback(async () => ['You', 'Anita', 'Rohit'], []);
 
@@ -74,7 +74,7 @@ export default function HomeScreen() {
           showBackButton={false}
           rightActions={
             <TouchableOpacity onPress={() => router.push('/notifications')}>
-              <MaterialIcons name="notifications" size={24} color="white" />
+              <MaterialIcons name="notifications" size={24} color={getColor('surface')} />
             </TouchableOpacity>
           }
         />
@@ -88,33 +88,37 @@ export default function HomeScreen() {
         {/* Summary Row with 3 cards */}
         <SectionHeader title="Summary (in August)" />
         <View className="mb-4 flex-row gap-2 space-x-3 px-4">
-          <SummaryCard title="Total Spent" amount="₹ 4,500" amountColor="#4F46E5" />
-          <SummaryCard title="You Owe" amount="₹ 1,250" amountColor="#FF6B3D" />
-          <SummaryCard title="Friends Owe" amount="₹ 3,400" amountColor="#10B981" />
+          <SummaryCard title="Total Spent" value={formatRs(2000)} type="total" />
+          <SummaryCard title="You Owe" value={formatRs(1500)} type="you" />
+          <SummaryCard title="Friends Owe" value={formatRs(500)} type="friend" />
         </View>
 
         {/* Quick Links */}
         <SectionHeader title="Quick links" />
         <View className="mb-4 flex-row flex-wrap px-4">
           {quickLinks.map((q) => (
-            <TouchableOpacity
+            <Card
               key={q.id}
-              onPress={() => {
-                if (q.id === 'add') {
-                  setAddOpen(true);
-                } else if (q.id === 'group') {
-                  setOpenNewGroupSheet(true);
-                } else {
-                  router.push(q.link!);
-                }
-              }}
-              className="mr-[3%] w-[23%] items-center justify-center rounded-2xl bg-white px-4 py-5 shadow-sm"
-              activeOpacity={0.85}>
-              <View className="mb-2 h-9 w-9 items-center justify-center rounded-lg bg-gray-100">
-                {q.icon}
-              </View>
-              <Text className="text-center text-[15px] font-semibold text-gray-900">{q.label}</Text>
-            </TouchableOpacity>
+              className="mr-[3%] w-[23%] items-center justify-center rounded-2xl px-4 py-5">
+              <TouchableOpacity
+                onPress={() => {
+                  if (q.id === 'add') {
+                    setAddOpen(true);
+                  } else if (q.id === 'group') {
+                    setOpenCreateGroupSheet(true);
+                  } else {
+                    router.push(q.link!);
+                  }
+                }}
+                activeOpacity={0.85}>
+                <View className="mb-2 h-9 w-9 items-center justify-center rounded-lg bg-gray-100">
+                  {q.icon}
+                </View>
+                <Text className="text-center text-[15px] font-semibold text-gray-900">
+                  {q.label}
+                </Text>
+              </TouchableOpacity>
+            </Card>
           ))}
         </View>
 
@@ -175,36 +179,37 @@ export default function HomeScreen() {
         onSelectParticipants={openParticipantsPicker}
       />
       {/* Create New Group Bottom Sheet */}
-      <NewGroupSheet
-        open={openNewGroupSheet}
-        onClose={() => setOpenNewGroupSheet(false)}
+      <CreateGroupSheet
+        open={openCreateGroupSheet}
+        onClose={() => setOpenCreateGroupSheet(false)}
         onCreate={(payload) => {
           // handle create here
           console.log('create group', payload);
         }}
       />
+      <TransactionsDemoScreen />
     </ThemedSafeArea>
   );
 }
 
-function SummaryCard({
-  title,
-  amount,
-  amountColor,
-}: {
-  title: string;
-  amount: string;
-  amountColor: string;
-}) {
-  return (
-    <View className="flex-1 items-center rounded-xl bg-white px-3 py-3 shadow-sm">
-      <Text className="mb-1 text-sm font-semibold text-gray-500">{title}</Text>
-      <Text className="text-lg font-extrabold" style={{ color: amountColor }}>
-        {amount}
-      </Text>
-    </View>
-  );
-}
+// function SummaryCard({
+//   title,
+//   amount,
+//   amountColor,
+// }: {
+//   title: string;
+//   amount: string;
+//   amountColor: string;
+// }) {
+//   return (
+//     <Card className="flex-1 items-center rounded-xl px-3 py-3">
+//       <Text className="mb-1 text-sm font-semibold text-gray-500">{title}</Text>
+//       <Text className="text-lg font-extrabold" style={{ color: amountColor }}>
+//         {amount}
+//       </Text>
+//     </Card>
+//   );
+// }
 
 function SectionHeader({ title, actionIcon = false }: { title: string; actionIcon?: boolean }) {
   return (

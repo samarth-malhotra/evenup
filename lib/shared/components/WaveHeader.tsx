@@ -10,15 +10,15 @@ import Svg, {
   LinearGradient as SvgGradient,
 } from 'react-native-svg';
 
-import { COLORS } from '../../../theme/color';
+import { getColor } from '../utils/color';
 
 const { width } = Dimensions.get('window');
 
 export default function WaveHeader({ children }: { children?: React.ReactNode }) {
   const H = children ? 160 : 90;
-  const backgroundColor = (COLORS as any)['white'];
-  const top = '#6C4CE6';
-  const bottom = '#5336D3';
+  const backgroundColor = getColor('surface');
+  const top = getColor('evenup-primary');
+  const bottom = getColor('evenup-primary', 'dark');
 
   // One curvy wave (closes to bottom so area below becomes white)
   const wave = (offset = 0) => `
@@ -32,7 +32,7 @@ export default function WaveHeader({ children }: { children?: React.ReactNode })
   `;
 
   return (
-    <View className="" style={{ height: H - (children ? 60 : 30) }}>
+    <View className="relative" style={{ height: H - (children ? 60 : 30) }}>
       <Svg width={width} height={'100%'}>
         <Defs>
           {/* background gradient */}
@@ -43,8 +43,8 @@ export default function WaveHeader({ children }: { children?: React.ReactNode })
 
           {/* fade mask */}
           <SvgGradient id="fadeRight" x1="0" y1="0" x2="1" y2="0">
-            <Stop offset="0%" stopColor="#fff" stopOpacity="1" />
-            <Stop offset="100%" stopColor="#fff" stopOpacity="0" />
+            <Stop offset="0%" stopColor={backgroundColor} stopOpacity="1" />
+            <Stop offset="100%" stopColor={backgroundColor} stopOpacity="0" />
           </SvgGradient>
 
           <Mask id="fadeMask">
@@ -58,12 +58,12 @@ export default function WaveHeader({ children }: { children?: React.ReactNode })
         {/* Waves */}
         <G mask="url(#fadeMask)">
           {/* Main decorative wave */}
-          <Path d={wave(0.0)} fill="#FFFFFF" fillOpacity={0.22} />
+          <Path d={wave(0.0)} fill={backgroundColor} fillOpacity={0.22} />
           <Path d={wave(0.05)} fill={backgroundColor} />
         </G>
       </Svg>
 
-      <View className="absolute inset-0 top-11 px-4">{children}</View>
+      <View className="absolute inset-0 top-9 px-4">{children}</View>
     </View>
   );
 }
