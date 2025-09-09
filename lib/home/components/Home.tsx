@@ -1,13 +1,23 @@
+// app/(tabs)/home.tsx
 import { Feather, Ionicons, MaterialIcons } from '@expo/vector-icons';
 import { Link, router, useNavigation } from 'expo-router';
-import { useCallback, useLayoutEffect, useState } from 'react';
-import { Image, Pressable, ScrollView, Text, TouchableOpacity, View } from 'react-native';
+import { useCallback, useEffect, useLayoutEffect, useState } from 'react';
+import {
+  ActivityIndicator,
+  Image,
+  Pressable,
+  ScrollView,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 
 import AddBillSheet from '@/lib/bills/components/AddBillSheet';
 import NewGroupSheet from '@/lib/groups/components/BottomSheet/NewGroupSheet';
 import { groups } from '@/lib/groups/mocks/groupList';
 import AppHeader from '@/lib/shared/components/AppHeader';
 import ThemedSafeArea from '@/lib/shared/components/ThemedSafeArea';
+import { supabase } from '@/lib/supabase';
 
 // Mock data for settlements
 const pendingSettlements = [
@@ -62,15 +72,80 @@ export default function HomeScreen() {
   const navigation = useNavigation();
   const [addOpen, setAddOpen] = useState(false);
   const [openNewGroupSheet, setOpenNewGroupSheet] = useState(false);
+  const [displayName, setDisplayName] = useState<string | null>(null);
+  const [loadingUser, setLoadingUser] = useState(true);
+
   const openPaidByPicker = useCallback(async () => 'Anita', []);
   const openParticipantsPicker = useCallback(async () => ['You', 'Anita', 'Rohit'], []);
 
+  useEffect(() => {
+    let mounted = true;
+
+    async function loadUser() {
+      setLoadingUser(true);
+      try {
+        const {
+          data: { user },
+        } = await supabase.auth.getUser();
+
+        if (!mounted) return;
+
+        if (user) {
+          // supabase stores custom metadata inside user.user_metadata
+          const fullName = (user.user_metadata as any)?.full_name;
+          if (fullName && typeof fullName === 'string' && fullName.trim().length > 0) {
+            setDisplayName(fullName);
+          } else if (user.email) {
+            setDisplayName(user.email.split('@')[0]); // fallback to local part of email
+          } else {
+            setDisplayName('Friend');
+          }
+        } else {
+          setDisplayName('Friend');
+        }
+      } catch (e) {
+        console.warn('Failed to load user', e);
+        if (mounted) setDisplayName('Friend');
+      } finally {
+        if (mounted) setLoadingUser(false);
+      }
+    }
+
+    loadUser();
+
+    // Subscribe to auth state changes so we update UI when user signs in/out/updates
+    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
+      // when signed in, re-fetch user
+      if (session?.user) {
+        const user = session.user;
+        const fullName = (user.user_metadata as any)?.full_name;
+        if (fullName && typeof fullName === 'string' && fullName.trim().length > 0) {
+          setDisplayName(fullName);
+        } else if (user.email) {
+          setDisplayName(user.email.split('@')[0]);
+        } else {
+          setDisplayName('Friend');
+        }
+        setLoadingUser(false);
+      } else {
+        // signed out
+        setDisplayName('Friend');
+      }
+    });
+
+    return () => {
+      mounted = false;
+      listener?.subscription?.unsubscribe?.();
+    };
+  }, []);
+
+  // Update header once displayName is available (or while loading show generic)
   useLayoutEffect(() => {
     navigation.setOptions({
       headerShown: true,
       header: () => (
         <AppHeader
-          title="Hi, Rohan 👋"
+          title={loadingUser ? 'Hi 👋' : `Hi, ${displayName} 👋`}
           showBackButton={false}
           rightActions={
             <TouchableOpacity onPress={() => router.push('/notifications')}>
@@ -80,89 +155,98 @@ export default function HomeScreen() {
         />
       ),
     });
-  }, [navigation]);
+  }, [navigation, displayName, loadingUser]);
 
   return (
     <ThemedSafeArea scroll edges={['left', 'right']}>
-      <ScrollView contentContainerStyle={{ paddingBottom: 32 }}>
-        {/* Summary Row with 3 cards */}
-        <SectionHeader title="Summary (in August)" />
-        <View className="mb-4 flex-row gap-2 space-x-3 px-4">
-          <SummaryCard title="Total Spent" amount="₹ 4,500" amountColor="#4F46E5" />
-          <SummaryCard title="You Owe" amount="₹ 1,250" amountColor="#FF6B3D" />
-          <SummaryCard title="Friends Owe" amount="₹ 3,400" amountColor="#10B981" />
+      {loadingUser ? (
+        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 20 }}>
+          <ActivityIndicator size="large" />
         </View>
+      ) : (
+        <ScrollView contentContainerStyle={{ paddingBottom: 32 }}>
+          {/* Summary Row with 3 cards */}
+          <SectionHeader title="Summary (in August)" />
+          <View className="mb-4 flex-row gap-2 space-x-3 px-4">
+            <SummaryCard title="Total Spent" amount="₹ 4,500" amountColor="#4F46E5" />
+            <SummaryCard title="You Owe" amount="₹ 1,250" amountColor="#FF6B3D" />
+            <SummaryCard title="Friends Owe" amount="₹ 3,400" amountColor="#10B981" />
+          </View>
 
-        {/* Quick Links */}
-        <SectionHeader title="Quick links" />
-        <View className="mb-4 flex-row flex-wrap px-4">
-          {quickLinks.map((q) => (
-            <TouchableOpacity
-              key={q.id}
-              onPress={() => {
-                if (q.id === 'add') {
-                  setAddOpen(true);
-                } else if (q.id === 'group') {
-                  setOpenNewGroupSheet(true);
-                } else {
-                  router.push(q.link!);
-                }
-              }}
-              className="mr-[3%] w-[23%] items-center justify-center rounded-2xl bg-white px-4 py-5 shadow-sm"
-              activeOpacity={0.85}>
-              <View className="mb-2 h-9 w-9 items-center justify-center rounded-lg bg-gray-100">
-                {q.icon}
-              </View>
-              <Text className="text-center text-[15px] font-semibold text-gray-900">{q.label}</Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-
-        {/* Groups */}
-        <SectionHeader title="Groups" actionIcon />
-        {groups.length > 0 ? (
-          <ScrollView
-            className="mb-4"
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={{ paddingHorizontal: 20, gap: 18 }}>
-            {groups.map((g) => (
-              <Pressable
-                key={g.id}
-                className="items-center"
-                onPress={() => router.push(`/(tabs)/groups/${g.id}`)}>
-                <View className="h-[72px] w-[72px] items-center justify-center rounded-full bg-white shadow">
-                  <Image source={{ uri: g.img }} className="h-[72px] w-[72px] rounded-full" />
+          {/* Quick Links */}
+          <SectionHeader title="Quick links" />
+          <View className="mb-4 flex-row flex-wrap px-4">
+            {quickLinks.map((q) => (
+              <TouchableOpacity
+                key={q.id}
+                onPress={() => {
+                  if (q.id === 'add') {
+                    setAddOpen(true);
+                  } else if (q.id === 'group') {
+                    setOpenNewGroupSheet(true);
+                  } else {
+                    router.push(q.link!);
+                  }
+                }}
+                className="mr-[3%] w-[23%] items-center justify-center rounded-2xl bg-white px-4 py-5 shadow-sm"
+                activeOpacity={0.85}>
+                <View className="mb-2 h-9 w-9 items-center justify-center rounded-lg bg-gray-100">
+                  {q.icon}
                 </View>
-                <Text className="mt-2 w-[90px] text-center text-gray-900" numberOfLines={1}>
-                  {g.name}
+                <Text className="text-center text-[15px] font-semibold text-gray-900">
+                  {q.label}
                 </Text>
-              </Pressable>
+              </TouchableOpacity>
             ))}
-          </ScrollView>
-        ) : (
-          <Text className="mb-4 px-4 italic text-gray-500">
-            No groups yet 🚀 Create one to get started!
-          </Text>
-        )}
+          </View>
 
-        {/* Recent Activity */}
-        <SectionHeader title="Recent Activity" />
-        <View className="mb-4 px-4">
-          {recentActivity.map((a) => (
-            <View key={a.id} className="flex-row items-center border-b border-gray-200 py-3">
-              <Image source={{ uri: a.avatar }} className="mr-3 h-11 w-11 rounded-full" />
-              <View className="flex-1">
-                <Text className="text-base font-semibold text-gray-900">{a.title}</Text>
-                <Text className="text-sm text-gray-500">{a.sub}</Text>
+          {/* Groups */}
+          <SectionHeader title="Groups" actionIcon />
+          {groups.length > 0 ? (
+            <ScrollView
+              className="mb-4"
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={{ paddingHorizontal: 20, gap: 18 }}>
+              {groups.map((g) => (
+                <Pressable
+                  key={g.id}
+                  className="items-center"
+                  onPress={() => router.push(`/(tabs)/groups/${g.id}`)}>
+                  <View className="h-[72px] w-[72px] items-center justify-center rounded-full bg-white shadow">
+                    <Image source={{ uri: g.img }} className="h-[72px] w-[72px] rounded-full" />
+                  </View>
+                  <Text className="mt-2 w-[90px] text-center text-gray-900" numberOfLines={1}>
+                    {g.name}
+                  </Text>
+                </Pressable>
+              ))}
+            </ScrollView>
+          ) : (
+            <Text className="mb-4 px-4 italic text-gray-500">
+              No groups yet 🚀 Create one to get started!
+            </Text>
+          )}
+
+          {/* Recent Activity */}
+          <SectionHeader title="Recent Activity" />
+          <View className="mb-4 px-4">
+            {recentActivity.map((a) => (
+              <View key={a.id} className="flex-row items-center border-b border-gray-200 py-3">
+                <Image source={{ uri: a.avatar }} className="mr-3 h-11 w-11 rounded-full" />
+                <View className="flex-1">
+                  <Text className="text-base font-semibold text-gray-900">{a.title}</Text>
+                  <Text className="text-sm text-gray-500">{a.sub}</Text>
+                </View>
               </View>
-            </View>
-          ))}
-          <TouchableOpacity onPress={() => router.push('/activity')} className="py-3">
-            <Text className="text-center font-semibold text-indigo-600">View All</Text>
-          </TouchableOpacity>
-        </View>
-      </ScrollView>
+            ))}
+            <TouchableOpacity onPress={() => router.push('/activity')} className="py-3">
+              <Text className="text-center font-semibold text-indigo-600">View All</Text>
+            </TouchableOpacity>
+          </View>
+        </ScrollView>
+      )}
+
       {/* Add New Bill */}
       <AddBillSheet
         open={addOpen}
@@ -174,6 +258,7 @@ export default function HomeScreen() {
         onSelectPaidBy={openPaidByPicker}
         onSelectParticipants={openParticipantsPicker}
       />
+
       {/* Create New Group Bottom Sheet */}
       <NewGroupSheet
         open={openNewGroupSheet}

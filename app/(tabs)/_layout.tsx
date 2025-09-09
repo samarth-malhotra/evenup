@@ -1,83 +1,129 @@
-// app/(tabs)/_layout.tsx
-import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { Tabs } from 'expo-router';
-import { TouchableOpacity } from 'react-native';
-import { useTheme } from 'react-native-paper';
+// app/_layout.tsx
+import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
+import { Stack, useRouter, useSegments } from 'expo-router';
+import { useEffect, useState } from 'react';
+import { ActivityIndicator, useColorScheme, View } from 'react-native';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { PaperProvider } from 'react-native-paper';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 
-export default function TabsLayout() {
-  const theme = useTheme();
+import { supabase } from '@/lib/supabase';
+import { darkTheme, lightTheme } from '@/theme/paper';
+
+export const unstable_settings = { initialRouteName: '(auth)' };
+
+export default function RootLayout() {
+  const scheme = useColorScheme();
+  const theme = scheme === 'dark' ? darkTheme : lightTheme;
+
+  const router = useRouter();
+  const segments = useSegments();
+  const [checking, setChecking] = useState(true);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    (async function checkSession() {
+      try {
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
+
+        const topSegment = segments[0] ?? '';
+
+        if (!session) {
+          const isOnAuthRoute =
+            topSegment === 'login' || topSegment === 'signup' || topSegment === '(auth)';
+
+          if (!isOnAuthRoute) {
+            router.replace('/login');
+          }
+        } else {
+          const isOnAuthRoute =
+            topSegment === 'login' || topSegment === 'signup' || topSegment === '(auth)';
+
+          if (isOnAuthRoute) {
+            // ✅ send signed-in users directly to Home
+            router.replace('/(tabs)/home');
+          }
+        }
+      } catch (err) {
+        console.warn('Error checking supabase session', err);
+      } finally {
+        if (isMounted) setChecking(false);
+      }
+    })();
+
+    const { data: listener } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'SIGNED_IN') {
+        router.replace('/(tabs)/home');
+      }
+      if (event === 'SIGNED_OUT') {
+        router.replace('/login');
+      }
+    });
+
+    return () => {
+      isMounted = false;
+      listener?.subscription?.unsubscribe?.();
+    };
+  }, []);
+
+  if (checking) {
+    return (
+      <GestureHandlerRootView style={{ flex: 1 }}>
+        <BottomSheetModalProvider>
+          <PaperProvider theme={theme}>
+            <SafeAreaProvider>
+              <View
+                style={{
+                  flex: 1,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}>
+                <ActivityIndicator size="large" />
+              </View>
+            </SafeAreaProvider>
+          </PaperProvider>
+        </BottomSheetModalProvider>
+      </GestureHandlerRootView>
+    );
+  }
 
   return (
-    <Tabs
-      screenOptions={{
-        headerShown: false,
-        tabBarActiveTintColor: theme.colors.primary,
-        tabBarInactiveTintColor: (theme as any).colors?.onSurfaceVariant ?? theme.colors.onSurface,
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <BottomSheetModalProvider>
+        <PaperProvider theme={theme}>
+          <SafeAreaProvider>
+            <Stack screenOptions={{ headerShown: false }}>
+              {/* Auth group */}
+              <Stack.Screen name="(auth)" />
+              <Stack.Screen name="login" />
+              <Stack.Screen name="signup" />
 
-        tabBarActiveBackgroundColor: 'transparent',
-        tabBarInactiveBackgroundColor: 'transparent',
+              {/* Tabs group */}
+              <Stack.Screen name="(tabs)" />
 
-        tabBarStyle: {
-          backgroundColor: 'white',
-          borderTopWidth: 0,
-          height: 80,
-        },
-        tabBarItemStyle: {
-          paddingVertical: 6,
-        },
-        tabBarLabelStyle: {
-          fontSize: 12,
-          marginBottom: 4,
-        },
-
-        // <<< add this: replace default touchable with a TouchableOpacity that has no press feedback
-        tabBarButton: (props: any) => {
-          // props contains onPress, accessibility, children, style, etc.
-          return (
-            <TouchableOpacity
-              {...props}
-              activeOpacity={1} // no fade on press
-              style={props.style}
-            />
-          );
-        },
-      }}>
-      <Tabs.Screen
-        name="home"
-        options={{
-          title: 'Home',
-          tabBarIcon: ({ color, size }) => (
-            <MaterialCommunityIcons name="home-outline" color={color} size={size} />
-          ),
-        }}
-      />
-      <Tabs.Screen
-        name="groups"
-        options={{
-          title: 'Groups',
-          tabBarIcon: ({ color, size }) => (
-            <MaterialCommunityIcons name="account-multiple" color={color} size={size} />
-          ),
-        }}
-      />
-      <Tabs.Screen
-        name="friends"
-        options={{
-          title: 'Friends',
-          tabBarIcon: ({ color, size }) => (
-            <MaterialCommunityIcons name="wallet-outline" color={color} size={size} />
-          ),
-        }}
-      />
-      <Tabs.Screen
-        name="profile"
-        options={{
-          title: 'Profile',
-          tabBarIcon: ({ color, size }) => (
-            <MaterialCommunityIcons name="account-outline" color={color} size={size} />
-          ),
-        }}
-      />
-    </Tabs>
+              {/* Non-tab sections */}
+              <Stack.Screen
+                name="notifications"
+                options={{
+                  headerShown: true,
+                  title: 'Notifications',
+                }}
+              />
+              <Stack.Screen
+                name="summary/index"
+                options={{
+                  headerShown: true,
+                  title: 'Summary',
+                }}
+              />
+              <Stack.Screen name="group" options={{ headerShown: true, title: 'Group' }} />
+            </Stack>
+          </SafeAreaProvider>
+        </PaperProvider>
+      </BottomSheetModalProvider>
+    </GestureHandlerRootView>
   );
 }

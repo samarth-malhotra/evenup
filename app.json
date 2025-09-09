@@ -1,7 +1,8 @@
 {
   "expo": {
-    "name": "Evenup",
-    "slug": "demo",
+    "name": "EvenUp",
+    "slug": "evenup",
+    "owner": "samarthmalhotra",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
