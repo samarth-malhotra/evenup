@@ -2,11 +2,9 @@
 import React from 'react';
 import { Text, View } from 'react-native';
 
-import { useElevation } from '@/hooks/useElevation';
-
-import { getColor } from '../utils/color';
-
+import { getBoxShadow } from '@/hooks/getBoxShadow';
 import type { StyleProp, ViewProps, ViewStyle } from 'react-native';
+import { useColor } from '../utils/color';
 
 type CardType = 'total' | 'you' | 'friend';
 
@@ -24,12 +22,6 @@ type CardProps = ViewProps & {
   style?: StyleProp<ViewStyle>;
 };
 
-const typeToColor: Record<CardType, string> = {
-  total: getColor('evenup-primary'),
-  you: getColor('warning'),
-  friend: getColor('success'),
-};
-
 export default function SummaryCard({
   title,
   value,
@@ -40,17 +32,28 @@ export default function SummaryCard({
   style,
   ...rest
 }: CardProps) {
-  const elev = useElevation(elevation);
+  const getColor = useColor();
+  let color = '';
+  switch (type) {
+    case 'friend':
+      color = getColor('success');
+      break;
+    case 'you':
+      color = getColor('warning');
+      break;
+    default:
+      color = getColor('primary');
+  }
 
   // If `type` present, pick mapped color; otherwise no inline color (use tailwind text color)
-  const valueColor = type ? typeToColor[type] : undefined;
+  const valueColor = type ? color : undefined;
 
   return (
     <View
-      className={`bg-surface shadow-card flex-1 items-center rounded-2xl p-4 ${className}`}
-      style={[elev as StyleProp<ViewStyle>, style]}
+      className={`flex-1 items-center rounded-2xl bg-surface p-4 ${className}`}
+      style={[getBoxShadow('md'), style]}
       {...rest}>
-      {title ? <Text className="text-muted text-md mb-1">{title}</Text> : null}
+      {title ? <Text className="text-md mb-1 text-muted">{title}</Text> : null}
 
       {value !== undefined ? (
         // If the value is a node (component), render it directly (but still wrap to apply color if needed)

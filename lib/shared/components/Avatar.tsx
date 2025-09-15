@@ -48,7 +48,6 @@ export const Avatar: React.FC<AvatarProps> = memo(
 
     // dynamic font size → ensures initials always scale nicely
     const fontSize = diameter * textScale;
-
     return (
       <View
         testID={testID}
