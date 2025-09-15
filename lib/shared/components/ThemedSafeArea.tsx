@@ -4,17 +4,15 @@ import React from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { COLORS } from '../../../theme/color';
-
 import type { StyleProp, ViewStyle } from 'react-native';
 import type { Edge } from 'react-native-safe-area-context';
-import type { ColorKey } from '../../../theme/color';
+import { useColor } from '../utils/color';
 // import { COLORS, ColorKey } from "@/theme/colors";
 
 type Props = {
   children: React.ReactNode;
   /** Use a key from COLORS or pass any valid color string */
-  bg?: ColorKey | string;
+  bg?: string;
   /** Add default padding inside */
   padding?: number;
   /** If true, content is placed in a ScrollView */
@@ -35,7 +33,7 @@ type Props = {
 
 export default function ThemedSafeArea({
   children,
-  bg = 'white',
+  bg,
   padding = 0,
   scroll = false,
   style,
@@ -46,7 +44,8 @@ export default function ThemedSafeArea({
   className,
 }: Props) {
   // const insets = useSafeAreaInsets();
-  const backgroundColor = (COLORS as any)[bg] ?? bg;
+  const getColor = useColor();
+  const backgroundColor = bg ?? getColor('surface');
 
   const containerStyle: StyleProp<ViewStyle> = [
     styles.container,

@@ -12,7 +12,9 @@
     "lint": "eslint . --ext .js,.jsx,.ts,.tsx",
     "lint:fix": "eslint . --ext .js,.jsx,.ts,.tsx --fix",
     "format": "prettier . --write",
-    "format:check": "prettier . --check"
+    "format:check": "prettier . --check",
+    "sync:tokens": "node theme/sync-tailwind.js",
+    "start:reset": "npm run sync:tokens && expo start -c"
   },
   "dependencies": {
     "@expo/metro-runtime": "~5.0.4",
@@ -25,8 +27,10 @@
     "clsx": "^2.1.1",
     "dayjs": "^1.11.13",
     "expo": "~53.0.22",
+    "expo-file-system": "~18.1.11",
     "expo-linear-gradient": "~14.1.5",
     "expo-router": "^5.1.5",
+    "expo-sharing": "~13.1.5",
     "expo-status-bar": "~2.2.3",
     "nativewind": "^4.1.23",
     "react": "19.0.0",
@@ -41,9 +45,7 @@
     "react-native-screens": "~4.11.1",
     "react-native-svg": "15.11.2",
     "react-native-web": "^0.20.0",
-    "zustand": "^5.0.8",
-    "expo-sharing": "~13.1.5",
-    "expo-file-system": "~18.1.11"
+    "zustand": "^5.0.8"
   },
   "devDependencies": {
     "@babel/core": "7.25",

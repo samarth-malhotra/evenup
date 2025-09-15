@@ -10,7 +10,7 @@ import AppHeader from '@/lib/shared/components/AppHeader';
 import { Avatar } from '@/lib/shared/components/Avatar';
 import Card from '@/lib/shared/components/Card';
 import SummaryCard from '@/lib/shared/components/SummaryCard';
-import { getColor } from '@/lib/shared/utils/color';
+import { useColor } from '@/lib/shared/utils/color';
 import { formatRs } from '@/lib/shared/utils/utils';
 
 import TransactionsDemoScreen from './TransactionDemo';
@@ -59,6 +59,7 @@ const quickLinks = [
 ];
 
 export default function HomeScreen() {
+  const getColor = useColor();
   const navigation = useNavigation();
   const [addOpen, setAddOpen] = useState(false);
   const [openCreateGroupSheet, setOpenCreateGroupSheet] = useState(false);

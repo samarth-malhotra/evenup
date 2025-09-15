@@ -10,17 +10,20 @@ import Svg, {
   Stop,
   LinearGradient as SvgGradient,
 } from 'react-native-svg';
+import { useColor } from '../utils/color';
 
-import { getColor } from '../utils/color';
+// import { getColor } from '../utils/color';
 
 const { width } = Dimensions.get('window');
 
 export default function WaveHeader({ children }: { children?: React.ReactNode }) {
+  const getColor = useColor();
+
   const insets = useSafeAreaInsets();
   const H = children ? 160 : 90;
   const backgroundColor = getColor('surface');
-  const top = getColor('evenup-primary');
-  const bottom = getColor('evenup-primary', 'dark');
+  const top = getColor('primary');
+  const bottom = getColor('primary', 'dark');
 
   // One curvy wave (closes to bottom so area below becomes white)
   const wave = (offset = 0) => `
@@ -50,7 +53,7 @@ export default function WaveHeader({ children }: { children?: React.ReactNode })
           </SvgGradient>
 
           <Mask id="fadeMask">
-            <Rect x="0" y="0" width={width} height={H} fill={backgroundColor} />
+            <Rect x="0" y="0" width={width} height={H} fill={'#fff'} />
           </Mask>
         </Defs>
 

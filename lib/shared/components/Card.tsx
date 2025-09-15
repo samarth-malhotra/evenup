@@ -1,29 +1,19 @@
 // lib/components/ui/Card.tsx
+import { getBoxShadow } from '@/hooks/getBoxShadow';
 import React from 'react';
 import { View } from 'react-native';
-
-import { useElevation } from '@/hooks/useElevation';
 
 import type { StyleProp, ViewProps, ViewStyle } from 'react-native';
 
 type CardProps = ViewProps & {
   children: React.ReactNode;
-  elevation?: number; // default 4
   className?: string; // Tailwind classes
   style?: StyleProp<ViewStyle>; // inline overrides
 };
 
-export default function Card({
-  children,
-  elevation = 4,
-  className = '',
-  style,
-  ...rest
-}: CardProps) {
-  const elev = useElevation(elevation);
-
+export default function Card({ children, className = '', style, ...rest }: CardProps) {
   return (
-    <View className={`bg-surface shadow-card ${className}`} style={[elev, style]} {...rest}>
+    <View className={`bg-surface ${className}`} style={[style, getBoxShadow('md')]} {...rest}>
       {children}
     </View>
   );

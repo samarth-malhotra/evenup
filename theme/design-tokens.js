@@ -7,12 +7,16 @@ const tokens = {
       light: '#9F7CF6',
       dark: '#5B21B6',
     },
-    'evenup-accent': {
+    'evenup-secondary': {
       DEFAULT: '#06B6D4',
       light: '#67E8F9',
       dark: '#0891B2',
     },
-
+    'evenup-text': {
+      DEFAULT: '#06B6D4',
+      light: '#67E8F9',
+      dark: '#4b5563',
+    },
     // Semantic mapping (single-source values)
     primary: {
       DEFAULT: '#7C3AED',
@@ -23,6 +27,11 @@ const tokens = {
       DEFAULT: '#06B6D4',
       light: '#67E8F9',
       dark: '#0891B2',
+    },
+    muted: {
+      DEFAULT: '#9CA3AF',
+      light: '#67E8F9',
+      dark: '#4b5563',
     },
 
     // Surfaces & utilities
