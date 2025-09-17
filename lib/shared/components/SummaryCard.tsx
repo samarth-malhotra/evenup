@@ -3,6 +3,7 @@ import React from 'react';
 import { Text, View } from 'react-native';
 
 import { getBoxShadow } from '@/hooks/getBoxShadow';
+import { useTheme } from '@/theme/ThemeProvider';
 import type { StyleProp, ViewProps, ViewStyle } from 'react-native';
 import { useColor } from '../utils/color';
 
@@ -33,6 +34,8 @@ export default function SummaryCard({
   ...rest
 }: CardProps) {
   const getColor = useColor();
+  const { theme } = useTheme();
+
   let color = '';
   switch (type) {
     case 'friend':
@@ -50,10 +53,14 @@ export default function SummaryCard({
 
   return (
     <View
-      className={`flex-1 items-center rounded-2xl bg-surface p-4 ${className}`}
-      style={[getBoxShadow('md'), style]}
+      className={`flex-1 items-center rounded-2xl p-4 ${className}`}
+      style={[getBoxShadow('md'), { backgroundColor: theme.colors.background }, style]}
       {...rest}>
-      {title ? <Text className="text-md mb-1 text-muted">{title}</Text> : null}
+      {title ? (
+        <Text style={{ color: theme.colors.muted }} className="text-md mb-1">
+          {title}
+        </Text>
+      ) : null}
 
       {value !== undefined ? (
         // If the value is a node (component), render it directly (but still wrap to apply color if needed)

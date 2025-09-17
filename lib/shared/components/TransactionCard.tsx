@@ -1,21 +1,22 @@
 import React from 'react';
-import { Platform, Pressable, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Pressable, Text, TouchableOpacity, View } from 'react-native';
 
+import { getBoxShadow } from '@/hooks/getBoxShadow';
+import { useTheme } from '@/theme/ThemeProvider';
+import { useColor } from '../utils/color';
 import { Avatar } from './Avatar';
 
 /**
- * Single-file reusable TransactionCard + demo of many variations.
- * - Uses Tailwind classes (NativeWind) if available.
- * - Adds explicit shadow styles (shadowCard) for stronger elevation.
+ * TransactionCard — Tailwind (NativeWind) version.
  *
- * Replace any string types with your EvenUp types imports where needed.
+ * - Replaced StyleSheet with className Tailwind classes.
+ * - Removed unused/commented code.
+ * - Kept getBoxShadow for consistent elevation across platforms.
  */
 
-/* ----------------------------- Utilities ------------------------------ */
 export type TransactionStatus =
   | 'you-owe'
   | 'friend-owe'
-  //   | 'you-borrowed'
   | 'settle'
   | 'settled'
   | 'pending'
@@ -48,185 +49,106 @@ interface TransactionCardProps {
   className?: string;
 }
 
-/* --------------------------- Styles (shadow) -------------------------- */
-const shadowCard = Platform.select({
-  ios: {
-    shadowColor: '#0F172A',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.06,
-    shadowRadius: 18,
-  },
-  android: {
-    elevation: 6,
-  },
-  default: {},
-});
-
-const styles = StyleSheet.create({
-  cardContainer: {
-    borderRadius: 14,
-    backgroundColor: '#ffffff',
-    padding: 14,
-    marginBottom: 12,
-  },
-  shadow: {
-    // merge in platform shadows
-    ...shadowCard,
-  },
-  avatar: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: '#F3F4F6',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 12,
-  },
-  avatarText: {
-    color: '#374151',
-    fontWeight: '700',
-    fontSize: 18,
-  },
-  title: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#111827',
-  },
-  subtitle: {
-    fontSize: 13,
-    color: '#6B7280',
-    marginTop: 4,
-  },
-  amount: {
-    fontSize: 18,
-    fontWeight: '800',
-    color: '#111827',
-  },
-  pillBase: {
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-    borderRadius: 999,
-    alignSelf: 'flex-end',
-  },
-  pillText: {
-    fontSize: 13,
-    fontWeight: '600',
-  },
-  badgesWrap: {
-    marginTop: 8,
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 6,
-  },
-  badgeItem: {
-    // backgroundColor: '#ECFDF5',
-    // borderRadius: 999,
-    marginRight: 8,
-    // marginTop: 6,
-    // color: 'red',
-  },
-  badgeText: {
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    // color: '#065F46',
-    fontWeight: '600',
-    fontSize: 12,
-    color: 'inherit',
-  },
-});
-
 /* --------------------------- Small Subcomponents --------------------------- */
 
 const StatusPill: React.FC<{
-  status?: TransactionStatus;
+  status?: TransactionStatus | 'neutral';
   label?: string;
   onPress?: () => void;
   prominent?: boolean;
 }> = ({ status = 'neutral', label, onPress, prominent = false }) => {
-  let bg = '#F3F4F6';
-  let text = '#374151';
-  let borderColor: string | undefined;
-  let isButton = false;
+  const getColor = useColor();
+  // background / text / border choices expressed via Tailwind classes below
+  let bgClass = '',
+    textClass = '',
+    borderClass = '',
+    isButton = false;
 
   switch (status) {
     case 'you-owe':
-      bg = '#FEF2F2';
-      text = '#DC2626';
+      bgClass = getColor('danger', 'light', 0.3);
+      textClass = getColor('danger', 'dark');
       break;
     case 'friend-owe':
-      bg = '#ECFDF5';
-      text = '#059669';
+      bgClass = getColor('success', 'light', 0.2);
+      textClass = getColor('success', 'dark');
       break;
-    // case 'you-borrowed':
-    //   bg = '#FFFAEB';
-    //   text = '#B45309';
-    //   break;
     case 'settle':
-      bg = '#059669';
-      text = '#FFFFFF';
+      bgClass = getColor('success');
+      textClass = getColor('textWhite');
       isButton = true;
       break;
     case 'pending':
-      bg = '#FEF3C7';
-      text = '#92400E';
+      bgClass = getColor('warning', 'light', 0.8);
+      textClass = getColor('textPrimary');
       break;
     case 'error':
-      bg = '#FCE7F3';
-      text = '#BE185D';
-      borderColor = '#FBCFE8';
+      bgClass = getColor('danger', 'DEFAULT', 0.8);
+      textClass = getColor('textWhite');
+      borderClass = getColor('danger');
       break;
     default:
-      bg = '#F3F4F6';
-      text = '#374151';
+      bgClass = getColor('textPrimary', 'DEFAULT', 0.2);
+      textClass = getColor('textPrimary');
   }
 
   const pill = (
     <View
-      style={[
-        styles.pillBase,
-        {
-          backgroundColor: bg,
-          borderColor: borderColor ?? 'transparent',
-          borderWidth: borderColor ? 1 : 0,
-        },
-      ]}>
-      <Text style={[styles.pillText, { color: text }]}>{label}</Text>
+      className={`self-end rounded-full px-3 py-1.5`}
+      style={{ backgroundColor: bgClass, borderColor: borderClass }}>
+      <Text className={`text-sm font-semibold`} style={{ color: textClass }}>
+        {label}
+      </Text>
     </View>
   );
 
   if (isButton || onPress) {
     return (
-      <Pressable onPress={onPress} accessibilityRole="button" hitSlop={8} style={{ marginTop: 6 }}>
+      <Pressable onPress={onPress} accessibilityRole="button" hitSlop={8} className="mt-1.5">
         {pill}
       </Pressable>
     );
   }
 
-  return <View style={{ marginTop: 6 }}>{pill}</View>;
+  return <View className="mt-1.5">{pill}</View>;
 };
 
 const BadgesRow: React.FC<{ badges?: BadgeItem[] }> = ({ badges }) => {
-  const getBadgeTheme = (status: string) => {
+  const getColor = useColor();
+  if (!badges?.length) return null;
+
+  const getBadgeClasses = (status: string) => {
     if (status === 'you-owe') {
-      return { backgroundColor: '#FEF2F2', color: '#DC2626' };
+      return {
+        container: getColor('danger', 'light'),
+        text: getColor('textPrimary', 'DEFAULT', 0.8),
+      };
     } else if (status === 'friend-owe') {
-      return { backgroundColor: '#ECFDF5', color: '#059669' };
+      return {
+        container: getColor('success', 'light'),
+        text: getColor('textPrimary', 'DEFAULT', 0.8),
+      };
     } else {
-      return { backgroundColor: '#F3F4F6', color: '#374151' };
+      return {
+        container: getColor('muted'),
+        text: getColor('textPrimary', 'DEFAULT', 0.8),
+      };
     }
   };
 
-  if (!badges?.length) return null;
   return (
-    <View style={styles.badgesWrap as any}>
-      {badges.map((b, i) => (
-        <View key={i} style={(styles.badgeItem, { ...getBadgeTheme(b.status) })}>
-          <Text style={styles.badgeText}>
-            {b.title}
-            {b.amount !== undefined ? ` · ₹${b.amount}` : ''}
-          </Text>
-        </View>
-      ))}
+    <View className="mt-2 flex-row flex-wrap gap-x-2 gap-y-2">
+      {badges.map((b, i) => {
+        const { container: bg, text: color } = getBadgeClasses(b.status);
+        return (
+          <View key={i} style={{ borderColor: bg }} className={`mr-2 rounded-full border-2`}>
+            <Text style={{ color }} className={`px-3 py-1.5 text-xs font-semibold`}>
+              {b.title}
+              {b.amount !== undefined ? ` · ₹${b.amount}` : ''}
+            </Text>
+          </View>
+        );
+      })}
     </View>
   );
 };
@@ -236,7 +158,6 @@ const BadgesRow: React.FC<{ badges?: BadgeItem[] }> = ({ badges }) => {
 const TransactionCard: React.FC<TransactionCardProps> = ({
   title,
   subtitle,
-  avatarInitials,
   img,
   amount,
   status,
@@ -245,14 +166,15 @@ const TransactionCard: React.FC<TransactionCardProps> = ({
   isNew,
   disabled,
   hasAttachment,
-  errorMessage,
   icon,
   noShadow = false,
-  className,
+  className = '',
   onPress,
   onSettle,
   onRetry,
 }) => {
+  const { theme } = useTheme();
+  const getColor = useColor();
   const label =
     status === 'you-owe'
       ? 'You owe'
@@ -268,41 +190,47 @@ const TransactionCard: React.FC<TransactionCardProps> = ({
                 ? 'Settled'
                 : '';
 
+  const paddingClass = compact ? 'py-2 px-3' : 'p-3.5';
+  // combine base classes with any className prop the caller provides
+  const containerClasses = `rounded-[14px] mb-3 ${paddingClass} ${className}`;
+  const shadowStyle = !noShadow ? getBoxShadow('sm') : undefined;
   return (
     <TouchableOpacity
       activeOpacity={0.95}
       onPress={onPress}
       disabled={!!disabled}
-      className={`${className}`}
-      style={[
-        styles.cardContainer,
-        !noShadow ? styles.shadow : undefined,
-        compact ? { paddingVertical: 10, paddingHorizontal: 12 } : undefined,
-      ]}>
-      <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-        {/* <AvatarC name={title} img={img} icon={icon} /> */}
+      className={containerClasses}
+      style={[{ backgroundColor: getColor('background') }, shadowStyle]}>
+      <View className="flex-row items-center">
         <Avatar name={title} imageUri={img} icon={icon} />
-        <View style={{ flex: 1 }}>
-          <View
-            style={{
-              flexDirection: 'row',
-              alignItems: 'flex-start',
-              justifyContent: 'space-between',
-            }}>
-            <View style={{ flex: 1, paddingRight: 8 }}>
-              <Text style={styles.title}>
+
+        <View className="ml-3 flex-1">
+          <View className="flex-row items-start justify-between">
+            <View className="flex-1 pr-2">
+              <Text style={{ color: theme.colors.textPrimary }} className="text-[16px] font-bold">
                 {title}
                 {isNew ? ' · New' : ''}
               </Text>
-              {subtitle ? <Text style={styles.subtitle}>{subtitle}</Text> : null}
-              {/* Multi badges (for rollup) */}
+
+              {subtitle ? (
+                <Text style={{ color: theme.colors.textSecondary }} className="mt-1 text-sm">
+                  {subtitle}
+                </Text>
+              ) : null}
+
+              {/* badges */}
               <BadgesRow badges={badges} />
             </View>
 
-            <View style={{ alignItems: 'flex-end' }}>
-              {amount !== undefined ? <Text style={styles.amount}>₹{amount}</Text> : null}
+            <View className="items-end">
+              {amount !== undefined ? (
+                <Text
+                  style={{ color: theme.colors.textPrimary }}
+                  className="text-lg font-extrabold">
+                  ₹{amount}
+                </Text>
+              ) : null}
 
-              {/* status or settle button */}
               {status === 'settle' ? (
                 <StatusPill
                   status="settle"
@@ -311,10 +239,12 @@ const TransactionCard: React.FC<TransactionCardProps> = ({
                   prominent
                 />
               ) : status === 'error' && onRetry ? (
-                <View style={{ marginTop: 8, flexDirection: 'row', alignItems: 'center' }}>
+                <View className="mt-2 flex-row items-center">
                   <StatusPill status="error" label="Failed" />
-                  <Pressable onPress={onRetry} style={{ marginLeft: 8, padding: 8 }}>
-                    <Text style={{ color: '#0B74FF', fontWeight: '700' }}>Retry</Text>
+                  <Pressable onPress={onRetry} className="ml-2 px-2 py-2">
+                    <Text style={{ color: theme.colors.link }} className="font-bold">
+                      Retry
+                    </Text>
                   </Pressable>
                 </View>
               ) : (
@@ -323,10 +253,9 @@ const TransactionCard: React.FC<TransactionCardProps> = ({
             </View>
           </View>
 
-          {/* attachments / extra meta */}
           {hasAttachment ? (
-            <View style={{ marginTop: 10 }}>
-              <Text style={{ color: '#6B7280', fontSize: 13 }}>
+            <View className="mt-2">
+              <Text style={{ color: theme.colors.textSecondary }} className="text-sm">
                 Receipt attached • tap to preview
               </Text>
             </View>

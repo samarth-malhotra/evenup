@@ -6,6 +6,7 @@ export const tokens = {
       surface: '#F8FAFC',
       textPrimary: '#111827',
       textSecondary: '#6B7280',
+      textWhite: '#FFFFFF',
       border: '#E5E7EB',
 
       primary: {
@@ -36,7 +37,9 @@ export const tokens = {
       },
 
       muted: '#9CA3AF',
+      mutedLight: '#f3f4f6',
       highlight: '#EEF2FF',
+      link: '#4f46e5',
     },
 
     dark: {

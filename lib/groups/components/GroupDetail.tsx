@@ -9,8 +9,10 @@ import SummaryCard from '@/lib/shared/components/SummaryCard';
 import ThemedSafeArea from '@/lib/shared/components/ThemedSafeArea';
 import TransactionCard from '@/lib/shared/components/TransactionCard';
 import { formatRs } from '@/lib/shared/utils/utils';
-import { COLORS } from '@/theme/color';
 
+import { getBoxShadow } from '@/hooks/getBoxShadow';
+import { useColor } from '@/lib/shared/utils/color';
+import { useTheme } from '@/theme/ThemeProvider';
 import { groupExpense } from '../mocks/groupList';
 import { selectGroup } from '../util';
 
@@ -34,6 +36,8 @@ export type Expense = {
 
 // ---------------- Screen ----------------
 export default function GroupDetailScreen() {
+  const { theme } = useTheme();
+  const getColor = useColor();
   const { id } = useLocalSearchParams<{ id: string }>();
   const navigation = useNavigation();
   const router = useRouter();
@@ -52,10 +56,14 @@ export default function GroupDetailScreen() {
           rightActions={
             <View className="flex-row gap-4">
               <Pressable onPress={handleSettleUp} accessibilityLabel="Settle up">
-                <MaterialCommunityIcons name="hand-coin" size={28} color="#fff" />
+                <MaterialCommunityIcons name="hand-coin" size={28} color={getColor('textWhite')} />
               </Pressable>
               <Pressable onPress={handleSetting} accessibilityLabel="Settings">
-                <MaterialCommunityIcons name="account-cog-outline" size={28} color="#fff" />
+                <MaterialCommunityIcons
+                  name="account-cog-outline"
+                  size={28}
+                  color={getColor('textWhite')}
+                />
               </Pressable>
             </View>
           }
@@ -90,7 +98,9 @@ export default function GroupDetailScreen() {
         <Text className="text-base font-semibold">Transactions</Text>
         <View className="flex-row items-center gap-1">
           <Ionicons name="arrow-down" size={14} />
-          <Text className="text-xs text-gray-600">Latest first</Text>
+          <Text style={{ color: theme.colors.textSecondary }} className="text-xs">
+            Latest first
+          </Text>
         </View>
       </View>
 
@@ -119,10 +129,10 @@ export default function GroupDetailScreen() {
       <TouchableOpacity
         activeOpacity={0.9}
         onPress={() => setAddOpen(true)}
-        className="absolute bottom-8 right-5 h-14 w-14 items-center justify-center rounded-full shadow-md"
-        style={{ backgroundColor: COLORS?.primary ?? '#6366F1' }}
+        className="absolute bottom-8 right-5 h-14 w-14 items-center justify-center rounded-full"
+        style={[{ backgroundColor: theme.colors.primary.DEFAULT }, getBoxShadow('md')]}
         accessibilityLabel="Add expense">
-        <Ionicons name="add" size={28} color="#fff" />
+        <Ionicons name="add" size={28} color={getColor('textWhite')} />
       </TouchableOpacity>
 
       <AddBillSheet

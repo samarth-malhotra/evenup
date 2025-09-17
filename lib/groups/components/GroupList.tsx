@@ -7,10 +7,14 @@ import AppHeader from '@/lib/shared/components/AppHeader';
 import type { TransactionStatus } from '@/lib/shared/components/TransactionCard';
 import TransactionCard from '@/lib/shared/components/TransactionCard';
 
+import { useColor } from '@/lib/shared/utils/color';
+import { useTheme } from '@/theme/ThemeProvider';
 import { groups } from '../mocks/groupList';
 import NewGroupSheet from './BottomSheet/CreateGroupSheet';
 
 export default function GroupList() {
+  const { theme } = useTheme();
+  const getColor = useColor();
   const navigation = useNavigation();
   const [q, setQ] = useState('');
   const [openNewGroupSheet, setOpenNewGroupSheet] = useState(false);
@@ -30,7 +34,11 @@ export default function GroupList() {
           showBackButton={false}
           rightActions={
             <Pressable onPress={() => setOpenNewGroupSheet(true)} accessibilityLabel="New Group">
-              <MaterialCommunityIcons name="account-multiple-plus" size={28} color="#fff" />
+              <MaterialCommunityIcons
+                name="account-multiple-plus"
+                size={28}
+                color={getColor('textWhite')}
+              />
             </Pressable>
           }
         />
@@ -41,14 +49,17 @@ export default function GroupList() {
   return (
     <View className="flex-1 px-4">
       {/* Search */}
-      <View className="mb-4 h-11 flex-row items-center rounded-full border border-gray-200 bg-white px-3">
-        <Ionicons name="search" size={18} color="#9CA3AF" />
+      <View
+        className="mb-4 h-11 flex-row items-center rounded-full border px-3"
+        style={{ backgroundColor: theme.colors.background, borderColor: theme.colors.border }}>
+        <Ionicons name="search" size={18} color={getColor('muted')} />
         <TextInput
           placeholder="Search groups"
-          placeholderTextColor="#9CA3AF"
+          placeholderTextColor={getColor('muted')}
           value={q}
           onChangeText={setQ}
-          className="ml-2 flex-1 text-[15px] text-gray-900"
+          style={{ color: theme.colors.textPrimary }}
+          className="ml-2 flex-1 text-[15px]"
         />
       </View>
 

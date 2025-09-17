@@ -7,6 +7,7 @@ import { FlatList, Image, Modal, Pressable, Switch, Text, TextInput, View } from
 
 import AppHeader from '@/lib/shared/components/AppHeader';
 import BottomSheet from '@/lib/shared/components/BottomSheet'; // your AutoBottomSheet with avoidScrollView prop
+import { useTheme } from '@/theme/ThemeProvider';
 
 type User = { id: string; name: string; avatar?: string };
 
@@ -19,6 +20,7 @@ const mockFriends: User[] = [
 ];
 
 export default function GroupSettings() {
+  const { theme } = useTheme();
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const navigation = useNavigation();
@@ -97,9 +99,11 @@ export default function GroupSettings() {
   const Header = (
     <View className="px-4 pb-2 pt-4">
       {/* Group name row (opens modal when pencil pressed) */}
-      <View className="flex-row items-center justify-between border-b border-gray-200 py-4">
+      <View className="flex-row items-center justify-between py-4">
         <View>
-          <Text className="text-sm text-gray-500">Group</Text>
+          <Text style={{ color: theme.colors.textSecondary }} className="text-sm">
+            Group
+          </Text>
           <Text className="text-lg font-semibold">{groupName}</Text>
         </View>
 
@@ -115,9 +119,7 @@ export default function GroupSettings() {
       </View>
 
       {/* Add / Remove people */}
-      <Pressable
-        className="flex-row items-center justify-between border-b border-gray-200 py-4"
-        onPress={openMembersSheet}>
+      <Pressable className="flex-row items-center justify-between py-4" onPress={openMembersSheet}>
         <View>
           <Text className="text-base">Add / Remove people</Text>
           <Text className="text-xs text-gray-500">Manage group members</Text>

@@ -16,6 +16,8 @@ import {
 import AddBillSheet from '@/lib/bills/components/AddBillSheet';
 import AppHeader from '@/lib/shared/components/AppHeader';
 import TransactionCard from '@/lib/shared/components/TransactionCard';
+import { useColor } from '@/lib/shared/utils/color';
+import { useTheme } from '@/theme/ThemeProvider';
 
 // ---------- MOCK (replace with real store/API) ----------
 const mockTransactionBase = {
@@ -39,6 +41,9 @@ const mockTransactionBase = {
 // -------------------------------------------------------
 
 export default function GroupTransactionDetail() {
+  const { theme } = useTheme();
+  const getColor = useColor();
+
   const { id, txId } = useLocalSearchParams<{ id: string; txId: string }>();
   const navigation = useNavigation();
 
@@ -64,7 +69,7 @@ export default function GroupTransactionDetail() {
           showBackButton
           rightActions={
             <TouchableOpacity onPress={() => setEditOpen(true)} className="p-2">
-              <Ionicons name="create-outline" size={22} color="white" />
+              <Ionicons name="create-outline" size={22} color={getColor('textWhite')} />
             </TouchableOpacity>
           }
         />
@@ -133,31 +138,42 @@ export default function GroupTransactionDetail() {
       <View className="px-4">
         <View className="mb-5 flex-row items-start justify-between">
           <View className="flex-1 pr-4">
-            <Text className="text-lg font-semibold text-gray-900">{transaction.title}</Text>
+            <Text style={{ color: theme.colors.textPrimary }} className="text-lg font-semibold">
+              {transaction.title}
+            </Text>
 
             <View className="mt-1 flex-row items-center space-x-2">
-              <Text className="text-sm text-gray-500">{transaction.date}</Text>
-              <Text className="text-sm text-gray-400">•</Text>
-
-              <Text className="text-sm text-gray-500">
-                Paid by <Text className="font-semibold text-gray-800">{transaction.paidBy}</Text>
+              <Text style={{ color: theme.colors.textSecondary }} className="text-sm">
+                {transaction.date}
               </Text>
             </View>
 
             {/* split method — informational only */}
-            <Text className="mt-2 text-sm font-medium text-indigo-600">{splitLabel}</Text>
+            <Text
+              style={{ color: theme.colors.primary.DEFAULT }}
+              className="mt-2 text-sm font-medium">
+              {splitLabel}
+            </Text>
           </View>
 
           <View className="items-end">
-            <Text className="text-3xl font-extrabold text-indigo-600">₹{transaction.amount}</Text>
-            <Text className="mt-1 text-sm text-gray-500">Total</Text>
+            <Text style={{ color: theme.colors.primary.dark }} className="text-3xl font-extrabold">
+              ₹{transaction.amount}
+            </Text>
+            <Text style={{ color: theme.colors.textSecondary }} className="mt-1 text-sm">
+              Total
+            </Text>
           </View>
         </View>
 
         {/* Payer highlighted */}
         {payer ? (
           <View className="mb-2">
-            <Text className="pb-2 text-base font-semibold text-gray-900">Payer</Text>
+            <Text
+              style={{ color: theme.colors.textPrimary }}
+              className="pb-2 text-base font-semibold">
+              Payer
+            </Text>
             <TransactionCard
               title="Anita"
               subtitle="Paid"
@@ -170,10 +186,16 @@ export default function GroupTransactionDetail() {
 
         {/* Owes: show everyone who owes (all participants except payer) */}
         <View className="mb-2">
-          <Text className="mb-3 text-base font-semibold text-gray-900">Owes</Text>
+          <Text
+            style={{ color: theme.colors.textPrimary }}
+            className="mb-3 text-base font-semibold">
+            Owes
+          </Text>
 
           {oweList.length === 0 ? (
-            <Text className="text-sm text-gray-500">No participants owe anything.</Text>
+            <Text style={{ color: theme.colors.textSecondary }} className="text-sm">
+              No participants owe anything.
+            </Text>
           ) : (
             <>
               <TransactionCard

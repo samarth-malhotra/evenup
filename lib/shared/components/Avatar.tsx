@@ -1,4 +1,5 @@
 // components/Avatar.tsx
+import { NestedTheme } from '@/theme/ThemeProvider';
 import clsx from 'clsx';
 import React, { memo } from 'react';
 import { Image, Text, View } from 'react-native';
@@ -11,10 +12,9 @@ export type AvatarProps = {
   className?: string;
   testID?: string;
   accessibilityLabel?: string;
-  /** Tailwind bg color class for fallback initials */
-  bgColor?: string;
   /** Scale factor for text size (default: 0.45 → ~45% of diameter) */
   textScale?: number;
+  theme?: NestedTheme;
 };
 
 const DEFAULT_SIZE = 48;
@@ -39,9 +39,10 @@ export const Avatar: React.FC<AvatarProps> = memo(
     className,
     testID,
     accessibilityLabel,
-    bgColor = 'bg-gray-100',
     textScale = 0.3, // default font scale relative to avatar
+    theme,
   }) => {
+    // const { theme } = useTheme();
     const initials = getInitials(name);
     const diameter = Math.max(24, size);
     const borderRadius = diameter / 2;
@@ -54,11 +55,15 @@ export const Avatar: React.FC<AvatarProps> = memo(
         accessible
         accessibilityLabel={accessibilityLabel ?? name}
         className={clsx(
-          'mr-3 items-center justify-center overflow-hidden rounded-full',
-          bgColor,
+          'mr-3 items-center justify-center overflow-hidden rounded-full bg-gray-100',
           className
         )}
-        style={{ width: diameter, height: diameter, borderRadius }}>
+        style={{
+          backgroundColor: theme?.colors.mutedLight,
+          width: diameter,
+          height: diameter,
+          borderRadius,
+        }}>
         {icon ? (
           icon
         ) : imageUri ? (
@@ -69,7 +74,7 @@ export const Avatar: React.FC<AvatarProps> = memo(
             resizeMode="cover"
           />
         ) : (
-          <Text className="font-bold text-gray-700" style={{ fontSize }}>
+          <Text className="font-bold" style={{ color: theme?.colors.textSecondary, fontSize }}>
             {initials}
           </Text>
         )}

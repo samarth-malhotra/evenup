@@ -15,9 +15,11 @@ import {
   timeAgo,
 } from '../util';
 
+import { useTheme } from '@/theme/ThemeProvider';
 import type { Activity } from '../types';
 
 export default function NotificationsScreen() {
+  const { theme } = useTheme();
   const [list, setList] = useState<Activity[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);

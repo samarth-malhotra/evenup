@@ -13,6 +13,7 @@ import SummaryCard from '@/lib/shared/components/SummaryCard';
 import { useColor } from '@/lib/shared/utils/color';
 import { formatRs } from '@/lib/shared/utils/utils';
 
+import { useTheme } from '@/theme/ThemeProvider';
 import TransactionsDemoScreen from './TransactionDemo';
 
 // Mock recent activity
@@ -60,6 +61,7 @@ const quickLinks = [
 
 export default function HomeScreen() {
   const getColor = useColor();
+  const { theme } = useTheme();
   const navigation = useNavigation();
   const [addOpen, setAddOpen] = useState(false);
   const [openCreateGroupSheet, setOpenCreateGroupSheet] = useState(false);
@@ -98,7 +100,10 @@ export default function HomeScreen() {
         <SectionHeader title="Quick links" />
         <View className="mb-4 flex-row justify-center gap-4 px-4">
           {quickLinks.map((q) => (
-            <Card key={q.id} className="flex-1 rounded-2xl px-4  py-5">
+            <Card
+              key={q.id}
+              style={{ backgroundColor: theme.colors.background }}
+              className="flex-1 rounded-2xl px-4 py-5">
               <TouchableOpacity
                 className="flex items-center justify-center"
                 onPress={() => {
@@ -111,10 +116,14 @@ export default function HomeScreen() {
                   }
                 }}
                 activeOpacity={0.85}>
-                <View className="mb-2 h-9 w-9 items-center justify-center rounded-lg bg-gray-100">
+                <View
+                  style={{ backgroundColor: theme.colors.highlight }}
+                  className="mb-2 h-9 w-9 items-center justify-center rounded-lg">
                   {q.icon}
                 </View>
-                <Text className="text-center text-[15px] font-semibold text-gray-900">
+                <Text
+                  style={{ color: theme.colors.textPrimary }}
+                  className="text-center text-[15px] font-semibold">
                   {q.label}
                 </Text>
               </TouchableOpacity>
@@ -131,18 +140,18 @@ export default function HomeScreen() {
                 key={g.id}
                 className="items-center"
                 onPress={() => router.push(`/(tabs)/groups/${g.id}`)}>
-                {/* <View className="h-[72px] w-[72px] items-center justify-center rounded-full bg-white shadow">
-                  <Image source={{ uri: g.img }} className="h-[72px] w-[72px] rounded-full" />
-                </View> */}
                 <Avatar name={g.title} imageUri={g.img} size={64} />
-                <Text className="mt-2 w-[90px] text-center text-gray-900" numberOfLines={1}>
+                <Text
+                  style={{ color: theme.colors.textPrimary }}
+                  className="mt-2 w-[90px] text-center"
+                  numberOfLines={1}>
                   {g.title}
                 </Text>
               </Pressable>
             ))}
           </ScrollView>
         ) : (
-          <Text className="mb-4 px-4 italic text-gray-500">
+          <Text style={{ color: theme.colors.textSecondary }} className="mb-4 px-4 italic">
             No groups yet 🚀 Create one to get started!
           </Text>
         )}
@@ -151,16 +160,27 @@ export default function HomeScreen() {
         <SectionHeader title="Recent Activity" />
         <View className="mb-4 px-4">
           {recentActivity.map((a) => (
-            <View key={a.id} className="flex-row items-center border-b border-gray-200 py-3">
+            <View
+              key={a.id}
+              style={{ borderColor: theme.colors.border }}
+              className="flex-row items-center border-b py-3">
               <Image source={{ uri: a.avatar }} className="mr-3 h-11 w-11 rounded-full" />
               <View className="flex-1">
-                <Text className="text-base font-semibold text-gray-900">{a.title}</Text>
-                <Text className="text-sm text-gray-500">{a.sub}</Text>
+                <Text
+                  style={{ color: theme.colors.textPrimary }}
+                  className="text-base font-semibold">
+                  {a.title}
+                </Text>
+                <Text style={{ color: theme.colors.textSecondary }} className="text-sm">
+                  {a.sub}
+                </Text>
               </View>
             </View>
           ))}
           <TouchableOpacity onPress={() => router.push('/activity')} className="py-3">
-            <Text className="text-center font-semibold text-indigo-600">View All</Text>
+            <Text style={{ color: theme.colors.link }} className="text-center font-semibold ">
+              View All
+            </Text>
           </TouchableOpacity>
         </View>
       </ScrollView>
@@ -190,9 +210,12 @@ export default function HomeScreen() {
 }
 
 function SectionHeader({ title }: { title: string }) {
+  const { theme } = useTheme();
   return (
     <View className="mb-4 mt-2 flex-row items-center justify-between px-4">
-      <Text className="text-lg font-bold text-gray-900">{title}</Text>
+      <Text style={{ color: theme.colors.textPrimary }} className="text-lg font-bold">
+        {title}
+      </Text>
     </View>
   );
 }

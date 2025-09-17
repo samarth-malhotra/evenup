@@ -1,10 +1,14 @@
 // app/groups/new.tsx
 import { MaterialIcons } from '@expo/vector-icons';
 import { useEffect, useRef, useState } from 'react';
-import { Image, Pressable, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Pressable, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
 import BottomSheet from '@/lib/shared/components/BottomSheet';
 
+import { getBoxShadow } from '@/hooks/getBoxShadow';
+import { Avatar } from '@/lib/shared/components/Avatar';
+import { useColor } from '@/lib/shared/utils/color';
+import { useTheme } from '@/theme/ThemeProvider';
 import type { BottomSheetModal as BottomSheetModalType } from '@gorhom/bottom-sheet';
 
 type Props = {
@@ -14,6 +18,8 @@ type Props = {
 };
 
 export default function NewGroupSheet({ open, onClose, onCreate }: Props) {
+  const { theme } = useTheme();
+  const getColor = useColor();
   const sheetRef = useRef<BottomSheetModalType>(null);
 
   const [name, setName] = useState('');
@@ -41,24 +47,28 @@ export default function NewGroupSheet({ open, onClose, onCreate }: Props) {
   return (
     <BottomSheet open={open} onClose={onClose}>
       {/* Title */}
-      <Text className="mb-3 text-center text-lg font-semibold text-gray-900">Create Group</Text>
+      <Text
+        style={{ color: theme.colors.textPrimary }}
+        className="mb-3 text-center text-lg font-semibold">
+        Create Group
+      </Text>
 
       {/* Group Info */}
-      <View className="mb-5 rounded-2xl bg-white p-5 shadow-sm">
-        <Text className="mb-4 text-base font-semibold text-gray-700">Group Info</Text>
-
+      <View
+        style={[{ backgroundColor: theme.colors.background }, getBoxShadow('sm')]}
+        className="mb-5 rounded-2xl p-5">
         {/* Group Avatar */}
         <Pressable
           onPress={() => console.log('TODO: open image picker')}
           className="mb-4 self-center">
-          {image ? (
-            <Image source={{ uri: image }} className="h-20 w-20 rounded-full" />
-          ) : (
-            <View className="h-20 w-20 items-center justify-center rounded-full bg-gray-200">
-              <MaterialIcons name="group" size={32} color="#6B7280" />
-            </View>
-          )}
-          <Text className="mt-2 text-center text-sm text-indigo-600">
+          <Avatar
+            name={'Photo'}
+            theme={theme}
+            size={81}
+            imageUri={image ?? ''}
+            icon={<MaterialIcons name="group" size={32} color={getColor('textSecondary')} />}
+          />
+          <Text style={{ color: theme.colors.link }} className="mt-2 text-center text-sm">
             {image ? 'Change Image' : 'Add Image'}
           </Text>
         </Pressable>
@@ -68,32 +78,45 @@ export default function NewGroupSheet({ open, onClose, onCreate }: Props) {
           value={name}
           onChangeText={setName}
           placeholder="Group name (e.g. Goa Trip)"
-          placeholderTextColor="#9CA3AF"
-          className="rounded-xl bg-gray-50 px-4 py-3 text-base text-gray-800"
+          placeholderTextColor={getColor('textSecondary')}
+          style={{ backgroundColor: theme.colors.mutedLight, color: theme.colors.textPrimary }}
+          className="rounded-xl px-4 py-3 text-base"
           returnKeyType="done"
         />
       </View>
 
       {/* Members */}
-      <View className="mb-5 rounded-2xl bg-white p-5 shadow-sm">
-        <Text className="mb-4 text-base font-semibold text-gray-700">Members</Text>
+      <View style={[{ backgroundColor: theme.colors.background }]} className="mb-5 rounded-2xl p-5">
+        <Text
+          style={{ color: theme.colors.textSecondary }}
+          className="mb-4 text-base font-semibold">
+          Members
+        </Text>
 
         <Pressable
           onPress={() => console.log('TODO: open members picker')}
-          className="flex-row items-center justify-between rounded-xl bg-gray-50 px-4 py-3">
-          <Text className="text-gray-400">Add members</Text>
-          <MaterialIcons name="person-add" size={22} color="#6B7280" />
+          style={{ backgroundColor: theme.colors.mutedLight }}
+          className="flex-row items-center justify-between rounded-xl px-4 py-3">
+          <Text style={{ color: theme.colors.textPrimary }}>Add members</Text>
+          <MaterialIcons name="person-add" size={22} color={getColor('textSecondary')} />
         </Pressable>
 
         {/* Selected Members Chips */}
         {members.length > 0 && (
           <View className="mt-3 flex-row flex-wrap gap-2">
             {members.map((m) => (
-              <View key={m} className="flex-row items-center rounded-full bg-indigo-50 px-3 py-1.5">
-                <Text className="mr-2 text-sm font-medium text-indigo-700">{m}</Text>
+              <View
+                key={m}
+                style={[{ borderColor: theme.colors.muted }]}
+                className="flex-row items-center rounded-full border-2 px-3 py-1.5">
+                <Text
+                  style={[{ color: theme.colors.textSecondary }]}
+                  className={`${m !== 'You' ? 'mr-2' : ''} text-sm font-medium`}>
+                  {m}
+                </Text>
                 {m !== 'You' && (
                   <Pressable onPress={() => removeMember(m)} hitSlop={10}>
-                    <MaterialIcons name="close" size={16} color="#4F46E5" />
+                    <MaterialIcons name="close" size={16} color={getColor('textSecondary')} />
                   </Pressable>
                 )}
               </View>
@@ -105,8 +128,13 @@ export default function NewGroupSheet({ open, onClose, onCreate }: Props) {
       {/* Create Button */}
       <TouchableOpacity
         onPress={handleCreate}
-        className="rounded-full bg-indigo-600 py-4 shadow-lg active:bg-indigo-700">
-        <Text className="text-center text-lg font-semibold text-white">Create Group</Text>
+        style={[{ backgroundColor: theme.colors.link }, getBoxShadow('lg')]}
+        className="rounded-full py-4">
+        <Text
+          style={[{ color: theme.colors.textWhite }]}
+          className="text-center text-lg font-semibold">
+          Create Group
+        </Text>
       </TouchableOpacity>
     </BottomSheet>
   );
