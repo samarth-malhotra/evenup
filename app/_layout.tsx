@@ -2,7 +2,7 @@
 import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, useColorScheme, View } from 'react-native';
+import { ActivityIndicator, Linking, useColorScheme, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { PaperProvider } from 'react-native-paper';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
@@ -14,27 +14,97 @@ import { darkTheme, lightTheme } from '../theme/paper';
 
 export const unstable_settings = { initialRouteName: '(tabs)' };
 
+// parse fragment like "#access_token=...&refresh_token=..."
+function parseFragment(fragment: string | null) {
+  if (!fragment) return {};
+  const hash = fragment.startsWith('#') ? fragment.slice(1) : fragment;
+  return Object.fromEntries(
+    hash
+      .split('&')
+      .map((kv) => kv.split('=').map((s) => decodeURIComponent(s ?? '')))
+      .filter((pair) => pair.length === 2)
+  );
+}
+
 export default function RootLayout() {
   const scheme = useColorScheme();
   const theme = scheme === 'dark' ? darkTheme : lightTheme;
 
   const router = useRouter();
-  const segments = useSegments(); // expo-router hook to inspect current route segments
+  const segments = useSegments(); // used for initial route detection
   const [checking, setChecking] = useState(true);
 
+  // --- 1) Auth handoff: detect auth.expo.io fragment and set Supabase session ---
+  useEffect(() => {
+    let mounted = true;
+
+    async function handleUrl(url?: string | null) {
+      if (!url) return;
+      console.log('[AUTH-HANDOFF] incoming URL:', url);
+
+      const hashStart = url.indexOf('#');
+      const fragment = hashStart >= 0 ? url.substring(hashStart) : null;
+      if (!fragment) {
+        console.log('[AUTH-HANDOFF] no fragment in URL');
+        return;
+      }
+
+      const params = parseFragment(fragment);
+      const access_token = params['access_token'];
+      const refresh_token = params['refresh_token'];
+
+      if (access_token) {
+        try {
+          console.log('[AUTH-HANDOFF] found access_token — setting session...');
+          // set session using Supabase v2 API
+          await supabase.auth.setSession({
+            access_token,
+            refresh_token: refresh_token ?? undefined,
+          });
+
+          // navigate into app
+          router.replace('/(tabs)/home');
+        } catch (err) {
+          console.warn('[AUTH-HANDOFF] setSession failed', err);
+        }
+      } else {
+        console.log('[AUTH-HANDOFF] fragment present but no access_token');
+      }
+    }
+
+    (async () => {
+      try {
+        const initial = await Linking.getInitialURL();
+        console.log('[AUTH-HANDOFF] initial URL:', initial);
+        await handleUrl(initial);
+      } catch (e) {
+        console.warn('[AUTH-HANDOFF] initial URL error', e);
+      }
+
+      const sub = Linking.addEventListener('url', ({ url }) => {
+        console.log('[AUTH-HANDOFF] linking event', url);
+        handleUrl(url);
+      });
+
+      return () => {
+        mounted = false;
+        sub.remove();
+      };
+    })();
+  }, [router]);
+
+  // --- 2) Normal session check + auth state listener (keeps your flow) ---
   useEffect(() => {
     let isMounted = true;
-    // check session once on mount
+
     (async function checkSession() {
       try {
         const {
           data: { session },
         } = await supabase.auth.getSession();
 
-        // first segment often indicates top-level group or route: e.g. '(tabs)' or 'login'
         const topSegment = segments[0] ?? '';
 
-        // if no session and not already on an auth route, redirect to /login
         if (!session) {
           const isOnAuthRoute =
             topSegment === 'login' || topSegment === 'signup' || topSegment === '(auth)';
@@ -43,12 +113,11 @@ export default function RootLayout() {
             router.replace('/login');
           }
         } else {
-          // session exists: if user is on auth pages, send them to tabs
           const isOnAuthRoute =
             topSegment === 'login' || topSegment === 'signup' || topSegment === '(auth)';
 
           if (isOnAuthRoute) {
-            router.replace('/(tabs)');
+            router.replace('/(tabs)/home');
           }
         }
       } catch (err) {
@@ -58,25 +127,33 @@ export default function RootLayout() {
       }
     })();
 
-    // subscribe to auth changes (sign in / sign out)
-    const { data: listener } = supabase.auth.onAuthStateChange((event, session) => {
-      // on sign in -> navigate to tabs
+    // subscribe to auth changes
+    const { data: listener } = supabase.auth.onAuthStateChange((event) => {
       if (event === 'SIGNED_IN') {
-        router.replace('/(tabs)');
-      }
-      // on sign out -> navigate to login
-      if (event === 'SIGNED_OUT') {
+        router.replace('/(tabs)/home');
+      } else if (event === 'SIGNED_OUT') {
         router.replace('/login');
       }
     });
 
     return () => {
       isMounted = false;
-      listener?.subscription?.unsubscribe?.();
+      // robust unsubscribe for different SDK shapes
+      try {
+        if (listener) {
+          if ((listener as any).subscription?.unsubscribe) {
+            (listener as any).subscription.unsubscribe();
+          } else if (typeof (listener as any).unsubscribe === 'function') {
+            (listener as any).unsubscribe();
+          }
+        }
+      } catch (e) {
+        // ignore
+      }
     };
-  }, []); // run once on mount
+  }, [router, segments]);
 
-  // while checking session, show a lightweight loader to avoid UI flash
+  // while checking session, show loader
   if (checking) {
     return (
       <GestureHandlerRootView style={{ flex: 1 }}>
@@ -93,23 +170,22 @@ export default function RootLayout() {
     );
   }
 
+  // normal app UI
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <BottomSheetModalProvider>
         <PaperProvider theme={theme}>
           <SafeAreaProvider>
             <Stack screenOptions={{ headerShown: false }}>
-              {/* Auth group (place your auth screens in app/(auth)/login.tsx and app/(auth)/signup.tsx) */}
+              {/* Auth group */}
               <Stack.Screen name="(auth)" />
-
-              {/* Individual auth routes */}
               <Stack.Screen name="login" />
               <Stack.Screen name="signup" />
 
-              {/* The Tabs group */}
+              {/* Tabs group */}
               <Stack.Screen name="(tabs)" />
 
-              {/* Non-tab sections still work via push/link */}
+              {/* Other routes */}
               <Stack.Screen
                 name="notifications"
                 options={{
