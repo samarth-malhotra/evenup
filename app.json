@@ -28,6 +28,7 @@
       "bundler": "metro",
       "output": "single"
     },
-    "plugins": ["expo-router"]
+    "scheme": "evenup",
+    "plugins": ["expo-router", "expo-web-browser"]
   }
 }

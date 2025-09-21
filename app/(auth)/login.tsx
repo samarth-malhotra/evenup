@@ -5,6 +5,8 @@ import { Alert, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'reac
 
 import { supabase } from '@/lib/supabase';
 
+import GoogleLoginButton from './GoogleLoginButton';
+
 export default function LoginScreen() {
   const router = useRouter();
   const [email, setEmail] = useState('');
@@ -39,6 +41,7 @@ export default function LoginScreen() {
       <TouchableOpacity onPress={onSubmit} style={styles.button}>
         <Text style={styles.buttonText}>Log In</Text>
       </TouchableOpacity>
+      <GoogleLoginButton />
       <TouchableOpacity onPress={() => router.push('/signup')}>
         <Text style={styles.link}>Don’t have an account? Sign up</Text>
       </TouchableOpacity>
