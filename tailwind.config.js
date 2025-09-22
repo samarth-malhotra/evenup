@@ -2,7 +2,7 @@
 // Reads theme/tokens-export.json and maps tokens (light) to Tailwind colors statically.
 
 const path = require('path');
-const tokensPath = path.join(__dirname, 'theme', 'tokens-export.json');
+const tokensPath = path.join(__dirname, 'theme', 'build', 'tokens-export.json');
 
 let tokens = {};
 try {
@@ -95,7 +95,29 @@ if (!boxShadow.card) {
 }
 
 module.exports = {
-  content: ['./app/**/*.{js,ts,tsx}', './lib/**/*.{js,ts,tsx}', './components/**/*.{js,ts,tsx}'],
+  // content: ['./app/**/*.{js,ts,tsx}', './lib/**/*.{js,ts,tsx}', './components/**/*.{js,ts,tsx}'],
+  content: [
+    // app / entry points
+    './src/app/**/*.{js,ts,jsx,tsx}',
+
+    // main source directory (covers most aliases below)
+    './src/**/*.{js,ts,jsx,tsx}',
+
+    // explicit folders that match your aliases (helps tooling & clarity)
+    './src/api/**/*.{js,ts,jsx,tsx}',
+    './src/assets/**/*.{js,ts,jsx,tsx}',
+    './src/hooks/**/*.{js,ts,jsx,tsx}',
+    './src/features/**/*.{js,ts,jsx,tsx}',
+    './src/theme/**/*.{js,ts,jsx,tsx}',
+    './src/mocks/**/*.{js,ts,jsx,tsx}',
+    './src/components/**/*.{js,ts,jsx,tsx}',
+
+    // stores (you had a stores alias pointing outside src)
+    './src/stores/**/*.{js,ts,jsx,tsx}',
+
+    // any other top-level file patterns you may add later
+    './**/*.html',
+  ],
   darkMode: 'class', // harmless for RN, useful if you later use web
   presets: [require('nativewind/preset')],
   theme: {

@@ -20,7 +20,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 export default [
   {
-    // ⬇️ Added config files to ignores (Option A)
+    // Files / dirs to ignore
     ignores: [
       'node_modules',
       'dist',
@@ -77,6 +77,7 @@ export default [
     rules: {
       ...tsPlugin.configs.recommended.rules,
 
+      // unused imports
       'unused-imports/no-unused-imports': 'error',
       'unused-imports/no-unused-vars': [
         'warn',
@@ -88,34 +89,66 @@ export default [
         },
       ],
 
+      // import ordering: type imports first, then builtin, external, internal (aliases), then parent/sibling/index
       'import/order': [
         'warn',
         {
           groups: [
-            ['builtin', 'external'],
-            ['internal'],
-            ['parent', 'sibling', 'index'],
-            'object',
-            'type',
+            'type', // 1) import type {...}
+            'builtin', // 2) node builtin modules
+            'external', // 3) 3rd-party packages (react, react-native, etc.)
+            'internal', // 4) project internal (alias-resolved imports)
+            'parent', // 5) ../
+            'sibling', // 6) ./
+            'index', // 7) ./index
+            'object', // 8) import x = require('x') style (rare)
           ],
           'newlines-between': 'always',
           alphabetize: { order: 'asc', caseInsensitive: true },
-          pathGroups: [{ pattern: '@/**', group: 'internal', position: 'before' }],
-          pathGroupsExcludedImportTypes: ['builtin'],
+          pathGroups: [
+            // your project-specific aliases (matches your tsconfig paths)
+            { pattern: '@api/**', group: 'internal', position: 'before' },
+            { pattern: '@assets/**', group: 'internal', position: 'before' },
+            { pattern: '@hooks/**', group: 'internal', position: 'before' },
+            { pattern: '@features/**', group: 'internal', position: 'before' },
+            { pattern: '@theme/**', group: 'internal', position: 'before' },
+            { pattern: '@mocks/**', group: 'internal', position: 'before' },
+            { pattern: '@components/**', group: 'internal', position: 'before' },
+            { pattern: '@stores/**', group: 'internal', position: 'before' },
+            // fallback catch-all for @/*
+            { pattern: '@/**', group: 'internal', position: 'before' },
+          ],
+          // keep type-only imports classified as 'type' (don't let pathGroups reclassify them)
+          pathGroupsExcludedImportTypes: ['type'],
         },
       ],
+
+      // allow unresolved imports to be handled by TS (avoid noisy false positives)
       'import/no-unresolved': 'off',
       'import/no-named-as-default': 'off',
 
+      // react / react-native rules
       'react/react-in-jsx-scope': 'off',
       'react/jsx-no-useless-fragment': ['warn', { allowExpressions: true }],
       'react-native/no-inline-styles': 'off',
       'react-native/no-raw-text': 'off',
 
+      // TypeScript preferences
       '@typescript-eslint/consistent-type-imports': ['warn', { prefer: 'type-imports' }],
       '@typescript-eslint/no-explicit-any': 'off',
       'no-unused-vars': 'off',
       '@typescript-eslint/no-unused-vars': 'warn',
+
+      // small safety to encourage not mixing type and value imports in same statement
+      'no-restricted-syntax': [
+        'error',
+        {
+          selector:
+            "ImportDeclaration[importKind='value'][specifiers.0.type='ImportSpecifier'][specifiers.0.importKind='type']",
+          message:
+            'Avoid mixing `import type` and value imports in the same declaration. Use `import type` for types.',
+        },
+      ],
     },
   },
 

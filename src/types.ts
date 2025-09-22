@@ -1,0 +1,139 @@
+// ==============================
+// EvenUp Mock Dataset Types
+// ==============================
+
+import {
+  ActivityTypeEnum,
+  ExpenseStatusEnum,
+  FriendStatusEnum,
+  MemberRoleEnum,
+  SplitMethodEnum,
+} from '@/constant';
+
+// Generic base entity (for extendability)
+export interface BaseEntity {
+  id: string;
+}
+
+// ---------------- Users ----------------
+export interface User extends BaseEntity {
+  email: string;
+  name: string;
+  avatarUrl?: string;
+  phone?: string;
+  timezone?: string;
+  createdAt?: string;
+}
+
+// ---------------- Friends ----------------
+export type FriendStatus = `${FriendStatusEnum}`;
+export interface Friend extends BaseEntity {
+  requesterId: string; // user who initiated the request
+  addresseeId: string; // user who receives the request
+  status: FriendStatus; // pending | accepted | blocked | removed
+  nicknameForRequester?: string | null; // optional local nickname set by requester
+  nicknameForAddressee?: string | null; // optional local nickname for addressee's view
+  isFavorite?: boolean; // quick UI flag
+  createdAt?: string;
+  updatedAt?: string;
+  acceptedAt?: string | null;
+  lastInteractedAt?: string | null; // optional for sort by recent contact
+}
+
+// ---------------- Groups ----------------
+export interface Group extends BaseEntity {
+  name: string;
+  description?: string;
+  currency?: string; // default: "INR"
+  createdBy: string; // userId
+  createdAt?: string;
+  members?: string;
+}
+
+// ---------------- Group Members ----------------
+export type MemberRole = `${MemberRoleEnum}`;
+export interface GroupMember extends BaseEntity {
+  groupId: string;
+  userId: string;
+  role?: MemberRole;
+  nickname?: string;
+  shareWeight?: number; // default: 1
+  joinDate?: string;
+  isActive?: boolean;
+}
+
+// ---------------- Expenses ----------------
+export type SplitMethod = `${SplitMethodEnum}`;
+export type ExpenseStatus = `${ExpenseStatusEnum}`;
+
+export interface Expense extends BaseEntity {
+  groupId: string;
+  title: string;
+  description?: string;
+  amount: number;
+  currency?: string; // default: "INR"
+  paidBy: string; // userId
+  createdBy?: string; // userId
+  date?: string;
+  splitMethod: SplitMethod;
+  status?: ExpenseStatus;
+  createdAt?: string;
+  updatedAt?: string;
+  payerId: string;
+}
+
+// ---------------- Expense Shares ----------------
+export interface ExpenseShare extends BaseEntity {
+  expenseId: string;
+  userId: string;
+  shareAmount: number;
+  sharePercent?: number;
+  isSettled?: boolean;
+  settledAt?: string;
+  note?: string;
+}
+
+// ---------------- Transactions ----------------
+export interface Transaction extends BaseEntity {
+  fromUser: string; // userId
+  toUser: string; // userId
+  groupId?: string; // optional for direct friend payments
+  amount: number;
+  currency?: string; // default: "INR"
+  method?: 'upi' | 'cash' | 'bank_transfer' | 'in-app';
+  createdAt?: string;
+  note?: string;
+}
+
+// ---------------- Activities ----------------
+export type ActivityType = `${ActivityTypeEnum}`;
+export interface Activity extends BaseEntity {
+  groupId: string;
+  userId: string;
+  type: ActivityType;
+  meta?: Record<string, any>;
+  createdAt?: string;
+}
+
+// ---------------- Notifications ----------------
+export interface Notification extends BaseEntity {
+  userId: string;
+  title: string;
+  body: string;
+  data?: Record<string, any>;
+  isRead?: boolean;
+  createdAt?: string;
+}
+
+// ---------------- Dataset Wrapper ----------------
+export interface EvenUpMockData {
+  users: User[];
+  friends: Friend[];
+  groups: Group[];
+  group_members?: GroupMember[];
+  expenses: Expense[];
+  expense_shares: ExpenseShare[];
+  transactions: Transaction[];
+  activities?: Activity[];
+  notifications?: Notification[];
+}

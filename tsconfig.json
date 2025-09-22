@@ -6,7 +6,16 @@
 
     "baseUrl": ".",
     "paths": {
-      "@/*": ["./*"]
+      "@/*": ["./src/*"],
+      "@api/*": ["./src/api/*"],
+      "@assets/*": ["./src/assets/*"],
+      "@hooks/*": ["./src/hooks/*"],
+      "@features/*": ["./src/features/*"],
+      "@theme/*": ["./src/theme/*"],
+      "@mocks/*": ["./src/mocks/*"],
+      "@components/*": ["./src/components/*"],
+      "@stores/*": ["./stores/*"]
+      // "@config/*": ["./config/*"]
     },
 
     "types": ["react", "react-native", "nativewind/types", "expo-router"],
