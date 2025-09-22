@@ -1,15 +1,19 @@
+// app/(auth)/login.tsx
+import { MaterialIcons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRouter } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
+  Keyboard,
   KeyboardAvoidingView,
   Platform,
   Pressable,
   StyleSheet,
   Text,
   TextInput,
+  TouchableOpacity,
   View,
 } from 'react-native';
 
@@ -24,8 +28,17 @@ export default function LoginScreen() {
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+
   const [submitting, setSubmitting] = useState(false);
   const [loadingSession, setLoadingSession] = useState(true);
+
+  const [emailError, setEmailError] = useState<string | null>(null);
+  const [passwordError, setPasswordError] = useState<string | null>(null);
+  const [generalError, setGeneralError] = useState<string | null>(null);
+
+  const [showPassword, setShowPassword] = useState(false);
+
+  const passwordRef = useRef<TextInput | null>(null);
 
   // Persist session to AsyncStorage when Supabase auth state changes,
   // so OAuth sign-in is also captured.
@@ -56,11 +69,10 @@ export default function LoginScreen() {
     const { data: listener } = supabase.auth.onAuthStateChange(async (_event, session) => {
       await setSessionInStorage(session ?? null);
       if (_event === 'SIGNED_IN') {
-        // navigate when signed in
         router.replace('/(tabs)');
       }
       if (_event === 'SIGNED_OUT') {
-        // optionally navigate to login
+        // no-op
       }
     });
 
@@ -74,29 +86,54 @@ export default function LoginScreen() {
     };
   }, [router]);
 
-  // Basic email validation
-  const validate = (): string | null => {
-    if (!email.trim()) return 'Email is required';
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) return 'Please provide a valid email';
-    if (!password) return 'Password is required';
-    if (password.length < 6) return 'Password must be at least 6 characters';
-    return null;
+  // Validation helper
+  const validate = (): boolean => {
+    let ok = true;
+    setEmailError(null);
+    setPasswordError(null);
+    setGeneralError(null);
+
+    const trimmedEmail = email.trim();
+    if (!trimmedEmail) {
+      setEmailError('Email is required');
+      ok = false;
+    } else {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(trimmedEmail)) {
+        setEmailError('Please enter a valid email');
+        ok = false;
+      }
+    }
+
+    if (!password) {
+      setPasswordError('Password is required');
+      ok = false;
+    } else if (password.length < 6) {
+      setPasswordError('Password must be at least 6 characters');
+      ok = false;
+    }
+
+    return ok;
   };
 
   const onSubmit = async () => {
-    const validationError = validate();
-    if (validationError) {
-      Alert.alert('Validation error', validationError);
-      return;
-    }
+    // hide keyboard
+    Keyboard.dismiss();
+
+    if (!validate()) return;
 
     setSubmitting(true);
+    setGeneralError(null);
+
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: email.trim(),
+        password,
+      });
 
       if (error) {
-        Alert.alert('Login error', error.message);
+        setGeneralError(error.message ?? 'Login failed');
+        Alert.alert('Login error', error.message ?? 'Login failed');
         return;
       }
 
@@ -105,14 +142,20 @@ export default function LoginScreen() {
         await AsyncStorage.setItem(SESSION_KEY, JSON.stringify(data.session));
         router.replace('/(tabs)');
       } else {
-        // In case the session is not present but sign-in triggered an OAuth or similar
-        Alert.alert('Login', 'Signed in but no session returned. Waiting for auth update...');
+        // Occasionally signInWithPassword may not return session immediately
+        Alert.alert('Login', 'Signed in, waiting for session update...');
       }
     } catch (err: any) {
+      setGeneralError(err?.message ?? String(err));
       Alert.alert('Unexpected error', err?.message ?? String(err));
     } finally {
       setSubmitting(false);
     }
+  };
+
+  const onForgotPassword = () => {
+    // navigate to a forgot password screen (create one if you don't have)
+    router.push('/forgot-password');
   };
 
   if (loadingSession) {
@@ -126,92 +169,172 @@ export default function LoginScreen() {
   return (
     <KeyboardAvoidingView
       behavior={Platform.select({ ios: 'padding', android: undefined })}
-      style={styles.container}>
-      <View style={styles.card}>
-        <Text style={styles.title}>Log In</Text>
+      style={styles.screen}
+      keyboardVerticalOffset={Platform.select({ ios: 80, android: 0 })}>
+      <View style={styles.container}>
+        <View style={styles.card}>
+          <Text style={styles.title}>Welcome back</Text>
+          <Text style={styles.subtitle}>Sign in to continue to EvenUp</Text>
 
-        <TextInput
-          placeholder="Email"
-          autoCapitalize="none"
-          keyboardType="email-address"
-          value={email}
-          onChangeText={setEmail}
-          style={styles.input}
-          textContentType="emailAddress"
-          importantForAutofill="yes"
-          accessibilityLabel="Email"
-        />
+          <View style={{ height: 18 }} />
 
-        <TextInput
-          placeholder="Password"
-          secureTextEntry
-          value={password}
-          onChangeText={setPassword}
-          style={styles.input}
-          textContentType="password"
-          accessibilityLabel="Password"
-        />
+          <TextInput
+            placeholder="Email"
+            placeholderTextColor="#9AA1B2"
+            autoCapitalize="none"
+            keyboardType="email-address"
+            value={email}
+            onChangeText={setEmail}
+            style={[styles.input, emailError ? styles.inputError : null]}
+            textContentType="emailAddress"
+            importantForAutofill="yes"
+            accessibilityLabel="Email"
+            returnKeyType="next"
+            onSubmitEditing={() => passwordRef.current?.focus()}
+            editable={!submitting}
+            testID="emailInput"
+          />
+          {emailError ? <Text style={styles.fieldError}>{emailError}</Text> : null}
 
-        <Pressable
-          onPress={onSubmit}
-          style={({ pressed }) => [styles.primaryButton, pressed && styles.buttonPressed]}
-          accessibilityRole="button"
-          disabled={submitting}>
-          {submitting ? (
-            <ActivityIndicator color="#fff" />
-          ) : (
-            <Text style={styles.primaryText}>Log In</Text>
-          )}
-        </Pressable>
+          <View style={{ height: 8 }} />
 
-        <View style={styles.orRow}>
-          <View style={styles.line} />
-          <Text style={styles.orText}>OR</Text>
-          <View style={styles.line} />
+          <View style={styles.passwordRow}>
+            <TextInput
+              ref={passwordRef}
+              placeholder="Password"
+              placeholderTextColor="#9AA1B2"
+              secureTextEntry={!showPassword}
+              value={password}
+              onChangeText={setPassword}
+              style={[styles.input, passwordError ? styles.inputError : null, { flex: 1 }]}
+              textContentType="password"
+              accessibilityLabel="Password"
+              returnKeyType="done"
+              onSubmitEditing={onSubmit}
+              editable={!submitting}
+              testID="passwordInput"
+            />
+            <TouchableOpacity
+              onPress={() => setShowPassword((s) => !s)}
+              accessibilityRole="button"
+              accessibilityLabel={showPassword ? 'Hide password' : 'Show password'}
+              style={styles.eyeButton}>
+              <MaterialIcons
+                name={showPassword ? 'visibility-off' : 'visibility'}
+                size={22}
+                color="#6B7280"
+              />
+            </TouchableOpacity>
+          </View>
+          {passwordError ? <Text style={styles.fieldError}>{passwordError}</Text> : null}
+
+          {/* ===== Primary Login Button (visible) ===== */}
+          <View style={{ height: 12 }} />
+          <Pressable
+            onPress={onSubmit}
+            style={({ pressed }) => [
+              styles.primaryButton,
+              pressed && styles.buttonPressed,
+              submitting && styles.buttonDisabled,
+            ]}
+            accessibilityRole="button"
+            accessibilityState={{ disabled: submitting }}
+            disabled={submitting}
+            testID="loginButton">
+            {submitting ? (
+              <ActivityIndicator color="#fff" />
+            ) : (
+              <Text style={styles.primaryText}>Log In</Text>
+            )}
+          </Pressable>
+
+          {/* Forgot password placed AFTER the login button */}
+          <TouchableOpacity
+            onPress={onForgotPassword}
+            accessibilityRole="link"
+            style={styles.forgotWrap}>
+            <Text style={styles.forgotText}>Forgot password?</Text>
+          </TouchableOpacity>
+
+          {generalError ? <Text style={styles.generalError}>{generalError}</Text> : null}
+
+          <View style={styles.orRow}>
+            <View style={styles.line} />
+            <Text style={styles.orText}>OR</Text>
+            <View style={styles.line} />
+          </View>
+
+          <GoogleLoginButton />
+
+          <View style={styles.signUpRow}>
+            <Text style={styles.signUpText}>Don’t have an account?</Text>
+            <TouchableOpacity onPress={() => router.push('/signup')}>
+              <Text style={styles.signUpLink}> Sign up</Text>
+            </TouchableOpacity>
+          </View>
         </View>
-
-        <GoogleLoginButton />
       </View>
-      <Pressable onPress={() => router.push('/signup')} style={styles.linkWrap}>
-        <Text style={styles.linkText}>Don’t have an account? Sign up</Text>
-      </Pressable>
     </KeyboardAvoidingView>
   );
 }
 
+const CARD_PADDING = 22;
+
 const styles = StyleSheet.create({
-  loader: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  container: { flex: 1, justifyContent: 'center', padding: 20, backgroundColor: '#F8FAFF' },
+  screen: { flex: 1, backgroundColor: '#F8FAFF' },
+  container: { flex: 1, justifyContent: 'center', padding: 20 },
   card: {
     backgroundColor: '#fff',
-    padding: 20,
-    borderRadius: 12,
+    padding: CARD_PADDING,
+    borderRadius: 16,
     shadowColor: '#000',
     shadowOpacity: 0.06,
-    shadowRadius: 12,
-    elevation: 4,
-    marginBottom: 12,
+    shadowRadius: 18,
+    elevation: 6,
   },
-  title: { fontSize: 24, fontWeight: '700', marginBottom: 18 },
+  title: { fontSize: 22, fontWeight: '800', color: '#0F172A' },
+  subtitle: { fontSize: 13, color: '#6B7280', marginTop: 6 },
+
   input: {
     borderWidth: 1,
     borderColor: '#E6E9EE',
-    padding: 12,
-    borderRadius: 8,
-    marginBottom: 12,
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    borderRadius: 10,
+    fontSize: 15,
+    color: '#0F172A',
+    backgroundColor: '#FFF',
   },
+  inputError: {
+    borderColor: '#F97373',
+  },
+  passwordRow: { flexDirection: 'row', alignItems: 'center', marginTop: 8 },
+  eyeButton: { marginLeft: 8, padding: 6 },
+
   primaryButton: {
     backgroundColor: '#0B5FFF',
     paddingVertical: 14,
-    borderRadius: 8,
+    borderRadius: 10,
     alignItems: 'center',
-    marginTop: 6,
+    flex: 1,
   },
+  buttonDisabled: { opacity: 0.7 },
   primaryText: { color: '#fff', fontWeight: '700' },
   buttonPressed: { opacity: 0.9 },
-  orRow: { flexDirection: 'row', alignItems: 'center', marginVertical: 12 },
+
+  forgotWrap: { paddingVertical: 10, alignItems: 'center' },
+  forgotText: { color: '#6B7280', fontWeight: '600' },
+
+  orRow: { flexDirection: 'row', alignItems: 'center', marginVertical: 16 },
   line: { flex: 1, height: 1, backgroundColor: '#EAECEF' },
-  orText: { marginHorizontal: 10, color: '#9AA1B2', fontWeight: '600' },
-  linkWrap: { marginTop: 14, alignItems: 'center' },
-  linkText: { color: '#0B5FFF', fontWeight: '600' },
+  orText: { marginHorizontal: 12, color: '#9AA1B2', fontWeight: '600' },
+
+  fieldError: { color: '#DC2626', marginTop: 6, marginBottom: 2, fontSize: 13 },
+  generalError: { color: '#DC2626', marginTop: 8, textAlign: 'center' },
+
+  signUpRow: { flexDirection: 'row', justifyContent: 'center', marginTop: 14 },
+  signUpText: { color: '#6B7280' },
+  signUpLink: { color: '#0B5FFF', fontWeight: '700' },
+
+  loader: { flex: 1, alignItems: 'center', justifyContent: 'center' },
 });
