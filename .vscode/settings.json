@@ -1,8 +1,44 @@
 {
   "editor.formatOnSave": true,
+  // Use workspace TypeScript (node_modules) so TS server sees your project's tsconfig
+  "typescript.tsdk": "node_modules/typescript/lib",
+
+  // Prefer non-relative imports (this makes quick fixes use aliases when possible)
+  "typescript.preferences.importModuleSpecifier": "non-relative",
+  "typescript.preferences.importModuleSpecifierEnding": "auto",
+  "typescript.preferences.quoteStyle": "single",
+
+  // Same for JS files if you sometimes edit JS
+  "javascript.preferences.importModuleSpecifier": "non-relative",
+  "javascript.preferences.importModuleSpecifierEnding": "auto",
+  "javascript.preferences.quoteStyle": "single",
+
+  // Run ESLint fixes and organize imports on save for this workspace only
   "editor.codeActionsOnSave": {
     "source.fixAll": "explicit",
-    "source.organizeImports": "explicit"
+    "source.fixAll.eslint": true,
+    "source.organizeImports": true
   },
-  "eslint.validate": ["javascript", "javascriptreact", "typescript", "typescriptreact"]
+
+  // Use ESLint from the workspace (not global)
+  "eslint.workingDirectories": [{ "mode": "auto" }],
+
+  // Path Intellisense maps (for the Path Intellisense extension)
+  // Maps alias prefixes to actual folders in your project workspace
+  "path-intellisense.mappings": {
+    "@api": "${workspaceFolder}/src/api",
+    "@assets": "${workspaceFolder}/src/assets",
+    "@hooks": "${workspaceFolder}/src/hooks",
+    "@features": "${workspaceFolder}/src/features",
+    "@theme": "${workspaceFolder}/src/theme",
+    "@mocks": "${workspaceFolder}/src/mocks",
+    "@components": "${workspaceFolder}/src/components",
+    "@stores": "${workspaceFolder}/stores"
+  },
+
+  // Optional: show quick suggestions for imports and enable auto import suggestions
+  "editor.quickSuggestions": { "other": true, "comments": false, "strings": false },
+  "typescript.suggest.completeFunctionCalls": true,
+  "typescript.suggest.autoImports": true,
+  "javascript.suggest.autoImports": true
 }
