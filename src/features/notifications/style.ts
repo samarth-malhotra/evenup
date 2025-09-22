@@ -14,7 +14,7 @@ export const styles = StyleSheet.create({
   screenTitle: {
     fontSize: 22,
     fontWeight: '800',
-    color: COLORS.text ?? '#1A1A1A',
+    color: '#1A1A1A',
   },
   markAllBtn: {
     flexDirection: 'row',
@@ -88,7 +88,7 @@ export const styles = StyleSheet.create({
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: COLORS.primary ?? '#6C4CE6',
+    backgroundColor: '#6C4CE6',
   },
   emptyWrap: {
     alignItems: 'center',

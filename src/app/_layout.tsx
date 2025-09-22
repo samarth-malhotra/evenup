@@ -6,7 +6,7 @@ import { Stack } from 'expo-router';
 import { Provider as JotaiProvider } from 'jotai';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
-import '../global.css';
+import '../../global.css';
 
 export const unstable_settings = { initialRouteName: '(tabs)' };
 

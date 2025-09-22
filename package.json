@@ -4,10 +4,10 @@
   "main": "expo-router/entry",
   "expo": {},
   "scripts": {
-    "start": "cross-env APP_ENV=development expo start",
-    "start:staging": "cross-env APP_ENV=staging expo start",
-    "start:prod": "cross-env APP_ENV=production expo start",
-    "android": "cross-env APP_ENV=development expo start:android",
+    "start": "cross-env APP_ENV=development npm run sync:tokens && expo start -c",
+    "start:staging": "cross-env APP_ENV=staging npm run sync:tokens && expo start",
+    "start:prod": "cross-env APP_ENV=production npm run sync:tokens && expo start",
+    "android": "cross-env APP_ENV=development npm run sync:tokens && expo start:android",
     "ios": "cross-env APP_ENV=development expo run:ios",
     "build:android:staging": "cross-env APP_ENV=staging eas build -p android --profile preview",
     "build:android:prod": "cross-env APP_ENV=production eas build -p android --profile production",
@@ -17,8 +17,7 @@
     "lint:fix": "eslint . --ext .js,.jsx,.ts,.tsx --fix",
     "format": "prettier . --write",
     "format:check": "prettier . --check",
-    "sync:tokens": "node src/theme/script/sync-tailwind.js",
-    "start:reset": "npm run sync:tokens && expo start -c"
+    "sync:tokens": "node src/theme/script/sync-tailwind.js"
   },
   "dependencies": {
     "@expo/metro-runtime": "~5.0.4",

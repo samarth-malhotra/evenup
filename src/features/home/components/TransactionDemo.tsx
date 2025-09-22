@@ -2,8 +2,8 @@
 
 import { ScrollView, Text, View } from 'react-native';
 
-import { CONFIG } from '@/src/config';
-import TransactionCard from '@/src/lib/shared/components/TransactionCard';
+import TransactionCard from '@/components/TransactionCard';
+import { CONFIG } from '@/config';
 import { userAtom } from '@/stores/atoms/user';
 import { STORAGE_KEYS } from '@/stores/storageKeys';
 import { useAtomValue } from 'jotai';

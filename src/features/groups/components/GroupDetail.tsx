@@ -245,7 +245,7 @@ export default function GroupDetailScreen() {
           {isSubmitting || isAdding ? (
             <ActivityIndicator />
           ) : (
-            <Text className="font-semibold text-white">Add Expense</Text>
+            <Text className="bg-blue-700 font-semibold text-white">Add Expense</Text>
           )}
         </TouchableOpacity>
       </View>
