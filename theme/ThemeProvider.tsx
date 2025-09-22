@@ -13,6 +13,7 @@ export type NestedTheme = {
   fontFamily: FontTokens;
   spacing: SpacingTokens;
   shadows: ShadowTokens;
+  textShadows?: any;
 };
 
 type ThemeContextType = {
@@ -25,7 +26,33 @@ type ThemeContextType = {
   loading: boolean;
 };
 
-const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
+/** Build a default theme from static tokens (light) to use as fallback context */
+const defaultResolved: ResolvedMode = 'light';
+const defaultNestedTheme: NestedTheme = {
+  colors: tokens.colors[defaultResolved],
+  fontFamily: tokens.fontFamily,
+  spacing: tokens.spacing,
+  shadows: tokens.shadows,
+  textShadows: (tokens as any).textShadows,
+};
+
+const noopAsync = async () => {};
+
+const defaultContext: ThemeContextType = {
+  mode: 'light',
+  resolved: defaultResolved,
+  setMode: async (m: ThemePreference) => {
+    // no-op when outside provider
+    return;
+  },
+  toggleTheme: noopAsync,
+  theme: defaultNestedTheme,
+  flatTheme: flattenObject(defaultNestedTheme),
+  loading: false,
+};
+
+const ThemeContext = createContext<ThemeContextType>(defaultContext);
+
 const STORAGE_KEY = 'evenup:themePreference';
 
 export const ThemeProvider: React.FC<{
@@ -35,7 +62,7 @@ export const ThemeProvider: React.FC<{
   const system = useColorScheme();
   const systemMode: ResolvedMode = system === 'dark' ? 'dark' : 'light';
 
-  const [mode, setModeState] = useState<ThemePreference>(initialMode ?? 'system');
+  const [mode, setModeState] = useState<ThemePreference>(initialMode ?? defaultContext.mode);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -94,6 +121,7 @@ export const ThemeProvider: React.FC<{
       fontFamily: tokens.fontFamily,
       spacing: tokens.spacing,
       shadows: tokens.shadows,
+      textShadows: (tokens as any).textShadows,
     };
   }, [resolved]);
 
@@ -112,8 +140,8 @@ export const ThemeProvider: React.FC<{
   return <ThemeContext.Provider value={ctx}>{children}</ThemeContext.Provider>;
 };
 
+/** Safe hook: always returns a ThemeContext value (default or provider) */
 export function useTheme(): ThemeContextType {
   const ctx = useContext(ThemeContext);
-  if (!ctx) throw new Error('useTheme must be used within ThemeProvider');
   return ctx;
 }

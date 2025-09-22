@@ -8,11 +8,11 @@ import CreateGroupSheet from '@/lib/groups/components/BottomSheet/CreateGroupShe
 import { groups } from '@/lib/groups/mocks/groupList';
 import AppHeader from '@/lib/shared/components/AppHeader';
 import { Avatar } from '@/lib/shared/components/Avatar';
-import Card from '@/lib/shared/components/Card';
 import SummaryCard from '@/lib/shared/components/SummaryCard';
 import { useColor } from '@/lib/shared/utils/color';
 import { formatRs } from '@/lib/shared/utils/utils';
 
+import { getBoxShadow } from '@/hooks/getBoxShadow';
 import { useTheme } from '@/theme/ThemeProvider';
 import TransactionsDemoScreen from './TransactionDemo';
 
@@ -77,7 +77,7 @@ export default function HomeScreen() {
           showBackButton={false}
           rightActions={
             <TouchableOpacity onPress={() => router.push('/notifications')}>
-              <MaterialIcons name="notifications" size={24} color={getColor('surface')} />
+              <MaterialIcons name="notifications" size={24} color={getColor('textWhite')} />
             </TouchableOpacity>
           }
         />
@@ -100,12 +100,12 @@ export default function HomeScreen() {
         <SectionHeader title="Quick links" />
         <View className="mb-4 flex-row justify-center gap-4 px-4">
           {quickLinks.map((q) => (
-            <Card
+            <View
               key={q.id}
-              style={{ backgroundColor: theme.colors.background }}
-              className="flex-1 rounded-2xl px-4 py-5">
+              style={[getBoxShadow('sm'), { borderRadius: 16, backgroundColor: theme.colors.card }]}
+              className="flex-1">
               <TouchableOpacity
-                className="flex items-center justify-center"
+                className="items-center rounded-2xl px-4 py-5" // inner card draw
                 onPress={() => {
                   if (q.id === 'add') {
                     setAddOpen(true);
@@ -127,7 +127,7 @@ export default function HomeScreen() {
                   {q.label}
                 </Text>
               </TouchableOpacity>
-            </Card>
+            </View>
           ))}
         </View>
 

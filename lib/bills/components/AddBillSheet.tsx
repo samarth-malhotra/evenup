@@ -10,6 +10,7 @@ import { SPLIT_OPTIONS } from '../constant';
 import { toNum } from '../utils';
 import ParticipantRow from './common/ParticipantRow';
 
+import { useTheme } from '@/theme/ThemeProvider';
 import type { SplitMethod } from '../types';
 
 const Pill = memo(function Pill({
@@ -55,6 +56,7 @@ export default function AddBillSheet({
   onSelectPaidBy?: () => Promise<string> | string | void;
   onSelectParticipants?: () => Promise<string[]> | string[] | void;
 }) {
+  const { theme } = useTheme();
   const [title, setTitle] = useState('');
   const [amountStr, setAmountStr] = useState('');
   const [date, setDate] = useState(new Date());
@@ -230,18 +232,29 @@ export default function AddBillSheet({
 
   return (
     <BottomSheet open={open} onClose={onClose}>
-      <Text className="mb-2 text-center text-lg font-semibold text-gray-900">Add Bills</Text>
+      <Text
+        style={{ color: theme.colors.textPrimary }}
+        className="mb-2 text-center text-lg font-semibold">
+        Add Bills
+      </Text>
 
       {/* Title */}
       <View className="mb-3 flex-row items-center">
-        <Text className="w-28 pr-3 text-sm font-medium text-gray-700">Title</Text>
+        <Text
+          style={{ color: theme.colors.textSecondary }}
+          className="w-28 pr-3 text-sm font-medium">
+          Title
+        </Text>
         <View className="flex-1">
-          <View className="h-11 rounded-xl border border-gray-300 bg-white px-4">
+          <View
+            style={{ borderColor: theme.colors.border, backgroundColor: theme.colors.background }}
+            className="h-11 rounded-xl border px-4">
             <TextInput
               value={title}
               onChangeText={setTitle}
               placeholder="Dinner at BBQ Nation"
-              placeholderTextColor="#9CA3AF"
+              placeholderTextColor={theme.colors.placeholder}
+              style={{ color: theme.colors.textPrimary }}
               className="h-11 text-base text-gray-900"
               returnKeyType="next"
             />
@@ -251,17 +264,26 @@ export default function AddBillSheet({
 
       {/* Amount */}
       <View className="mb-3 flex-row items-center">
-        <Text className="w-28 pr-3 text-sm font-medium text-gray-700">Amount</Text>
+        <Text
+          style={{ color: theme.colors.textSecondary }}
+          className="w-28 pr-3 text-sm font-medium">
+          Amount
+        </Text>
         <View className="flex-1">
-          <View className="h-11 flex-row items-center rounded-xl border border-gray-300 bg-white px-3">
-            <Text className="mr-2 text-gray-500">₹</Text>
+          <View
+            style={{ borderColor: theme.colors.border, backgroundColor: theme.colors.background }}
+            className="h-11 flex-row items-center rounded-xl border px-3">
+            <Text style={{ color: theme.colors.textSecondary }} className="mr-2">
+              ₹
+            </Text>
             <TextInput
               value={amountStr}
               onChangeText={setAmountStr}
               placeholder="0.00"
               keyboardType="numeric"
-              placeholderTextColor="#9CA3AF"
-              className="h-11 flex-1 text-base text-gray-900"
+              placeholderTextColor={theme.colors.placeholder}
+              style={{ color: theme.colors.textPrimary }}
+              className="h-11 flex-1 text-base"
             />
           </View>
         </View>
@@ -269,12 +291,23 @@ export default function AddBillSheet({
 
       {/* Date */}
       <View className="mb-3 flex-row items-center">
-        <Text className="w-28 pr-3 text-sm font-medium text-gray-700">Date</Text>
+        <Text
+          style={{ color: theme.colors.textSecondary }}
+          className="w-28 pr-3 text-sm font-medium">
+          Date
+        </Text>
         <Pressable
           onPress={() => setShowDatePicker(true)}
-          className="h-11 flex-1 flex-row items-center justify-between rounded-xl border border-gray-300 bg-white px-4">
-          <Text className="text-base text-gray-900">{dayjs(date).format('DD MMM YYYY')}</Text>
-          <MaterialIcons name="calendar-today" size={20} color="#6B7280" />
+          style={{ borderColor: theme.colors.border, backgroundColor: theme.colors.background }}
+          className="h-11 flex-1 flex-row items-center justify-between rounded-xl border px-4">
+          <Text style={{ color: theme.colors.textPrimary }} className="text-base">
+            {dayjs(date).format('DD MMM YYYY')}
+          </Text>
+          <MaterialIcons
+            name="calendar-today"
+            size={20}
+            style={{ color: theme.colors.textSecondary }}
+          />
         </Pressable>
       </View>
       {showDatePicker && (
@@ -293,34 +326,59 @@ export default function AddBillSheet({
 
       {/* Paid by */}
       <View className="mb-3 flex-row items-center">
-        <Text className="w-28 pr-3 text-sm font-medium text-gray-700">Paid by</Text>
+        <Text
+          style={{ color: theme.colors.textSecondary }}
+          className="w-28 pr-3 text-sm font-medium">
+          Paid by
+        </Text>
         <Pressable
           onPress={handlePaidByPress}
-          className="h-11 flex-1 flex-row items-center justify-between rounded-xl border border-gray-300 bg-white px-4">
-          <Text className={paidBy ? 'text-base text-gray-900' : 'text-base text-gray-400'}>
+          style={{ borderColor: theme.colors.border, backgroundColor: theme.colors.background }}
+          className="h-11 flex-1 flex-row items-center justify-between rounded-xl border px-4">
+          <Text
+            style={{
+              color: paidBy ? theme.colors.textPrimary : theme.colors.textSecondary,
+            }}
+            className={'text-base'}>
             {paidBy || 'Select person'}
           </Text>
-          <MaterialIcons name="expand-more" size={24} color="#6B7280" />
+          <MaterialIcons
+            name="expand-more"
+            size={24}
+            style={{ color: theme.colors.textSecondary }}
+          />
         </Pressable>
       </View>
 
       {/* People */}
       <View className="mb-3 flex-row items-center">
-        <Text className="w-28 pr-3 text-sm font-medium text-gray-700">People</Text>
+        <Text
+          style={{ color: theme.colors.textSecondary }}
+          className="w-28 pr-3 text-sm font-medium">
+          People
+        </Text>
         <Pressable
           onPress={handleParticipantsPress}
-          className="h-11 flex-1 flex-row items-center justify-between rounded-xl border border-gray-300 bg-white px-4">
+          style={{ borderColor: theme.colors.border, backgroundColor: theme.colors.background }}
+          className="h-11 flex-1 flex-row items-center justify-between rounded-xl border px-4">
           <Text
-            className={participants.length ? 'text-base text-gray-900' : 'text-base text-gray-400'}>
+            style={{
+              color: participants.length ? theme.colors.textPrimary : theme.colors.textSecondary,
+            }}
+            className={'text-base'}>
             {participants.length ? `${participants.length} selected` : 'Select members'}
           </Text>
-          <MaterialIcons name="group-add" size={22} color="#6B7280" />
+          <MaterialIcons name="group-add" size={22} style={{ color: theme.colors.textSecondary }} />
         </Pressable>
       </View>
 
       {/* Split selector */}
       <View className="mb-2 flex-row items-center">
-        <Text className="w-28 pr-3 text-sm font-medium text-gray-700">Split</Text>
+        <Text
+          style={{ color: theme.colors.textSecondary }}
+          className="w-28 pr-3 text-sm font-medium">
+          Split
+        </Text>
         <View className="flex-1 flex-row flex-wrap gap-2">
           {SPLIT_OPTIONS.map((opt) => (
             <Pill
@@ -335,7 +393,7 @@ export default function AddBillSheet({
 
       {/* Participant list */}
       {participants.length > 0 && (
-        <View className="mt-2 rounded-2xl bg-gray-50 p-3">
+        <View style={{ backgroundColor: theme.colors.gray50 }} className="mt-2 rounded-2xl p-3">
           {participants.map((id) => (
             <ParticipantRow
               key={id}
@@ -357,9 +415,9 @@ export default function AddBillSheet({
 
       {/* Warnings */}
       {warnings.length > 0 && (
-        <View className="mt-3 rounded-xl bg-yellow-50 p-3">
+        <View style={{ backgroundColor: theme.colors.warning50 }} className="mt-3 rounded-xl p-3">
           {warnings.map((w, i) => (
-            <Text key={i} className="text-xs text-yellow-800">
+            <Text key={i} style={{ color: theme.colors.warning800 }} className="text-xs">
               • {w}
             </Text>
           ))}
@@ -370,8 +428,13 @@ export default function AddBillSheet({
       <View className="pt-3">
         <TouchableOpacity
           onPress={handleSave}
-          className="rounded-full bg-blue-600 py-4 shadow-lg active:bg-blue-700">
-          <Text className="text-center text-lg font-semibold text-white">Save Bill</Text>
+          style={{ backgroundColor: theme.colors.link }}
+          className="rounded-full py-4 shadow-lg">
+          <Text
+            style={{ color: theme.colors.textWhite }}
+            className="text-center text-lg font-semibold">
+            Save Bill
+          </Text>
         </TouchableOpacity>
       </View>
     </BottomSheet>

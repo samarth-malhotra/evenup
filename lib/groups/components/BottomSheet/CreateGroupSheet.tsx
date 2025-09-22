@@ -78,8 +78,8 @@ export default function NewGroupSheet({ open, onClose, onCreate }: Props) {
           value={name}
           onChangeText={setName}
           placeholder="Group name (e.g. Goa Trip)"
-          placeholderTextColor={getColor('textSecondary')}
-          style={{ backgroundColor: theme.colors.mutedLight, color: theme.colors.textPrimary }}
+          placeholderTextColor={getColor('placeholder')}
+          style={{ backgroundColor: theme.colors.inputBackground, color: theme.colors.textPrimary }}
           className="rounded-xl px-4 py-3 text-base"
           returnKeyType="done"
         />
@@ -95,7 +95,7 @@ export default function NewGroupSheet({ open, onClose, onCreate }: Props) {
 
         <Pressable
           onPress={() => console.log('TODO: open members picker')}
-          style={{ backgroundColor: theme.colors.mutedLight }}
+          style={{ backgroundColor: theme.colors.inputBackground }}
           className="flex-row items-center justify-between rounded-xl px-4 py-3">
           <Text style={{ color: theme.colors.textPrimary }}>Add members</Text>
           <MaterialIcons name="person-add" size={22} color={getColor('textSecondary')} />
@@ -107,8 +107,8 @@ export default function NewGroupSheet({ open, onClose, onCreate }: Props) {
             {members.map((m) => (
               <View
                 key={m}
-                style={[{ borderColor: theme.colors.muted }]}
-                className="flex-row items-center rounded-full border-2 px-3 py-1.5">
+                style={[{ backgroundColor: theme.colors.disabled }]}
+                className="flex-row items-center rounded-full px-3 py-1.5">
                 <Text
                   style={[{ color: theme.colors.textSecondary }]}
                   className={`${m !== 'You' ? 'mr-2' : ''} text-sm font-medium`}>

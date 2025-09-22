@@ -66,11 +66,11 @@ const StatusPill: React.FC<{
 
   switch (status) {
     case 'you-owe':
-      bgClass = getColor('danger', 'light', 0.3);
+      bgClass = getColor('danger200');
       textClass = getColor('danger', 'dark');
       break;
     case 'friend-owe':
-      bgClass = getColor('success', 'light', 0.2);
+      bgClass = getColor('success100');
       textClass = getColor('success', 'dark');
       break;
     case 'settle':
@@ -79,16 +79,16 @@ const StatusPill: React.FC<{
       isButton = true;
       break;
     case 'pending':
-      bgClass = getColor('warning', 'light', 0.8);
+      bgClass = getColor('warning300');
       textClass = getColor('textPrimary');
       break;
     case 'error':
-      bgClass = getColor('danger', 'DEFAULT', 0.8);
+      bgClass = getColor('danger500');
       textClass = getColor('textWhite');
       borderClass = getColor('danger');
       break;
     default:
-      bgClass = getColor('textPrimary', 'DEFAULT', 0.2);
+      bgClass = getColor('gray200');
       textClass = getColor('textPrimary');
   }
 
@@ -120,18 +120,18 @@ const BadgesRow: React.FC<{ badges?: BadgeItem[] }> = ({ badges }) => {
   const getBadgeClasses = (status: string) => {
     if (status === 'you-owe') {
       return {
-        container: getColor('danger', 'light'),
-        text: getColor('textPrimary', 'DEFAULT', 0.8),
+        container: getColor('danger400'),
+        text: getColor('textPrimary'),
       };
     } else if (status === 'friend-owe') {
       return {
-        container: getColor('success', 'light'),
-        text: getColor('textPrimary', 'DEFAULT', 0.8),
+        container: getColor('success400', 'light'),
+        text: getColor('textPrimary'),
       };
     } else {
       return {
-        container: getColor('muted'),
-        text: getColor('textPrimary', 'DEFAULT', 0.8),
+        container: getColor('gray400'),
+        text: getColor('textPrimary'),
       };
     }
   };
@@ -200,10 +200,9 @@ const TransactionCard: React.FC<TransactionCardProps> = ({
       onPress={onPress}
       disabled={!!disabled}
       className={containerClasses}
-      style={[{ backgroundColor: getColor('background') }, shadowStyle]}>
+      style={[{ backgroundColor: theme.colors.card }, shadowStyle]}>
       <View className="flex-row items-center">
         <Avatar name={title} imageUri={img} icon={icon} />
-
         <View className="ml-3 flex-1">
           <View className="flex-row items-start justify-between">
             <View className="flex-1 pr-2">
@@ -255,7 +254,7 @@ const TransactionCard: React.FC<TransactionCardProps> = ({
 
           {hasAttachment ? (
             <View className="mt-2">
-              <Text style={{ color: theme.colors.textSecondary }} className="text-sm">
+              <Text style={{ color: theme.colors.link }} className="text-sm">
                 Receipt attached • tap to preview
               </Text>
             </View>

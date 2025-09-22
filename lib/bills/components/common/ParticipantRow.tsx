@@ -3,6 +3,7 @@ import { Text, TextInput, View } from 'react-native';
 
 import { labelFor, toNum } from '../../utils';
 
+import { useTheme } from '@/theme/ThemeProvider';
 import type { SplitMethod } from '../../types';
 
 function ParticipantRow({
@@ -30,19 +31,30 @@ function ParticipantRow({
   onChangePercent: (id: string, v: string) => void;
   onChangeShare: (id: string, v: string) => void;
 }) {
+  const { theme } = useTheme();
   const pct = toNum(percentStr);
   const shares = toNum(shareStr);
   const amountFromPct = amount * (pct / 100);
   const amountFromShare = totalShares > 0 ? (amount * shares) / totalShares : 0;
 
-  const inputCls = 'h-11 px-3 rounded-xl border border-gray-300 bg-white text-base text-gray-900';
-
+  const inputCls = 'h-11 px-3 rounded-xl border text-base';
+  const inputStyles = {
+    color: theme.colors.textPrimary,
+    borderColor: theme.colors.border,
+    backgroundColor: theme.colors.inputBackground,
+  };
   return (
-    <View className="flex-row items-center border-b border-gray-200 py-2">
-      <Text className="w-28 pr-2 text-gray-800">{labelFor(id)}</Text>
+    <View
+      style={{ borderColor: theme.colors.border }}
+      className="flex-row items-center border-b py-2">
+      <Text style={{ color: theme.colors.textPrimary }} className="w-28 pr-2">
+        {labelFor(id)}
+      </Text>
 
       {mode === 'equal' && (
-        <Text className="flex-1 text-right font-semibold text-gray-900">
+        <Text
+          style={{ color: theme.colors.textPrimary }}
+          className="flex-1 text-right font-semibold">
           ₹{(equalPerPerson || 0).toFixed(2)}
         </Text>
       )}
@@ -50,9 +62,9 @@ function ParticipantRow({
       {mode === 'exact' && (
         <>
           <View className="flex-1 pr-3">
-            <View className={inputCls}>
+            <View className={inputCls} style={inputStyles}>
               <View className="absolute left-3 top-2.5">
-                <Text className="text-gray-500">₹</Text>
+                <Text style={{ color: theme.colors.textSecondary }}>₹</Text>
               </View>
               <TextInput
                 value={exactStr}
@@ -63,47 +75,53 @@ function ParticipantRow({
               />
             </View>
           </View>
-          <Text className="w-24 text-right text-gray-500">₹{toNum(exactStr).toFixed(2)}</Text>
+          <Text style={{ color: theme.colors.textPrimary }} className="w-24 text-right">
+            ₹{toNum(exactStr).toFixed(2)}
+          </Text>
         </>
       )}
 
       {mode === 'percent' && (
         <>
           <View className="flex-1 pr-3">
-            <View className={inputCls}>
+            <View className={inputCls} style={inputStyles}>
               <TextInput
                 value={percentStr}
                 onChangeText={(t) => onChangePercent(id, t)}
                 keyboardType="numeric"
                 placeholder={(100).toFixed(0)}
-                className="h-11 px-2 text-right"
+                className="h-11 px-2 pr-4 text-right"
               />
               <View className="absolute right-3 top-2.5">
-                <Text className="text-gray-500">%</Text>
+                <Text style={{ color: theme.colors.textSecondary }}>%</Text>
               </View>
             </View>
           </View>
-          <Text className="w-24 text-right text-gray-500">₹{amountFromPct.toFixed(2)}</Text>
+          <Text style={{ color: theme.colors.textPrimary }} className="w-24 text-right">
+            ₹{amountFromPct.toFixed(2)}
+          </Text>
         </>
       )}
 
       {mode === 'shares' && (
         <>
           <View className="flex-1 pr-3">
-            <View className={inputCls}>
+            <View className={inputCls} style={inputStyles}>
               <TextInput
                 value={shareStr}
                 onChangeText={(t) => onChangeShare(id, t)}
                 keyboardType="numeric"
                 placeholder="1"
-                className="h-11 px-2 text-right"
+                className="h-11 px-2 pr-5 text-right"
               />
               <View className="absolute right-3 top-2.5">
-                <Text className="text-gray-500">sh</Text>
+                <Text style={{ color: theme.colors.textSecondary }}>sh</Text>
               </View>
             </View>
           </View>
-          <Text className="w-24 text-right text-gray-500">₹{amountFromShare.toFixed(2)}</Text>
+          <Text style={{ color: theme.colors.textPrimary }} className="w-24 text-right">
+            ₹{amountFromShare.toFixed(2)}
+          </Text>
         </>
       )}
     </View>

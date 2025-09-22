@@ -135,7 +135,7 @@ export default function GroupTransactionDetail() {
   return (
     <>
       {/* Summary card */}
-      <View className="px-4">
+      <View className="px-4 pt-2">
         <View className="mb-5 flex-row items-start justify-between">
           <View className="flex-1 pr-4">
             <Text style={{ color: theme.colors.textPrimary }} className="text-lg font-semibold">
@@ -157,7 +157,9 @@ export default function GroupTransactionDetail() {
           </View>
 
           <View className="items-end">
-            <Text style={{ color: theme.colors.primary.dark }} className="text-3xl font-extrabold">
+            <Text
+              style={{ color: theme.colors.primary.DEFAULT }}
+              className="text-3xl font-extrabold">
               ₹{transaction.amount}
             </Text>
             <Text style={{ color: theme.colors.textSecondary }} className="mt-1 text-sm">

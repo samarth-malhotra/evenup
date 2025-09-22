@@ -21,6 +21,7 @@ type CardProps = ViewProps & {
   elevation?: number; // Android elevation (fallback)
   className?: string; // extra tailwind classes
   style?: StyleProp<ViewStyle>;
+  compact?: boolean;
 };
 
 export default function SummaryCard({
@@ -30,6 +31,7 @@ export default function SummaryCard({
   children,
   elevation = 4,
   className = '',
+  compact = false,
   style,
   ...rest
 }: CardProps) {
@@ -53,11 +55,13 @@ export default function SummaryCard({
 
   return (
     <View
-      className={`flex-1 items-center rounded-2xl p-4 ${className}`}
-      style={[getBoxShadow('md'), { backgroundColor: theme.colors.background }, style]}
+      className={`flex-1 items-center rounded-2xl ${compact ? 'border-hairline border-red-400 p-2 pt-3' : 'p-4'} ${className}`}
+      style={[compact ? '' : getBoxShadow('sm'), { backgroundColor: theme.colors.card }, style]}
       {...rest}>
       {title ? (
-        <Text style={{ color: theme.colors.muted }} className="text-md mb-1">
+        <Text
+          style={{ color: theme.colors.textSecondary, backgroundColor: theme.colors.card }}
+          className={`text-md  mb-1  ${compact ? 'absolute -top-3' : ''}`}>
           {title}
         </Text>
       ) : null}
