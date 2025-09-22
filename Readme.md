@@ -1,0 +1,1 @@
+-- To add or update color make changes in ./theme/token.js file, and once done run command, npm run sync:tokens It will generate new css version which tailwind config will use internally.

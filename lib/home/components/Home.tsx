@@ -1,6 +1,6 @@
 // app/(tabs)/home.tsx
 import { Feather, Ionicons, MaterialIcons } from '@expo/vector-icons';
-import { Link, router, useNavigation } from 'expo-router';
+import { router, useNavigation } from 'expo-router';
 import { useCallback, useEffect, useLayoutEffect, useState } from 'react';
 import {
   ActivityIndicator,
@@ -13,17 +13,18 @@ import {
 } from 'react-native';
 
 import AddBillSheet from '@/lib/bills/components/AddBillSheet';
-import NewGroupSheet from '@/lib/groups/components/BottomSheet/NewGroupSheet';
+import CreateGroupSheet from '@/lib/groups/components/BottomSheet/CreateGroupSheet';
 import { groups } from '@/lib/groups/mocks/groupList';
 import AppHeader from '@/lib/shared/components/AppHeader';
+import { Avatar } from '@/lib/shared/components/Avatar';
+import Card from '@/lib/shared/components/Card';
+import SummaryCard from '@/lib/shared/components/SummaryCard';
 import ThemedSafeArea from '@/lib/shared/components/ThemedSafeArea';
+import { useColor } from '@/lib/shared/utils/color';
+import { formatRs } from '@/lib/shared/utils/utils';
 import { supabase } from '@/lib/supabase';
 
-// Mock data for settlements
-const pendingSettlements = [
-  { id: '1', name: 'Ravi', amount: '₹300', type: 'owed' }, // they owe you
-  { id: '2', name: 'Amit', amount: '₹150', type: 'owe' }, // you owe
-];
+import TransactionsDemoScreen from './TransactionDemo';
 
 // Mock recent activity
 const recentActivity = [
@@ -48,30 +49,22 @@ const recentActivity = [
 ];
 
 const quickLinks = [
-  {
-    id: 'add',
-    label: 'Add Bill',
-    icon: <Ionicons name="flash" size={22} />,
-    // link: '/bills/addBill',
-  },
+  { id: 'add', label: 'Add Bill', icon: <Ionicons name="flash" size={22} /> },
   {
     id: 'reports',
     label: 'Reports',
     icon: <MaterialIcons name="bar-chart" size={22} />,
     link: '../summary',
   },
-  {
-    id: 'group',
-    label: 'Create Group',
-    icon: <Feather name="plus" size={22} />,
-    // link: '/(tabs)/groups/new',
-  },
+  { id: 'group', label: 'Create Group', icon: <Feather name="plus" size={22} /> },
 ];
 
 export default function HomeScreen() {
+  const getColor = useColor();
   const navigation = useNavigation();
+
   const [addOpen, setAddOpen] = useState(false);
-  const [openNewGroupSheet, setOpenNewGroupSheet] = useState(false);
+  const [openCreateGroupSheet, setOpenCreateGroupSheet] = useState(false);
   const [displayName, setDisplayName] = useState<string | null>(null);
   const [loadingUser, setLoadingUser] = useState(true);
 
@@ -87,19 +80,13 @@ export default function HomeScreen() {
         const {
           data: { user },
         } = await supabase.auth.getUser();
-
         if (!mounted) return;
 
         if (user) {
-          // supabase stores custom metadata inside user.user_metadata
           const fullName = (user.user_metadata as any)?.full_name;
-          if (fullName && typeof fullName === 'string' && fullName.trim().length > 0) {
-            setDisplayName(fullName);
-          } else if (user.email) {
-            setDisplayName(user.email.split('@')[0]); // fallback to local part of email
-          } else {
-            setDisplayName('Friend');
-          }
+          if (fullName?.trim()) setDisplayName(fullName);
+          else if (user.email) setDisplayName(user.email.split('@')[0]);
+          else setDisplayName('Friend');
         } else {
           setDisplayName('Friend');
         }
@@ -113,22 +100,15 @@ export default function HomeScreen() {
 
     loadUser();
 
-    // Subscribe to auth state changes so we update UI when user signs in/out/updates
     const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
-      // when signed in, re-fetch user
       if (session?.user) {
         const user = session.user;
         const fullName = (user.user_metadata as any)?.full_name;
-        if (fullName && typeof fullName === 'string' && fullName.trim().length > 0) {
-          setDisplayName(fullName);
-        } else if (user.email) {
-          setDisplayName(user.email.split('@')[0]);
-        } else {
-          setDisplayName('Friend');
-        }
+        if (fullName?.trim()) setDisplayName(fullName);
+        else if (user.email) setDisplayName(user.email.split('@')[0]);
+        else setDisplayName('Friend');
         setLoadingUser(false);
       } else {
-        // signed out
         setDisplayName('Friend');
       }
     });
@@ -139,7 +119,6 @@ export default function HomeScreen() {
     };
   }, []);
 
-  // Update header once displayName is available (or while loading show generic)
   useLayoutEffect(() => {
     navigation.setOptions({
       headerShown: true,
@@ -149,7 +128,7 @@ export default function HomeScreen() {
           showBackButton={false}
           rightActions={
             <TouchableOpacity onPress={() => router.push('/notifications')}>
-              <MaterialIcons name="notifications" size={24} color="white" />
+              <MaterialIcons name="notifications" size={24} color={getColor('surface')} />
             </TouchableOpacity>
           }
         />
@@ -165,43 +144,40 @@ export default function HomeScreen() {
         </View>
       ) : (
         <ScrollView contentContainerStyle={{ paddingBottom: 32 }}>
-          {/* Summary Row with 3 cards */}
+          {/* Summary */}
           <SectionHeader title="Summary (in August)" />
-          <View className="mb-4 flex-row gap-2 space-x-3 px-4">
-            <SummaryCard title="Total Spent" amount="₹ 4,500" amountColor="#4F46E5" />
-            <SummaryCard title="You Owe" amount="₹ 1,250" amountColor="#FF6B3D" />
-            <SummaryCard title="Friends Owe" amount="₹ 3,400" amountColor="#10B981" />
+          <View className="mb-4 flex-row gap-2 px-4">
+            <SummaryCard title="Total Spent" value={formatRs(2000)} type="total" />
+            <SummaryCard title="You Owe" value={formatRs(1500)} type="you" />
+            <SummaryCard title="Friends Owe" value={formatRs(500)} type="friend" />
           </View>
 
           {/* Quick Links */}
           <SectionHeader title="Quick links" />
-          <View className="mb-4 flex-row flex-wrap px-4">
+          <View className="mb-4 flex-row flex-wrap justify-center gap-4 px-4">
             {quickLinks.map((q) => (
-              <TouchableOpacity
-                key={q.id}
-                onPress={() => {
-                  if (q.id === 'add') {
-                    setAddOpen(true);
-                  } else if (q.id === 'group') {
-                    setOpenNewGroupSheet(true);
-                  } else {
-                    router.push(q.link!);
-                  }
-                }}
-                className="mr-[3%] w-[23%] items-center justify-center rounded-2xl bg-white px-4 py-5 shadow-sm"
-                activeOpacity={0.85}>
-                <View className="mb-2 h-9 w-9 items-center justify-center rounded-lg bg-gray-100">
-                  {q.icon}
-                </View>
-                <Text className="text-center text-[15px] font-semibold text-gray-900">
-                  {q.label}
-                </Text>
-              </TouchableOpacity>
+              <Card key={q.id} className="w-[30%] rounded-2xl px-4 py-5">
+                <TouchableOpacity
+                  className="flex items-center justify-center"
+                  onPress={() => {
+                    if (q.id === 'add') setAddOpen(true);
+                    else if (q.id === 'group') setOpenCreateGroupSheet(true);
+                    else if (q.link) router.push(q.link);
+                  }}
+                  activeOpacity={0.85}>
+                  <View className="mb-2 h-9 w-9 items-center justify-center rounded-lg bg-gray-100">
+                    {q.icon}
+                  </View>
+                  <Text className="text-center text-[15px] font-semibold text-gray-900">
+                    {q.label}
+                  </Text>
+                </TouchableOpacity>
+              </Card>
             ))}
           </View>
 
           {/* Groups */}
-          <SectionHeader title="Groups" actionIcon />
+          <SectionHeader title="Groups" />
           {groups.length > 0 ? (
             <ScrollView
               className="mb-4"
@@ -213,11 +189,9 @@ export default function HomeScreen() {
                   key={g.id}
                   className="items-center"
                   onPress={() => router.push(`/(tabs)/groups/${g.id}`)}>
-                  <View className="h-[72px] w-[72px] items-center justify-center rounded-full bg-white shadow">
-                    <Image source={{ uri: g.img }} className="h-[72px] w-[72px] rounded-full" />
-                  </View>
+                  <Avatar name={g.title} imageUri={g.img} size={64} />
                   <Text className="mt-2 w-[90px] text-center text-gray-900" numberOfLines={1}>
-                    {g.name}
+                    {g.title}
                   </Text>
                 </Pressable>
               ))}
@@ -247,61 +221,32 @@ export default function HomeScreen() {
         </ScrollView>
       )}
 
-      {/* Add New Bill */}
+      {/* Add Bill Bottom Sheet */}
       <AddBillSheet
         open={addOpen}
         onClose={() => setAddOpen(false)}
-        onSave={(payload) => {
-          // Persist bill
-          console.log('SAVE BILL', payload);
-        }}
+        onSave={(payload) => console.log('SAVE BILL', payload)}
         onSelectPaidBy={openPaidByPicker}
         onSelectParticipants={openParticipantsPicker}
       />
 
-      {/* Create New Group Bottom Sheet */}
-      <NewGroupSheet
-        open={openNewGroupSheet}
-        onClose={() => setOpenNewGroupSheet(false)}
-        onCreate={(payload) => {
-          // handle create here
-          console.log('create group', payload);
-        }}
+      {/* Create Group Bottom Sheet */}
+      <CreateGroupSheet
+        open={openCreateGroupSheet}
+        onClose={() => setOpenCreateGroupSheet(false)}
+        onCreate={(payload) => console.log('create group', payload)}
       />
+
+      {/* Demo Transactions */}
+      <TransactionsDemoScreen />
     </ThemedSafeArea>
   );
 }
 
-function SummaryCard({
-  title,
-  amount,
-  amountColor,
-}: {
-  title: string;
-  amount: string;
-  amountColor: string;
-}) {
+function SectionHeader({ title }: { title: string }) {
   return (
-    <View className="flex-1 items-center rounded-xl bg-white px-3 py-3 shadow-sm">
-      <Text className="mb-1 text-sm font-semibold text-gray-500">{title}</Text>
-      <Text className="text-lg font-extrabold" style={{ color: amountColor }}>
-        {amount}
-      </Text>
-    </View>
-  );
-}
-
-function SectionHeader({ title, actionIcon = false }: { title: string; actionIcon?: boolean }) {
-  return (
-    <View className="mb-2 flex-row items-center justify-between px-4">
+    <View className="mb-4 mt-2 flex-row items-center justify-between px-4">
       <Text className="text-lg font-bold text-gray-900">{title}</Text>
-      {actionIcon && (
-        <Link href={'/groups'} asChild>
-          <TouchableOpacity>
-            <Ionicons name="chevron-forward" size={22} color="#1A1A1A" />
-          </TouchableOpacity>
-        </Link>
-      )}
     </View>
   );
 }

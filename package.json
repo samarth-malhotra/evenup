@@ -12,7 +12,9 @@
     "lint": "eslint . --ext .js,.jsx,.ts,.tsx",
     "lint:fix": "eslint . --ext .js,.jsx,.ts,.tsx --fix",
     "format": "prettier . --write",
-    "format:check": "prettier . --check"
+    "format:check": "prettier . --check",
+    "sync:tokens": "node theme/sync-tailwind.js",
+    "start:reset": "npm run sync:tokens && expo start -c"
   },
   "dependencies": {
     "@expo/metro-runtime": "~5.0.4",

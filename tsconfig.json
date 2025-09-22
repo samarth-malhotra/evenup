@@ -8,6 +8,14 @@
     "paths": {
       "@/*": ["./*"]
     },
-    "types": ["react", "react-native", "nativewind/types", "expo-router"]
+
+    "types": ["react", "react-native", "nativewind/types", "expo-router"],
+
+    "moduleResolution": "bundler",
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "resolveJsonModule": true,
+    "skipLibCheck": true,
+    "noEmit": true
   }
 }

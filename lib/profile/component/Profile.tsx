@@ -5,11 +5,15 @@ import { useLayoutEffect, useState } from 'react';
 import { Platform, StyleSheet, Switch, Text, TouchableOpacity, View } from 'react-native';
 
 import AppHeader from '@/lib/shared/components/AppHeader';
+import { useColor } from '@/lib/shared/utils/color';
+import { useTheme } from '@/theme/ThemeProvider';
 
 export default function Profile() {
+  const getColor = useColor();
+  const { toggleTheme, mode, theme } = useTheme();
   const navigation = useNavigation();
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
-  const [darkModeEnabled, setDarkModeEnabled] = useState(false);
+  const [darkModeEnabled, setDarkModeEnabled] = useState(mode === 'dark');
   const [currency, setCurrency] = useState<'INR' | 'USD' | 'EUR'>('INR');
 
   useLayoutEffect(() => {
@@ -85,7 +89,10 @@ export default function Profile() {
           iconTint="#6C5CE7"
           label="Dark Mode"
           value={darkModeEnabled ? 'On' : 'Off'}
-          onPress={() => setDarkModeEnabled((v) => !v)}
+          onPress={() => {
+            toggleTheme();
+            setDarkModeEnabled((v) => !v);
+          }}
         />
       </View>
 

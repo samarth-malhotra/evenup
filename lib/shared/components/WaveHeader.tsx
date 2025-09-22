@@ -1,5 +1,6 @@
 import React from 'react';
 import { Dimensions, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, {
   Defs,
   G,
@@ -9,16 +10,20 @@ import Svg, {
   Stop,
   LinearGradient as SvgGradient,
 } from 'react-native-svg';
+import { useColor } from '../utils/color';
 
-import { COLORS } from '../../../theme/color';
+// import { getColor } from '../utils/color';
 
 const { width } = Dimensions.get('window');
 
 export default function WaveHeader({ children }: { children?: React.ReactNode }) {
+  const getColor = useColor();
+
+  const insets = useSafeAreaInsets();
   const H = children ? 160 : 90;
-  const backgroundColor = (COLORS as any)['white'];
-  const top = '#6C4CE6';
-  const bottom = '#5336D3';
+  const backgroundColor = getColor('surface');
+  const top = getColor('primary');
+  const bottom = getColor('primary', 'dark');
 
   // One curvy wave (closes to bottom so area below becomes white)
   const wave = (offset = 0) => `
@@ -32,7 +37,7 @@ export default function WaveHeader({ children }: { children?: React.ReactNode })
   `;
 
   return (
-    <View className="" style={{ height: H - (children ? 60 : 30) }}>
+    <View className="relative" style={{ height: H - (children ? 60 : 30) }}>
       <Svg width={width} height={'100%'}>
         <Defs>
           {/* background gradient */}
@@ -43,12 +48,12 @@ export default function WaveHeader({ children }: { children?: React.ReactNode })
 
           {/* fade mask */}
           <SvgGradient id="fadeRight" x1="0" y1="0" x2="1" y2="0">
-            <Stop offset="0%" stopColor="#fff" stopOpacity="1" />
-            <Stop offset="100%" stopColor="#fff" stopOpacity="0" />
+            <Stop offset="0%" stopColor={backgroundColor} stopOpacity="1" />
+            <Stop offset="100%" stopColor={backgroundColor} stopOpacity="0" />
           </SvgGradient>
 
           <Mask id="fadeMask">
-            <Rect x="0" y="0" width={width} height={H} fill={backgroundColor} />
+            <Rect x="0" y="0" width={width} height={H} fill={'#fff'} />
           </Mask>
         </Defs>
 
@@ -58,12 +63,19 @@ export default function WaveHeader({ children }: { children?: React.ReactNode })
         {/* Waves */}
         <G mask="url(#fadeMask)">
           {/* Main decorative wave */}
-          <Path d={wave(0.0)} fill="#FFFFFF" fillOpacity={0.22} />
+          <Path d={wave(0.0)} fill={backgroundColor} fillOpacity={0.22} />
           <Path d={wave(0.05)} fill={backgroundColor} />
         </G>
       </Svg>
 
-      <View className="absolute inset-0 top-11 px-4">{children}</View>
+      <View
+        className="absolute inset-0 px-4"
+        style={{
+          paddingTop: insets.top,
+          minHeight: H * 0.65,
+        }}>
+        {children}
+      </View>
     </View>
   );
 }
