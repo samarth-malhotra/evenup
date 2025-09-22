@@ -79,6 +79,10 @@ export default ({ config }) => {
       appVersion: version,
       iosBuildNumber,
       androidVersionCode,
+
+      // Supabase
+      supabaseUrl: process.env.SUPABASE_URL,
+      supabaseAnonKey: process.env.SUPABASE_ANON_KEY,
     },
     // If you use EAS updates, set the URL via env or leave as is
     updates: {

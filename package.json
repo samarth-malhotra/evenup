@@ -33,6 +33,7 @@
     "@tanstack/react-query-persist-client": "^5.89.0",
     "axios": "^1.12.2",
     "axios-mock-adapter": "^2.1.0",
+    "@supabase/supabase-js": "^2.57.2",
     "clsx": "^2.1.1",
     "dayjs": "^1.11.13",
     "dotenv": "^17.2.2",
@@ -56,8 +57,11 @@
     "react-native-safe-area-context": "^5.4.0",
     "react-native-screens": "~4.11.1",
     "react-native-svg": "15.11.2",
+    "react-native-url-polyfill": "^2.0.0",
     "react-native-web": "^0.20.0",
-    "zustand": "^5.0.8"
+    "zustand": "^5.0.8",
+    "expo-auth-session": "~6.2.1",
+    "expo-web-browser": "~14.2.0"
   },
   "devDependencies": {
     "@babel/core": "7.25",

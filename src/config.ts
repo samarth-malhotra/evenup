@@ -9,22 +9,28 @@ type Extra = {
   appVersion?: string;
   iosBuildNumber?: string | number;
   androidVersionCode?: string | number;
+  supabaseUrl?: string;
+  supabaseAnonKey?: string;
 };
 
-const extra = ((Constants.expoConfig && Constants.expoConfig.extra) ||
+const rawExtra = ((Constants.expoConfig && Constants.expoConfig.extra) ||
   (Constants.manifest && (Constants.manifest as any).extra) ||
   {}) as Extra;
 
-export const CONFIG = {
-  MOCK_API: process.env.MOCK_API === 'true' || __DEV__ === true,
-  API_URL: extra.apiUrl ?? 'https://api.evenup.com',
-  FEATURE_NEW_SUMMARY:
-    (extra.featureNewSummary === true || extra.featureNewSummary === 'true') ?? false,
-  SENTRY_DSN: extra.sentryDsn ?? '',
-  ENV: extra.env ?? 'development',
-  APP_VERSION: extra.appVersion ?? '1.0.0',
-  IOS_BUILD_NUMBER: String(extra.iosBuildNumber ?? '1'),
-  ANDROID_VERSION_CODE: Number(extra.androidVersionCode ?? 1),
-} as const;
+/**
+ * Helpful helper: coerce boolean-like values
+ */
+const asBool = (v?: boolean | string) => v === true || v === 'true' || v === '1';
 
-export type Config = typeof CONFIG;
+export const CONFIG = {
+  MOCK_API: asBool(process.env.MOCK_API) || __DEV__ === true,
+  API_URL: rawExtra.apiUrl ?? 'https://api.evenup.com',
+  FEATURE_NEW_SUMMARY: asBool(rawExtra.featureNewSummary) ?? false,
+  SENTRY_DSN: rawExtra.sentryDsn ?? '',
+  ENV: rawExtra.env ?? 'development',
+  APP_VERSION: rawExtra.appVersion ?? '1.0.0',
+  IOS_BUILD_NUMBER: String(rawExtra.iosBuildNumber ?? '1'),
+  ANDROID_VERSION_CODE: Number(rawExtra.androidVersionCode ?? 1),
+  SUPABASE_URL: rawExtra.supabaseUrl ?? '',
+  SUPABASE_ANON_KEY: rawExtra.supabaseAnonKey ?? '',
+} as const;
