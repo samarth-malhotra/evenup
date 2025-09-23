@@ -1,14 +1,24 @@
 // ProfileScreen.tsx
 import AppHeader from '@/components/AppHeader';
+import { useAuth } from '@/features/auth/components/AuthProvider';
 import { useColor } from '@/hooks/useColor';
 import { useTheme } from '@/hooks/useTheme';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from 'expo-router';
 import { useLayoutEffect, useState } from 'react';
-import { Platform, StyleSheet, Switch, Text, TouchableOpacity, View } from 'react-native';
+import {
+  Platform,
+  Pressable,
+  StyleSheet,
+  Switch,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 
 export default function Profile() {
   const getColor = useColor();
+  const { signOut } = useAuth();
   const { toggleTheme, mode, theme } = useTheme();
   const navigation = useNavigation();
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
@@ -46,6 +56,9 @@ export default function Profile() {
         </View>
       </View>
 
+      <Pressable onPress={signOut} className="flex-1 rounded-full bg-red-600 py-3">
+        <Text className="text-center font-medium text-white">Logout</Text>
+      </Pressable>
       {/* Account */}
       <Text style={styles.sectionTitle}>Account</Text>
       <View style={[styles.card, styles.shadow]}>

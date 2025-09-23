@@ -1,9 +1,9 @@
+// app/(auth)/GoogleLoginButton.tsx
+import { supabase } from '@/supabase';
 import Constants from 'expo-constants';
 import * as WebBrowser from 'expo-web-browser';
 import { useState } from 'react';
-import { ActivityIndicator, Alert, Pressable, StyleSheet, Text, View } from 'react-native';
-
-import { supabase } from '@/supabase';
+import { ActivityIndicator, Alert, Pressable, Text, View } from 'react-native';
 
 WebBrowser.maybeCompleteAuthSession();
 
@@ -50,20 +50,11 @@ export default function GoogleLoginButton() {
         return;
       }
 
-      // Show a short alert so you know it's opening
-      Alert.alert(
-        'Opening auth URL',
-        data.url.slice(0, 120) + (data.url.length > 120 ? '...' : '')
-      );
+      // Open the OAuth web flow (auth.expo.io or Google)
+      await WebBrowser.openAuthSessionAsync(data.url, redirectUri);
 
-      // open web flow (auth.expo.io or google)
-      const result = await WebBrowser.openAuthSessionAsync(data.url, redirectUri);
-      console.log('[GoogleLogin] openAuthSessionAsync result:', result);
-      Alert.alert('Auth session result', JSON.stringify(result));
-
-      // After redirect, check session
-      const sessionResp = await supabase.auth.getSession();
-      console.log('[GoogleLogin] supabase.getSession ->', sessionResp);
+      // DO NOT call supabase.getSession() or persist session here.
+      // AuthProvider will handle the session change once Supabase SDK persists it via the storage adapter.
     } catch (err: any) {
       console.error('[GoogleLogin] unexpected:', err);
       Alert.alert('Unexpected error', err?.message ?? String(err));
@@ -75,34 +66,19 @@ export default function GoogleLoginButton() {
   return (
     <Pressable
       onPress={handlePress}
-      style={({ pressed }) => [styles.button, pressed && styles.buttonPressed]}
-      disabled={loading}>
-      <View style={styles.content}>
+      disabled={loading}
+      className="items-center rounded-lg border border-slate-200 bg-white py-3"
+      style={({ pressed }) => [{ opacity: pressed ? 0.9 : 1 }]}>
+      <View className="flex-row items-center">
         {loading ? (
           <ActivityIndicator />
         ) : (
           <>
-            <Text style={styles.logo}>G</Text>
-            <Text style={styles.text}>Continue with Google</Text>
+            <Text className="mr-3 text-xl font-bold text-red-500">G</Text>
+            <Text className="text-base font-semibold">Continue with Google</Text>
           </>
         )}
       </View>
     </Pressable>
   );
 }
-
-const styles = StyleSheet.create({
-  button: {
-    marginTop: 12,
-    paddingVertical: 12,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#E6E6E6',
-    backgroundColor: '#fff',
-    alignItems: 'center',
-  },
-  buttonPressed: { opacity: 0.85 },
-  content: { flexDirection: 'row', alignItems: 'center' },
-  logo: { fontWeight: '700', marginRight: 10, fontSize: 18, color: '#DB4437' },
-  text: { fontSize: 15, fontWeight: '600' },
-});

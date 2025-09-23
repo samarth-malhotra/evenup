@@ -21,7 +21,6 @@ export interface User extends BaseEntity {
   name: string;
   avatarUrl?: string;
   phone?: string;
-  timezone?: string;
   createdAt?: string;
 }
 

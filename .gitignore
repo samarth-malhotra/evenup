@@ -39,3 +39,6 @@ yarn-error.*
 
 # typescript
 *.tsbuildinfo
+
+# Color Tokens
+src/theme/build/
