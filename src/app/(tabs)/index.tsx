@@ -1,5 +1,12 @@
-import { Redirect } from 'expo-router';
+import ThemedSafeArea from '@/components/ThemedSafeArea';
+import HomeScreen from '@/features/home/components/Home';
 
-export default function Index() {
-  return <Redirect href="/(tabs)/home" />;
+function index() {
+  return (
+    <ThemedSafeArea scroll>
+      <HomeScreen />
+    </ThemedSafeArea>
+  );
 }
+
+export default index;
