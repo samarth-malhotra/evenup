@@ -1,6 +1,7 @@
 // app/(auth)/login.tsx
 import { supabase } from '@/supabase';
 import { MaterialIcons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
 import { useRef, useState } from 'react';
 import {
   ActivityIndicator,
@@ -17,6 +18,7 @@ import {
 import GoogleLoginButton from './GoogleLoginButton';
 
 export default function LoginScreen() {
+  const router = useRouter();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -88,7 +90,7 @@ export default function LoginScreen() {
 
   const onForgotPassword = () => {
     // keep navigation to forgot-password if you have it
-    (global as any).router?.push?.('/forgot-password');
+    router?.push?.('/forgot-password');
   };
 
   return (
@@ -168,7 +170,7 @@ export default function LoginScreen() {
 
           <View className="mt-4 flex-row justify-center">
             <Text className="text-slate-600">Don’t have an account?</Text>
-            <TouchableOpacity onPress={() => (global as any).router?.push?.('/signup')}>
+            <TouchableOpacity onPress={() => router?.push?.('/signup')}>
               <Text className="font-semibold text-blue-600"> Sign up</Text>
             </TouchableOpacity>
           </View>

@@ -1,9 +1,11 @@
 // app/(auth)/signup.tsx
 import { supabase } from '@/supabase';
+import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { ActivityIndicator, Alert, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
 export default function SignupScreen() {
+  const router = useRouter();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -82,9 +84,7 @@ export default function SignupScreen() {
         )}
       </TouchableOpacity>
 
-      <TouchableOpacity
-        onPress={() => (global as any).router?.push?.('/login')}
-        className="mt-4 items-center">
+      <TouchableOpacity onPress={() => router?.push?.('/login')} className="mt-4 items-center">
         {/* keep link navigation — this is just for switching screens, not auth redirect */}
         <Text className="text-blue-600">Already have an account? Log in</Text>
       </TouchableOpacity>
