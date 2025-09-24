@@ -1,5 +1,5 @@
 // lib/auth/AuthProvider.tsx
-import { authLoadingAtom, userAtom } from '@/stores/atoms/user';
+import { userAtom } from '@/stores/atoms/user';
 import { supabase } from '@/supabase';
 import type { Session, User } from '@supabase/supabase-js';
 import { useSetAtom } from 'jotai';
@@ -21,7 +21,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const authAtoms = [userAtom] as const;
   const resetFns = [useResetAtom(authAtoms[0])];
   const setUser = useSetAtom(userAtom);
-  const setAuthLoading = useSetAtom(authLoadingAtom);
 
   const [user, setLocalUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
@@ -35,7 +34,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     let mounted = true;
-    setAuthLoading(true);
 
     async function init() {
       try {
@@ -54,7 +52,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       } finally {
         if (mounted) {
           setIsLoading(false);
-          setAuthLoading(false);
         }
       }
     }
@@ -80,7 +77,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       mounted = false;
       listener?.subscription?.unsubscribe?.();
     };
-  }, [setUser, setAuthLoading]);
+  }, [setUser]);
 
   async function signOut() {
     await supabase.auth.signOut();

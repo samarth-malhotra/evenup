@@ -45,17 +45,10 @@ function InnerApp() {
 
   return (
     <Stack screenOptions={{ headerShown: false }}>
-      {/* public/auth routes (file-based: placed under app/(auth) folder) */}
-      <Stack.Screen name="(auth)/login" />
-      <Stack.Screen name="(auth)/signup" />
-
-      {/* app */}
+      <Stack.Screen name="(auth)" />
       <Stack.Screen name="(tabs)" />
-
-      {/* other screens */}
       <Stack.Screen name="notifications" options={{ headerShown: true, title: 'Notifications' }} />
       <Stack.Screen name="summary" options={{ headerShown: true, title: 'Summary' }} />
-      {/* <Stack.Screen name="group" options={{ headerShown: true, title: 'Group' }} /> */}
     </Stack>
   );
 }

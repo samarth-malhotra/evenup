@@ -15,5 +15,3 @@ const defaultUserValue = {
 export const userAtom = persistedAtom<User | null>(STORAGE_KEYS.USER, null);
 // derived boolean
 export const isAuthenticatedAtom = atom((get) => !!get(userAtom));
-
-export const authLoadingAtom = atom(false);
