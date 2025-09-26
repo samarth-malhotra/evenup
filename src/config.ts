@@ -23,7 +23,6 @@ const rawExtra = ((Constants.expoConfig && Constants.expoConfig.extra) ||
 const asBool = (v?: boolean | string) => v === true || v === 'true' || v === '1';
 
 export const CONFIG = {
-  MOCK_API: asBool(process.env.MOCK_API) || __DEV__ === true,
   API_URL: rawExtra.apiUrl ?? 'https://api.evenup.com',
   FEATURE_NEW_SUMMARY: asBool(rawExtra.featureNewSummary) ?? false,
   SENTRY_DSN: rawExtra.sentryDsn ?? '',

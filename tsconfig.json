@@ -3,22 +3,42 @@
   "compilerOptions": {
     "strict": true,
     "jsx": "react-jsx",
-
     "baseUrl": ".",
     "paths": {
-      "@/*": ["./src/*"],
-      "@api/*": ["./src/api/*"],
-      "@assets/*": ["./src/assets/*"],
-      "@hooks/*": ["./src/hooks/*"],
-      "@features/*": ["./src/features/*"],
-      "@theme/*": ["./src/theme/*"],
-      "@mocks/*": ["./src/mocks/*"],
-      "@components/*": ["./src/components/*"],
-      "@stores/*": ["./stores/*"]
+      "@/*": [
+        "./src/*"
+      ],
+      "@api/*": [
+        "./src/api/*"
+      ],
+      "@assets/*": [
+        "./src/assets/*"
+      ],
+      "@hooks/*": [
+        "./src/hooks/*"
+      ],
+      "@features/*": [
+        "./src/features/*"
+      ],
+      "@theme/*": [
+        "./src/theme/*"
+      ],
+      "@mocks/*": [
+        "./src/mocks/*"
+      ],
+      "@components/*": [
+        "./src/components/*"
+      ],
+      "@stores/*": [
+        "./stores/*"
+      ]
     },
-
-    "types": ["react", "react-native", "nativewind/types", "expo-router"],
-
+    "types": [
+      "react",
+      "react-native",
+      "nativewind/types",
+      "expo-router"
+    ],
     "moduleResolution": "bundler",
     "esModuleInterop": true,
     "allowSyntheticDefaultImports": true,
@@ -26,7 +46,16 @@
     "skipLibCheck": true,
     "noEmit": true
   },
-
-  "include": ["src/**/*", "app/**/*", "types/**/*"],
-  "exclude": ["node_modules", "dist", "build", ".expo"]
+  "include": [
+    "src/**/*",
+    "app/**/*",
+    "types/**/*",
+    "nativewind-env.d.ts"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist",
+    "build",
+    ".expo"
+  ]
 }
