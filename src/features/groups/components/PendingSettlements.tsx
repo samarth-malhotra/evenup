@@ -1,13 +1,14 @@
 // app/friends/[id].tsx
+import { useLocalSearchParams, useNavigation } from 'expo-router';
+import { useLayoutEffect, useMemo, useState } from 'react';
+import { FlatList, Text, View } from 'react-native';
+
 import AppHeader from '@/components/AppHeader';
 import SettleUpSheet from '@/components/SettleUpSheet';
 import SummaryCard from '@/components/SummaryCard';
 import TransactionCard from '@/components/TransactionCard';
 import { pendingSettlements } from '@/features/groups/mocks/pendingSettlementsMock';
 import { formatRs } from '@/utils/formatRs';
-import { useLocalSearchParams, useNavigation } from 'expo-router';
-import { useLayoutEffect, useMemo, useState } from 'react';
-import { FlatList, Text, View } from 'react-native';
 
 export type GroupParticipant = {
   id: string;

@@ -1,6 +1,7 @@
 // app/(tabs)/home.tsx
 import { Feather, Ionicons, MaterialIcons } from '@expo/vector-icons';
 import { router, useNavigation } from 'expo-router';
+import { useAtomValue } from 'jotai';
 import { useCallback, useLayoutEffect, useState } from 'react';
 import { Image, Pressable, ScrollView, Text, TouchableOpacity, View } from 'react-native';
 
@@ -16,7 +17,7 @@ import { useColor } from '@/hooks/useColor';
 import { useTheme } from '@/hooks/useTheme';
 import { userAtom } from '@/stores/atoms/user';
 import { formatRs } from '@/utils/formatRs';
-import { useAtomValue } from 'jotai';
+
 import TransactionsDemoScreen from './TransactionDemo';
 
 // Mock recent activity

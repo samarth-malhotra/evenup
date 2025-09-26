@@ -1,5 +1,7 @@
 // app/groups/new.tsx
 import { MaterialIcons } from '@expo/vector-icons';
+import type { BottomSheetModal as BottomSheetModalType } from '@gorhom/bottom-sheet';
+import { useAtomValue } from 'jotai';
 import { useEffect, useRef, useState } from 'react';
 import { Pressable, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
@@ -11,8 +13,6 @@ import { useColor } from '@/hooks/useColor';
 import { useTheme } from '@/hooks/useTheme';
 import { userAtom } from '@/stores/atoms/user';
 import { makeClientTempId } from '@/utils/uid';
-import type { BottomSheetModal as BottomSheetModalType } from '@gorhom/bottom-sheet';
-import { useAtomValue } from 'jotai';
 
 type Props = {
   open: boolean;

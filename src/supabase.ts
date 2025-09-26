@@ -1,6 +1,7 @@
 // lib/supabase.ts
-import { SecureStoreAdapter } from '@/features/auth/storage';
 import { createClient } from '@supabase/supabase-js';
+
+import { SecureStoreAdapter } from '@/features/auth/storage';
 import 'react-native-url-polyfill/auto';
 
 // console.log('CONFIG.SUPABASE_URL: ', CONFIG.SUPABASE_URL);

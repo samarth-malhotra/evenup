@@ -2,11 +2,11 @@
 import { StatusBar } from 'expo-status-bar';
 import React from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
+import type { StyleProp, ViewStyle } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import type { Edge } from 'react-native-safe-area-context';
 
 import { useColor } from '@/hooks/useColor';
-import type { StyleProp, ViewStyle } from 'react-native';
-import type { Edge } from 'react-native-safe-area-context';
 
 type Props = {
   children: React.ReactNode;

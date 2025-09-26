@@ -1,5 +1,4 @@
 // app/(auth)/login.tsx
-import { supabase } from '@/supabase';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useRef, useState } from 'react';
@@ -15,7 +14,9 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import GoogleLoginButton from './GoogleLoginButton';
+
+import GoogleLoginButton from '@/app/(auth)/GoogleLoginButton';
+import { supabase } from '@/supabase';
 
 export default function LoginScreen() {
   const router = useRouter();

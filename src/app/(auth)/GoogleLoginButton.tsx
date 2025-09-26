@@ -1,9 +1,10 @@
 // app/(auth)/GoogleLoginButton.tsx
-import { supabase } from '@/supabase';
 import Constants from 'expo-constants';
 import * as WebBrowser from 'expo-web-browser';
 import { useState } from 'react';
 import { ActivityIndicator, Alert, Pressable, Text, View } from 'react-native';
+
+import { supabase } from '@/supabase';
 
 WebBrowser.maybeCompleteAuthSession();
 

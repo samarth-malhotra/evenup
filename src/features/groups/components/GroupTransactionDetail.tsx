@@ -1,9 +1,4 @@
 // app/transactions/[txId].tsx
-import AppHeader from '@/components/AppHeader';
-import TransactionCard from '@/components/TransactionCard';
-import AddBillSheet from '@/features/bills/components/AddBillSheet';
-import { useColor } from '@/hooks/useColor';
-import { useTheme } from '@/hooks/useTheme';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { useLocalSearchParams } from 'expo-router';
@@ -17,6 +12,12 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+
+import AppHeader from '@/components/AppHeader';
+import TransactionCard from '@/components/TransactionCard';
+import AddBillSheet from '@/features/bills/components/AddBillSheet';
+import { useColor } from '@/hooks/useColor';
+import { useTheme } from '@/hooks/useTheme';
 
 // ---------- MOCK (replace with real store/API) ----------
 const mockTransactionBase = {

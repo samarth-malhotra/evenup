@@ -1,11 +1,13 @@
 // app/friends/index.tsx
-import AppHeader from '@/components/AppHeader';
-import TransactionCard, { TransactionStatus } from '@/components/TransactionCard';
-import { mockFriends } from '@/features/friends/mock';
 import { useNavigation } from '@react-navigation/native';
 import { router } from 'expo-router';
 import { useLayoutEffect } from 'react';
 import { Text, View } from 'react-native';
+
+import AppHeader from '@/components/AppHeader';
+import TransactionCard from '@/components/TransactionCard';
+import type { TransactionStatus } from '@/components/TransactionCard';
+import { mockFriends } from '@/features/friends/mock';
 
 export default function FriendList() {
   const navigation = useNavigation();

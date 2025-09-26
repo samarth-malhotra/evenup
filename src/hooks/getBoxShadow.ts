@@ -1,6 +1,7 @@
 // lib/theme/getBoxShadow.ts
+import type { ViewStyle } from 'react-native';
+
 import { tokens } from '@/theme/tokens';
-import { ViewStyle } from 'react-native';
 
 export function getBoxShadow(level: keyof typeof tokens.shadows): ViewStyle {
   const entry = tokens.shadows[level];

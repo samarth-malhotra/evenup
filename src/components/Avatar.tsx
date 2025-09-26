@@ -1,9 +1,10 @@
 // components/Avatar.tsx
-import { NestedTheme } from '@/components/ThemeProvider';
-import { useTheme } from '@/hooks/useTheme';
 import clsx from 'clsx';
 import React, { memo } from 'react';
 import { Image, Text, View } from 'react-native';
+
+import type { NestedTheme } from '@/components/ThemeProvider';
+import { useTheme } from '@/hooks/useTheme';
 
 export type AvatarProps = {
   name: string;

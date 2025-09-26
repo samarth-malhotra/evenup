@@ -1,6 +1,7 @@
 // app/(auth)/_layout.tsx
-import { useAuth } from '@/features/auth/components/AuthProvider';
 import { Redirect, Slot } from 'expo-router';
+
+import { useAuth } from '@/features/auth/components/AuthProvider';
 // import { useAuth } from '@/lib/auth/AuthProvider';
 
 export default function AuthLayout() {

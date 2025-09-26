@@ -1,9 +1,10 @@
 // src/features/groups.ts
+import { useQuery } from '@tanstack/react-query';
+
 import { useOptimisticMutation } from '@/api/helper/optimisticMutation';
 import { QUERY_KEYS } from '@/api/queryKeys';
 import { supabase } from '@/supabase';
 import type { Group } from '@/types';
-import { useQuery } from '@tanstack/react-query';
 
 // ---------- API (server-facing) ----------
 export type CreateGroupPayload = {

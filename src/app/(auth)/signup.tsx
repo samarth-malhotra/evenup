@@ -1,8 +1,9 @@
 // app/(auth)/signup.tsx
-import { supabase } from '@/supabase';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { ActivityIndicator, Alert, Text, TextInput, TouchableOpacity, View } from 'react-native';
+
+import { supabase } from '@/supabase';
 
 export default function SignupScreen() {
   const router = useRouter();

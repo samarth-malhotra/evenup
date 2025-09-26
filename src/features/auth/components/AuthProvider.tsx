@@ -1,12 +1,12 @@
 // lib/auth/AuthProvider.tsx
-import { queryClient } from '@/api/helper/queryClient';
-import { userAtom } from '@/stores/atoms/user';
-import { supabase } from '@/supabase';
 import type { Session, User } from '@supabase/supabase-js';
 import { useSetAtom } from 'jotai';
 import { useResetAtom } from 'jotai/utils';
 import React, { createContext, useCallback, useContext, useEffect, useState } from 'react';
-// import { userAtom, authLoadingAtom } from '@/lib/state/authAtoms';
+
+import { queryClient } from '@/api/helper/queryClient';
+import { userAtom } from '@/stores/atoms/user';
+import { supabase } from '@/supabase';
 
 const AuthContext = createContext(
   {} as {

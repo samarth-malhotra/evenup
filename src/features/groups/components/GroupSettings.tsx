@@ -1,12 +1,13 @@
 // app/groups/[id]/settings.tsx
-import AppHeader from '@/components/AppHeader';
-import BottomSheet from '@/components/BottomSheet';
-import { useTheme } from '@/hooks/useTheme';
 import { Feather, MaterialIcons } from '@expo/vector-icons';
 import { BottomSheetFlatList } from '@gorhom/bottom-sheet';
 import { useLocalSearchParams, useNavigation, useRouter } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
 import { FlatList, Image, Modal, Pressable, Switch, Text, TextInput, View } from 'react-native';
+
+import AppHeader from '@/components/AppHeader';
+import BottomSheet from '@/components/BottomSheet';
+import { useTheme } from '@/hooks/useTheme';
 
 type User = { id: string; name: string; avatar?: string };
 

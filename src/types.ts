@@ -2,7 +2,7 @@
 // EvenUp Mock Dataset Types
 // ==============================
 
-import {
+import type {
   ActivityTypeEnum,
   ExpenseStatusEnum,
   FriendStatusEnum,

@@ -1,8 +1,10 @@
-import { ColorTokens, FontTokens, ShadowTokens, SpacingTokens, tokens } from '@/theme/tokens';
-import { flattenObject } from '@/theme/utils';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import React, { createContext, useEffect, useMemo, useState } from 'react';
 import { useColorScheme } from 'react-native';
+
+import { tokens } from '@/theme/tokens';
+import type { ColorTokens, FontTokens, ShadowTokens, SpacingTokens} from '@/theme/tokens';
+import { flattenObject } from '@/theme/utils';
 
 export type ThemePreference = 'light' | 'dark' | 'system';
 export type ResolvedMode = 'light' | 'dark';

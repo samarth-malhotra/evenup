@@ -4,7 +4,6 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useState } from 'reac
 import { RefreshControl, SectionList, Text, TouchableOpacity, View } from 'react-native';
 
 import AppHeader from '@/components/AppHeader';
-
 import { styles } from '@/features/notifications/style';
 import {
   loadActivities,
@@ -15,6 +14,7 @@ import {
   timeAgo,
 } from '@/features/notifications/util';
 import { useTheme } from '@/hooks/useTheme';
+
 import type { Activity } from '../types';
 
 export default function NotificationsScreen() {

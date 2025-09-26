@@ -8,6 +8,7 @@ import SettleUpSheet from '@/components/SettleUpSheet';
 import SummaryCard from '@/components/SummaryCard';
 import TransactionCard from '@/components/TransactionCard';
 import { formatRs } from '@/utils/formatRs';
+
 import { mockFriendTransactions } from '../mock';
 type TransactionItem = {
   id: string;

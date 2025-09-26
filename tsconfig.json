@@ -15,7 +15,6 @@
       "@mocks/*": ["./src/mocks/*"],
       "@components/*": ["./src/components/*"],
       "@stores/*": ["./stores/*"]
-      // "@config/*": ["./config/*"]
     },
 
     "types": ["react", "react-native", "nativewind/types", "expo-router"],
@@ -26,5 +25,8 @@
     "resolveJsonModule": true,
     "skipLibCheck": true,
     "noEmit": true
-  }
+  },
+
+  "include": ["src/**/*", "app/**/*", "types/**/*"],
+  "exclude": ["node_modules", "dist", "build", ".expo"]
 }
