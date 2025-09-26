@@ -80,14 +80,7 @@ export default function GroupList() {
         )}
       />
       {/* Create New Group Bottom Sheet */}
-      <NewGroupSheet
-        open={openNewGroupSheet}
-        onClose={() => setOpenNewGroupSheet(false)}
-        onCreate={(payload) => {
-          // handle create here
-          console.log('create group', payload);
-        }}
-      />
+      <NewGroupSheet open={openNewGroupSheet} onClose={() => setOpenNewGroupSheet(false)} />
     </View>
   );
 }

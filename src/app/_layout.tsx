@@ -1,5 +1,5 @@
 // app/_layout.tsx
-import { QueryProvider } from '@/api/helper/queryClient';
+import { QueryProvider } from '@/api/QueryProvider';
 import { ThemeProvider } from '@/components/ThemeProvider';
 import { AuthProvider, useAuth } from '@/features/auth/components/AuthProvider';
 import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';

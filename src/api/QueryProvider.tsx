@@ -1,21 +1,7 @@
+import { queryClient } from '@/api/helper/queryClient';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createAsyncStoragePersister } from '@tanstack/query-async-storage-persister';
-import { QueryClient } from '@tanstack/react-query';
 import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client';
-import React from 'react';
-
-export const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      staleTime: 1000 * 60 * 5,
-      gcTime: 1000 * 60 * 30,
-      retry: 1,
-      refetchOnReconnect: true,
-      refetchOnMount: false,
-    },
-    mutations: { retry: 0 },
-  },
-});
 
 // create persister backed by AsyncStorage
 export const asyncStoragePersister = createAsyncStoragePersister({

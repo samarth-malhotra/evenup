@@ -15,7 +15,7 @@ import { getBoxShadow } from '@/hooks/getBoxShadow';
 import { useColor } from '@/hooks/useColor';
 import { useTheme } from '@/hooks/useTheme';
 import { userAtom } from '@/stores/atoms/user';
-import { formatRs } from '@/utils';
+import { formatRs } from '@/utils/formatRs';
 import { useAtomValue } from 'jotai';
 import TransactionsDemoScreen from './TransactionDemo';
 

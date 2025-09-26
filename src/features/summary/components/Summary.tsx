@@ -2,7 +2,7 @@
 import AppHeader from '@/components/AppHeader';
 import SummaryCard from '@/components/SummaryCard';
 import TransactionCard from '@/components/TransactionCard';
-import { formatRs } from '@/utils';
+import { formatRs } from '@/utils/formatRs';
 import { Ionicons } from '@expo/vector-icons';
 import * as FileSystem from 'expo-file-system';
 import { useNavigation } from 'expo-router';

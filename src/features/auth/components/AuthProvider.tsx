@@ -1,4 +1,5 @@
 // lib/auth/AuthProvider.tsx
+import { queryClient } from '@/api/helper/queryClient';
 import { userAtom } from '@/stores/atoms/user';
 import { supabase } from '@/supabase';
 import type { Session, User } from '@supabase/supabase-js';
@@ -50,6 +51,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       } catch (err) {
         console.warn('Auth init error', err);
       } finally {
+        queryClient.clear(); // clear or invalidate query cache to avoid leaking data
         if (mounted) {
           setIsLoading(false);
         }

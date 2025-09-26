@@ -45,7 +45,7 @@ export interface Group extends BaseEntity {
   description?: string;
   currency?: string; // default: "INR"
   createdBy: string; // userId
-  createdAt?: string;
+  createdAt: string;
   members?: string;
 }
 
