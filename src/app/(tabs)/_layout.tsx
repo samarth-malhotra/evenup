@@ -101,13 +101,14 @@
 // }
 
 // app/(tabs)/_layout.tsx
-import { useAuth } from '@/features/auth/components/AuthProvider';
-import { useTheme } from '@/hooks/useTheme';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Redirect, Tabs } from 'expo-router';
-import { Pressable, ViewStyle } from 'react-native';
+import type { ViewStyle } from 'react-native';
+import { Pressable } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-// import { useAuth } from '@/lib/auth/AuthProvider'; // make sure this path matches your project
+
+import { useAuth } from '@/features/auth/components/AuthProvider';
+import { useTheme } from '@/hooks/useTheme';
 
 function TabButton(props: any) {
   const { children, onPress, style } = props;

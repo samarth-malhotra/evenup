@@ -1,6 +1,7 @@
 // just a sample can be removed and replaced
-import type { Group, GroupMember } from '@/types';
 import { atom } from 'jotai';
+
+import type { Group, GroupMember } from '@/types';
 
 // base atom: groups list (kept in memory; persist if you want)
 export const groupsAtom = atom<Group[]>([]);

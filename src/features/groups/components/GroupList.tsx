@@ -1,14 +1,16 @@
 // import groups from '@/app/(tabs)/groups';
-import AppHeader from '@/components/AppHeader';
-import TransactionCard, { TransactionStatus } from '@/components/TransactionCard';
-import NewGroupSheet from '@/features/groups/components/BottomSheet/CreateGroupSheet';
-import { groups } from '@/features/groups/mocks/groupList';
-import { useColor } from '@/hooks/useColor';
-import { useTheme } from '@/hooks/useTheme';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { router, useNavigation } from 'expo-router';
 import { useLayoutEffect, useMemo, useState } from 'react';
 import { FlatList, Pressable, TextInput, View } from 'react-native';
+
+import AppHeader from '@/components/AppHeader';
+import type { TransactionStatus } from '@/components/TransactionCard';
+import TransactionCard from '@/components/TransactionCard';
+import NewGroupSheet from '@/features/groups/components/BottomSheet/CreateGroupSheet';
+import { groups } from '@/features/groups/mocks/groupList';
+import { useColor } from '@/hooks/useColor';
+import { useTheme } from '@/hooks/useTheme';
 
 export default function GroupList() {
   const { theme } = useTheme();
@@ -80,14 +82,7 @@ export default function GroupList() {
         )}
       />
       {/* Create New Group Bottom Sheet */}
-      <NewGroupSheet
-        open={openNewGroupSheet}
-        onClose={() => setOpenNewGroupSheet(false)}
-        onCreate={(payload) => {
-          // handle create here
-          console.log('create group', payload);
-        }}
-      />
+      <NewGroupSheet open={openNewGroupSheet} onClose={() => setOpenNewGroupSheet(false)} />
     </View>
   );
 }

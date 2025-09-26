@@ -1,13 +1,14 @@
 // app/_layout.tsx
-import { QueryProvider } from '@/api/helper/queryClient';
-import { ThemeProvider } from '@/components/ThemeProvider';
-import { AuthProvider, useAuth } from '@/features/auth/components/AuthProvider';
 import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
 import { Stack } from 'expo-router';
 import { Provider as JotaiProvider } from 'jotai';
 import { ActivityIndicator, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+
+import { QueryProvider } from '@/api/QueryProvider';
+import { ThemeProvider } from '@/components/ThemeProvider';
+import { AuthProvider, useAuth } from '@/features/auth/components/AuthProvider';
 import '../../global.css';
 
 export const unstable_settings = { initialRouteName: '(tabs)' };

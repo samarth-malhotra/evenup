@@ -1,8 +1,4 @@
 // ProfileScreen.tsx
-import AppHeader from '@/components/AppHeader';
-import { useAuth } from '@/features/auth/components/AuthProvider';
-import { useColor } from '@/hooks/useColor';
-import { useTheme } from '@/hooks/useTheme';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from 'expo-router';
 import { useLayoutEffect, useState } from 'react';
@@ -15,6 +11,11 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+
+import AppHeader from '@/components/AppHeader';
+import { useAuth } from '@/features/auth/components/AuthProvider';
+import { useColor } from '@/hooks/useColor';
+import { useTheme } from '@/hooks/useTheme';
 
 export default function Profile() {
   const getColor = useColor();

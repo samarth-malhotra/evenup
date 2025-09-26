@@ -1,9 +1,8 @@
 // components/AutoBottomSheet.tsx
 import { BottomSheetBackdrop, BottomSheetModal, BottomSheetScrollView } from '@gorhom/bottom-sheet';
+import type { BottomSheetModal as BottomSheetModalType } from '@gorhom/bottom-sheet';
 import React, { useEffect, useMemo, useRef } from 'react';
 import { Platform } from 'react-native';
-
-import type { BottomSheetModal as BottomSheetModalType } from '@gorhom/bottom-sheet';
 import type { ViewStyle } from 'react-native';
 
 type Props = {

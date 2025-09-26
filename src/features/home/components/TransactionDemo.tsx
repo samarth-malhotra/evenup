@@ -1,12 +1,12 @@
 // app/screens/TransactionsDemo.tsx
 
+import { useAtomValue } from 'jotai';
 import { ScrollView, Text, View } from 'react-native';
 
 import TransactionCard from '@/components/TransactionCard';
 import { CONFIG } from '@/config';
 import { userAtom } from '@/stores/atoms/user';
 import { STORAGE_KEYS } from '@/stores/storageKeys';
-import { useAtomValue } from 'jotai';
 
 /* --------------------------- TransactionsDemoScreen --------------------------- */
 
