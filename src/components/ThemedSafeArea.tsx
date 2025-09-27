@@ -1,10 +1,9 @@
 // components/ThemedSafeArea.tsx
-import { StatusBar } from 'expo-status-bar';
 import React from 'react';
-import { ScrollView, StyleSheet, View } from 'react-native';
 import type { StyleProp, ViewStyle } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { ScrollView, StyleSheet, View } from 'react-native';
 import type { Edge } from 'react-native-safe-area-context';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { useColor } from '@/hooks/useColor';
 
@@ -57,30 +56,16 @@ export default function ThemedSafeArea({
 
   return (
     <SafeAreaView style={[{ backgroundColor }, styles.flex]} edges={edges} className={className}>
-      <StatusBar
-        style={statusBarStyle}
-        backgroundColor={statusBarBackgroundMatch ? (backgroundColor as string) : undefined}
-      />
-
       {scroll ? (
         <ScrollView
-          contentContainerStyle={[
-            // { paddingTop: contentPadTop, paddingBottom: contentPadBottom },
-            // { paddingVertical: 12 }, // small default vertical gap
-            contentContainerStyle,
-          ]}
+          contentContainerStyle={[contentContainerStyle]}
           style={containerStyle}
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}>
           {children}
         </ScrollView>
       ) : (
-        <View
-          style={[
-            containerStyle,
-            // { paddingTop: contentPadTop, paddingBottom: contentPadBottom },
-          ]}
-          className={className}>
+        <View style={[containerStyle]} className={className}>
           {children}
         </View>
       )}

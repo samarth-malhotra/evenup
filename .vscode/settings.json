@@ -1,5 +1,6 @@
 {
   "editor.formatOnSave": true,
+  "editor.defaultFormatter": "esbenp.prettier-vscode",
   // Use workspace TypeScript (node_modules) so TS server sees your project's tsconfig
   "typescript.tsdk": "node_modules/typescript/lib",
 
@@ -40,5 +41,6 @@
   "editor.quickSuggestions": { "other": true, "comments": false, "strings": false },
   "typescript.suggest.completeFunctionCalls": true,
   "typescript.suggest.autoImports": true,
-  "javascript.suggest.autoImports": true
+  "javascript.suggest.autoImports": true,
+  "prettier.requireConfig": false
 }
