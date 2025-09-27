@@ -21,10 +21,6 @@ type Props = {
   contentContainerStyle?: StyleProp<ViewStyle>;
   /** Which edges get safe-area padding (default: top+bottom) */
   edges?: Readonly<Edge[]>;
-  /** Status bar style for this screen */
-  statusBarStyle?: 'light' | 'dark' | 'auto' | 'inverted';
-  /** When true, sets StatusBar background to match bg on Android */
-  statusBarBackgroundMatch?: boolean;
   /** (Optional) className for NativeWind; ignored if not installed */
   className?: string;
 };
@@ -37,8 +33,6 @@ export default function ThemedSafeArea({
   style,
   contentContainerStyle,
   edges = ['right', 'left'],
-  statusBarStyle = 'light',
-  statusBarBackgroundMatch = true,
   className,
 }: Props) {
   // const insets = useSafeAreaInsets();
