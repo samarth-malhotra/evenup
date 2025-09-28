@@ -10,9 +10,8 @@ import Svg, {
   Stop,
   LinearGradient as SvgGradient,
 } from 'react-native-svg';
-import { useColor } from '../hooks/useColor';
 
-// import { getColor } from '../utils/color';
+import { useColor } from '@/hooks/useColor';
 
 const { width } = Dimensions.get('window');
 

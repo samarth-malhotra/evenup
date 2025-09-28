@@ -1,9 +1,8 @@
+import type { Feather } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import { seed } from './mock';
-
 import type { Activity } from './types';
-import type { Feather } from '@expo/vector-icons';
 
 const STORAGE_KEY = 'evenup.notifications.v1';
 

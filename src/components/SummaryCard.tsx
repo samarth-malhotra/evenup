@@ -1,11 +1,11 @@
 // lib/components/ui/Card.tsx
+import React from 'react';
+import { Text, View } from 'react-native';
+import type { StyleProp, ViewProps, ViewStyle } from 'react-native';
+
 import { getBoxShadow } from '@/hooks/getBoxShadow';
 import { useColor } from '@/hooks/useColor';
 import { useTheme } from '@/hooks/useTheme';
-import React from 'react';
-import { Text, View } from 'react-native';
-
-import type { StyleProp, ViewProps, ViewStyle } from 'react-native';
 
 type CardType = 'total' | 'you' | 'friend';
 

@@ -1,9 +1,9 @@
 // lib/components/ui/Card.tsx
-import { getBoxShadow } from '@/hooks/getBoxShadow';
 import React from 'react';
 import { View } from 'react-native';
-
 import type { StyleProp, ViewProps, ViewStyle } from 'react-native';
+
+import { getBoxShadow } from '@/hooks/getBoxShadow';
 
 type CardProps = ViewProps & {
   children: React.ReactNode;

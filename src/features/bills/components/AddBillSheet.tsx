@@ -1,14 +1,15 @@
-import BottomSheet from '@/components/BottomSheet';
-import ParticipantRow from '@/features/bills/components/common/ParticipantRow';
-import { SPLIT_OPTIONS } from '@/features/bills/constant';
-import { toNum } from '@/features/bills/utils';
-import { useTheme } from '@/hooks/useTheme';
-import { SplitMethod } from '@/types';
 import { MaterialIcons } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import dayjs from 'dayjs';
 import React, { memo, useCallback, useEffect, useMemo, useState } from 'react';
 import { Pressable, Text, TextInput, TouchableOpacity, View } from 'react-native';
+
+import BottomSheet from '@/components/BottomSheet';
+import ParticipantRow from '@/features/bills/components/common/ParticipantRow';
+import { SPLIT_OPTIONS } from '@/features/bills/constant';
+import { toNum } from '@/features/bills/utils';
+import { useTheme } from '@/hooks/useTheme';
+import type { SplitMethod } from '@/types';
 
 const Pill = memo(function Pill({
   active,

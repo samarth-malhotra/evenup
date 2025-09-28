@@ -1,16 +1,15 @@
-// eslint.config.mjs
+import js from '@eslint/js';
+import prettier from 'eslint-config-prettier'; // Prettier config import
+import importPlugin from 'eslint-plugin-import';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import js from '@eslint/js';
 import globals from 'globals';
 
 import tsPlugin from '@typescript-eslint/eslint-plugin';
 import tsParser from '@typescript-eslint/parser';
 
-import prettier from 'eslint-config-prettier';
 import expo from 'eslint-plugin-expo';
-import importPlugin from 'eslint-plugin-import';
 import react from 'eslint-plugin-react';
 import reactHooks from 'eslint-plugin-react-hooks';
 import reactNative from 'eslint-plugin-react-native';
@@ -20,7 +19,6 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 export default [
   {
-    // Files / dirs to ignore
     ignores: [
       'node_modules',
       'dist',
@@ -28,7 +26,6 @@ export default [
       '.expo',
       'android',
       'ios',
-      // config files we don't want typed-linted
       'babel.config.*',
       'tailwind.config.*',
       'metro.config.*',
@@ -93,32 +90,10 @@ export default [
       'import/order': [
         'warn',
         {
-          groups: [
-            'type', // 1) import type {...}
-            'builtin', // 2) node builtin modules
-            'external', // 3) 3rd-party packages (react, react-native, etc.)
-            'internal', // 4) project internal (alias-resolved imports)
-            'parent', // 5) ../
-            'sibling', // 6) ./
-            'index', // 7) ./index
-            'object', // 8) import x = require('x') style (rare)
-          ],
+          groups: ['builtin', 'external', 'internal', 'parent', 'sibling', 'index'],
           'newlines-between': 'always',
           alphabetize: { order: 'asc', caseInsensitive: true },
-          pathGroups: [
-            // your project-specific aliases (matches your tsconfig paths)
-            { pattern: '@api/**', group: 'internal', position: 'before' },
-            { pattern: '@assets/**', group: 'internal', position: 'before' },
-            { pattern: '@hooks/**', group: 'internal', position: 'before' },
-            { pattern: '@features/**', group: 'internal', position: 'before' },
-            { pattern: '@theme/**', group: 'internal', position: 'before' },
-            { pattern: '@mocks/**', group: 'internal', position: 'before' },
-            { pattern: '@components/**', group: 'internal', position: 'before' },
-            { pattern: '@stores/**', group: 'internal', position: 'before' },
-            // fallback catch-all for @/*
-            { pattern: '@/**', group: 'internal', position: 'before' },
-          ],
-          // keep type-only imports classified as 'type' (don't let pathGroups reclassify them)
+          pathGroups: [{ pattern: '@/**', group: 'internal', position: 'before' }],
           pathGroupsExcludedImportTypes: ['type'],
         },
       ],
@@ -134,7 +109,14 @@ export default [
       'react-native/no-raw-text': 'off',
 
       // TypeScript preferences
-      '@typescript-eslint/consistent-type-imports': ['warn', { prefer: 'type-imports' }],
+      '@typescript-eslint/consistent-type-imports': [
+        'warn',
+        {
+          prefer: 'type-imports',
+          disallowTypeAnnotations: false,
+          fixStyle: 'separate-type-imports', // keeps type + value imports separate
+        },
+      ],
       '@typescript-eslint/no-explicit-any': 'off',
       'no-unused-vars': 'off',
       '@typescript-eslint/no-unused-vars': 'warn',

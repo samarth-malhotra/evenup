@@ -1,12 +1,13 @@
 // src/lib/optimisticInfiniteMutation.ts
+import type { InfiniteData, QueryKey, UseMutateAsyncFunction } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+
 import {
   makePrependSimpleItem,
   prependToFirstPage,
   removeOptimisticFromPages,
   replaceOptimisticInPages,
 } from '@/api/helper/infiniteHelpers';
-import type { InfiniteData, QueryKey, UseMutateAsyncFunction } from '@tanstack/react-query';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
 
 /**
  * Config:

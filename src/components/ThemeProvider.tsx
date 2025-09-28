@@ -1,8 +1,10 @@
-import { ColorTokens, FontTokens, ShadowTokens, SpacingTokens, tokens } from '@/theme/tokens';
-import { flattenObject } from '@/theme/utils';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import React, { createContext, useEffect, useMemo, useState } from 'react';
 import { useColorScheme } from 'react-native';
+
+import type { ColorTokens, FontTokens, ShadowTokens, SpacingTokens } from '@/theme/tokens';
+import { tokens } from '@/theme/tokens';
+import { flattenObject } from '@/theme/utils';
 
 export type ThemePreference = 'light' | 'dark' | 'system';
 export type ResolvedMode = 'light' | 'dark';
@@ -115,7 +117,7 @@ export const ThemeProvider: React.FC<{
   };
 
   const theme: NestedTheme = useMemo(() => {
-    // @ts-ignore - tokens.textShadows might be optional in the tokens typing
+    // @ts-expect-error - tokens.textShadows might be optional in the tokens typing
     const colorGroup: ColorTokens = tokens.colors[resolved];
     return {
       colors: colorGroup,

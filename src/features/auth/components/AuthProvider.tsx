@@ -1,11 +1,12 @@
 // lib/auth/AuthProvider.tsx
-import { userAtom } from '@/stores/atoms/user';
-import { supabase } from '@/supabase';
 import type { Session, User } from '@supabase/supabase-js';
 import { useSetAtom } from 'jotai';
 import { useResetAtom } from 'jotai/utils';
 import React, { createContext, useCallback, useContext, useEffect, useState } from 'react';
-// import { userAtom, authLoadingAtom } from '@/lib/state/authAtoms';
+
+import { queryClient } from '@/api/helper/queryClient';
+import { userAtom } from '@/stores/atoms/user';
+import { supabase } from '@/supabase';
 
 const AuthContext = createContext(
   {} as {
@@ -50,6 +51,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       } catch (err) {
         console.warn('Auth init error', err);
       } finally {
+        queryClient.clear(); // clear or invalidate query cache to avoid leaking data
         if (mounted) {
           setIsLoading(false);
         }

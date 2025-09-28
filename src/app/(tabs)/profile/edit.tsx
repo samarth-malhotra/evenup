@@ -1,8 +1,9 @@
 // app/profile/edit.tsx
-import AppHeader from '@/components/AppHeader';
 import { useNavigation } from 'expo-router';
 import { useLayoutEffect } from 'react';
 import { Text, View } from 'react-native';
+
+import AppHeader from '@/components/AppHeader';
 
 export default function EditProfile() {
   const navigation = useNavigation();

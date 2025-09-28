@@ -1,24 +1,30 @@
 // app/groups/new.tsx
 import { MaterialIcons } from '@expo/vector-icons';
+import type { BottomSheetModal as BottomSheetModalType } from '@gorhom/bottom-sheet';
+import { useAtomValue } from 'jotai';
 import { useEffect, useRef, useState } from 'react';
 import { Pressable, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
+import { useCreateGroup } from '@/api/calls/groups';
 import { Avatar } from '@/components/Avatar';
 import BottomSheet from '@/components/BottomSheet';
 import { getBoxShadow } from '@/hooks/getBoxShadow';
 import { useColor } from '@/hooks/useColor';
 import { useTheme } from '@/hooks/useTheme';
-import type { BottomSheetModal as BottomSheetModalType } from '@gorhom/bottom-sheet';
+import { userAtom } from '@/stores/atoms/user';
+import { makeClientTempId } from '@/utils/uid';
 
 type Props = {
   open: boolean;
   onClose: () => void;
-  onCreate?: (payload: { name: string; image: string | null; members: string[] }) => void;
+  // onCreate?: (payload: { name: string; image: string | null; members: string[] }) => void;
 };
 
-export default function NewGroupSheet({ open, onClose, onCreate }: Props) {
+export default function NewGroupSheet({ open, onClose }: Props) {
   const { theme } = useTheme();
   const getColor = useColor();
+  const createGroup = useCreateGroup();
+  const user = useAtomValue(userAtom);
   const sheetRef = useRef<BottomSheetModalType>(null);
 
   const [name, setName] = useState('');
@@ -41,6 +47,31 @@ export default function NewGroupSheet({ open, onClose, onCreate }: Props) {
   const removeMember = (member: string) => {
     if (member === 'You') return; // cannot remove creator
     setMembers((prev) => prev.filter((m) => m !== member));
+  };
+
+  const onCreate = async (payload: { name: string; image: string | null; members: string[] }) => {
+    const clientTempId = makeClientTempId('group');
+
+    const clientPayload = {
+      name: payload.name,
+      description: null,
+      created_by: user?.id ?? 'unknown-user',
+      __clientTempId: clientTempId,
+      // do NOT include image/members if your DB doesn't accept them. Add them to server payload if DB supports.
+    };
+
+    try {
+      // This will:
+      // - optimistically add item with id = clientTempId
+      // - call the server (createGroupServer) with server-facing fields
+      // - on success: replace the optimistic item by matching __clientTempId
+      const serverGroup = await createGroup.mutateAsync(clientPayload);
+      // serverGroup.id exists — you can navigate to it:
+      console.log('created group', serverGroup.id);
+    } catch (err) {
+      console.error('Create group failed', err);
+      // your UI show toast etc
+    }
   };
 
   return (

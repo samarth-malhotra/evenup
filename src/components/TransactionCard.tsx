@@ -1,10 +1,10 @@
 import React from 'react';
 import { Pressable, Text, TouchableOpacity, View } from 'react-native';
 
+import { Avatar } from '@/components/Avatar';
 import { getBoxShadow } from '@/hooks/getBoxShadow';
+import { useColor } from '@/hooks/useColor';
 import { useTheme } from '@/hooks/useTheme';
-import { useColor } from '../hooks/useColor';
-import { Avatar } from './Avatar';
 
 /**
  * TransactionCard — Tailwind (NativeWind) version.

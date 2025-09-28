@@ -1,8 +1,4 @@
 // WalletSummary.tsx
-import AppHeader from '@/components/AppHeader';
-import SummaryCard from '@/components/SummaryCard';
-import TransactionCard from '@/components/TransactionCard';
-import { formatRs } from '@/utils';
 import { Ionicons } from '@expo/vector-icons';
 import * as FileSystem from 'expo-file-system';
 import { useNavigation } from 'expo-router';
@@ -19,6 +15,11 @@ import {
 } from 'react-native';
 import { BarChart } from 'react-native-gifted-charts';
 import DateTimePickerModal from 'react-native-modal-datetime-picker';
+
+import AppHeader from '@/components/AppHeader';
+import SummaryCard from '@/components/SummaryCard';
+import TransactionCard from '@/components/TransactionCard';
+import { formatRs } from '@/utils/formatRs';
 
 /* -------------------------------------------------------------------------- */
 /* Types & constants                                                          */

@@ -1,10 +1,10 @@
 // lib/shared/components/SettleSheet.tsx
 import { BottomSheetTextInput } from '@gorhom/bottom-sheet';
+import type { BottomSheetModal as BottomSheetModalType } from '@gorhom/bottom-sheet';
 import { useEffect, useRef } from 'react';
 import { Pressable, Text, View } from 'react-native';
 
 import BottomSheet from '@/components/BottomSheet';
-import type { BottomSheetModal as BottomSheetModalType } from '@gorhom/bottom-sheet';
 
 type Props = {
   open: boolean;
