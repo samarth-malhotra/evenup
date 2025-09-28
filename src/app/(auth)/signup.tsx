@@ -1,8 +1,9 @@
 // app/(auth)/signup.tsx
-import { supabase } from '@/supabase';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { ActivityIndicator, Alert, Text, TextInput, TouchableOpacity, View } from 'react-native';
+
+import { supabase } from '@/supabase';
 
 export default function SignupScreen() {
   const router = useRouter();
@@ -10,6 +11,34 @@ export default function SignupScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [submitting, setSubmitting] = useState(false);
+
+  const createProfileIfNeeded = async (user: any) => {
+    if (!user?.id) return;
+
+    // Build profile payload
+    const profile = {
+      id: user.id,
+      email: user.email ?? null,
+      phone: user.phone ?? null,
+      avatar_url: null,
+      currency: 'INR',
+      language: 'en',
+      theme: 'system',
+      nickname: name || user.user_metadata?.full_name || null,
+      status: 'active',
+    };
+
+    // Upsert: will insert if missing, or update existing row (safe for initial creation)
+    const { error: upsertError } = await supabase
+      .from('user_profiles')
+      .upsert(profile, { returning: 'minimal' }); // returning minimal to reduce payload
+
+    if (upsertError) {
+      console.error('Failed to create profile:', upsertError);
+      // Non-blocking: we can still continue, but surface an alert optionally.
+      // Alert.alert('Profile creation failed', upsertError.message);
+    }
+  };
 
   const onSubmit = async () => {
     setSubmitting(true);
@@ -25,16 +54,23 @@ export default function SignupScreen() {
         return;
       }
 
-      // do not navigate here — AuthProvider + (auth)/(tabs) layouts will redirect automatically
+      // If signUp returned a session, the user is already signed in
       if (data?.session) {
-        // session available immediately (password sign-up) — we don't call router.replace
-        // just show a small toast/alert to confirm success
-        Alert.alert('Signed up', 'Account created. Finishing sign-in...');
+        // Create profile row (id = user.id) once
+        await createProfileIfNeeded(data.user);
+
+        // Optionally show a success toast
+        Alert.alert('Welcome', 'Account created and signed in.');
+
+        // AuthProvider + layout will redirect automatically, but if you want immediate navigation:
+        // router.replace('/(tabs)');
       } else {
-        // common case: confirmation email sent
+        // Most common with email confirmation: session not available
+        // You may still want to pre-create an "invited" profile row (optional).
+        // If you want profile only after confirmation, don't create now.
         Alert.alert(
           'Check your email',
-          'A confirmation link has been sent to your email. Please verify to complete sign up.'
+          'A confirmation link has been sent. Please verify your email to sign in.'
         );
       }
     } catch (err: any) {
@@ -85,7 +121,6 @@ export default function SignupScreen() {
       </TouchableOpacity>
 
       <TouchableOpacity onPress={() => router?.push?.('/login')} className="mt-4 items-center">
-        {/* keep link navigation — this is just for switching screens, not auth redirect */}
         <Text className="text-blue-600">Already have an account? Log in</Text>
       </TouchableOpacity>
     </View>
