@@ -28,8 +28,6 @@ export async function initAuth() {
     const {
       data: { session },
     } = await supabase.auth.getSession();
-    //
-    // store.set(userAtom, session?.user ?? null);
     const mappedUser = mapSupabaseUserToUser(session?.user ?? null);
     store.set(userAtom, mappedUser);
   } catch (err) {
