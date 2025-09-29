@@ -50,7 +50,7 @@ const quickLinks = [
     icon: <MaterialIcons name="bar-chart" size={22} />,
     link: '../summary',
   },
-  { id: 'group', label: 'Create Group', icon: <Feather name="plus" size={22} /> },
+  { id: 'group ', label: 'Create Group', icon: <Feather name="plus" size={22} /> },
 ];
 
 export default function HomeScreen() {
