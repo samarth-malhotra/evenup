@@ -103,12 +103,14 @@
 // app/(tabs)/_layout.tsx
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Redirect, Tabs } from 'expo-router';
+import { useAtomValue } from 'jotai';
 import type { ViewStyle } from 'react-native';
 import { Pressable } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { useAuth } from '@/features/auth/components/AuthProvider';
 import { useTheme } from '@/hooks/useTheme';
+import { authLoadingAtom } from '@/stores/atoms/auth';
+import { userAtom } from '@/stores/atoms/user';
 
 function TabButton(props: any) {
   const { children, onPress, style } = props;
@@ -134,7 +136,8 @@ function TabButton(props: any) {
 export default function TabsLayout() {
   const { theme } = useTheme();
   const insets = useSafeAreaInsets();
-  const { isLoading, user } = useAuth();
+  const user = useAtomValue(userAtom);
+  const isLoading = useAtomValue(authLoadingAtom);
 
   // wait until auth is initialized by the AuthProvider
   if (isLoading) return null;

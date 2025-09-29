@@ -1,25 +1,16 @@
 // app/screens/TransactionsDemo.tsx
 
-import { useAtomValue } from 'jotai';
 import { ScrollView, Text, View } from 'react-native';
 
 import TransactionCard from '@/components/TransactionCard';
-import { CONFIG } from '@/config';
-import { userAtom } from '@/stores/atoms/user';
-import { STORAGE_KEYS } from '@/stores/storageKeys';
 
 /* --------------------------- TransactionsDemoScreen --------------------------- */
 
 export default function TransactionsDemoScreen() {
-  const user = useAtomValue(userAtom);
-  console.log('user:', user);
-
-  console.log('Base API:', CONFIG.API_URL);
-  console.log('STORAGE_KEYS:', STORAGE_KEYS.USER);
   return (
     <ScrollView style={{ flex: 1, backgroundColor: '#F8FAFC', padding: 16 }}>
       <Text style={{ fontSize: 22, fontWeight: '800', marginBottom: 12, color: '#0F172A' }}>
-        Transactions — Variations
+        Transactions — Variationss
       </Text>
 
       {/* 1. Rollup: Person owes across multiple groups */}

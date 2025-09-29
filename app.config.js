@@ -33,6 +33,7 @@ export default ({ config }) => {
     ...config,
     name: process.env.EXPO_APP_NAME || 'Evenup',
     slug: process.env.EXPO_SLUG || config.slug || 'demo',
+    scheme: 'evenup',
     version,
     orientation: config.orientation || 'portrait',
     icon: config.icon || './src/assets/icon.png',
