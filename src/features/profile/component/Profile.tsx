@@ -1,6 +1,7 @@
 // ProfileScreen.tsx
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from 'expo-router';
+import { useAtomValue } from 'jotai';
 import { useLayoutEffect, useState } from 'react';
 import {
   Platform,
@@ -13,16 +14,20 @@ import {
 } from 'react-native';
 
 import AppHeader from '@/components/AppHeader';
-import { useAuth } from '@/features/auth/components/AuthProvider';
+import { Avatar } from '@/components/Avatar';
+import { signOut } from '@/features/auth/auth';
 import { useColor } from '@/hooks/useColor';
 import { useTheme } from '@/hooks/useTheme';
+import { userAtom } from '@/stores/atoms/user';
 
 export default function Profile() {
   const getColor = useColor();
-  const { signOut } = useAuth();
   const { toggleTheme, mode, theme } = useTheme();
   const navigation = useNavigation();
+
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
+  const user = useAtomValue(userAtom);
+
   const [darkModeEnabled, setDarkModeEnabled] = useState(mode === 'dark');
   const [currency, setCurrency] = useState<'INR' | 'USD' | 'EUR'>('INR');
 
@@ -47,13 +52,12 @@ export default function Profile() {
       {/* User card */}
       <View style={[styles.userCard, styles.shadow]}>
         <View style={styles.avatarWrap}>
-          <View style={styles.avatarCircle}>
-            <Ionicons name="person" size={48} color="#6C5CE7" />
-          </View>
+          <Avatar size={100} name={user?.name ?? ''} />
         </View>
         <View style={{ alignItems: 'center' }}>
-          <Text style={styles.userName}>Juhi</Text>
-          <Text style={styles.userPhone}>+91 98765 43210</Text>
+          <Text style={styles.userName}>{user?.name}</Text>
+          <Text style={styles.userPhone}>{user?.email}</Text>
+          <Text style={styles.userPhone}>{user?.phone}</Text>
         </View>
       </View>
 

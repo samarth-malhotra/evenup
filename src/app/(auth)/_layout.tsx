@@ -1,11 +1,13 @@
 // app/(auth)/_layout.tsx
 import { Redirect, Slot } from 'expo-router';
+import { useAtomValue } from 'jotai';
 
-import { useAuth } from '@/features/auth/components/AuthProvider';
-// import { useAuth } from '@/lib/auth/AuthProvider';
+import { authLoadingAtom } from '@/stores/atoms/auth';
+import { userAtom } from '@/stores/atoms/user';
 
 export default function AuthLayout() {
-  const { isLoading, user } = useAuth();
+  const user = useAtomValue(userAtom);
+  const isLoading = useAtomValue(authLoadingAtom);
 
   if (isLoading) return null; // waits until auth finishes
 

@@ -71,7 +71,7 @@ export default function HomeScreen() {
       headerShown: true,
       header: () => (
         <AppHeader
-          title={`Hi, ${(user?.user_metadata as any)?.full_name} 👋`}
+          title={`Hi, ${user?.name} 👋`}
           showBackButton={false}
           rightActions={
             <TouchableOpacity onPress={() => router.push('/notifications')}>

@@ -2,30 +2,35 @@
 import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { Provider as JotaiProvider } from 'jotai';
+import { Provider as JotaiProvider, useAtomValue } from 'jotai';
+import { useEffect } from 'react';
 import { ActivityIndicator, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { QueryProvider } from '@/api/QueryProvider';
 import { ThemeProvider } from '@/components/ThemeProvider';
-import { AuthProvider, useAuth } from '@/features/auth/components/AuthProvider';
+import { initAuth } from '@/features/auth/auth';
 import { useTheme } from '@/hooks/useTheme';
+import { authLoadingAtom } from '@/stores/atoms/auth';
+import { jotaiStore } from '@/stores/store';
 import '../../global.css';
 
 export const unstable_settings = { initialRouteName: '(tabs)' };
 
 export default function RootLayout() {
+  useEffect(() => {
+    initAuth(); // set up listeners once
+  }, []);
+
   return (
-    <JotaiProvider>
+    <JotaiProvider store={jotaiStore}>
       <QueryProvider>
         <GestureHandlerRootView style={{ flex: 1 }}>
           <BottomSheetModalProvider>
             <ThemeProvider>
               <SafeAreaProvider>
-                <AuthProvider>
-                  <InnerApp />
-                </AuthProvider>
+                <InnerApp />
               </SafeAreaProvider>
             </ThemeProvider>
           </BottomSheetModalProvider>
@@ -36,7 +41,7 @@ export default function RootLayout() {
 }
 
 function InnerApp() {
-  const { isLoading } = useAuth();
+  const isLoading = useAtomValue(authLoadingAtom);
 
   if (isLoading) {
     return (
