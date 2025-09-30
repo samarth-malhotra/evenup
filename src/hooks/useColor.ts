@@ -1,6 +1,6 @@
+import { COLOR_SHADE } from '@/constant';
 import { useTheme } from '@/hooks/useTheme';
-
-type Shade = 'DEFAULT' | 'light' | 'dark';
+import type { ShadeType } from '@/types';
 
 /**
  * Hook that returns a function for looking up colors from the current theme,
@@ -26,7 +26,7 @@ export function useColor() {
 
   function getColor(
     name: keyof typeof theme.colors,
-    shade: Shade = 'DEFAULT',
+    shade: ShadeType = COLOR_SHADE.DEFAULT,
     alpha?: number
   ): string {
     const color = theme.colors[name];

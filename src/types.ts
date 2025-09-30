@@ -4,6 +4,8 @@
 
 import type {
   ActivityTypeEnum,
+  APP_MODE,
+  COLOR_SHADE,
   ExpenseStatusEnum,
   FriendStatusEnum,
   MemberRoleEnum,
@@ -11,6 +13,9 @@ import type {
 } from '@/constant';
 
 // Generic base entity (for extendability)
+export type AppModeType = `${APP_MODE}`;
+export type ShadeType = `${COLOR_SHADE}`;
+
 export interface BaseEntity {
   id: string;
 }
