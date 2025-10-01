@@ -2,18 +2,21 @@
 import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { Provider as JotaiProvider, useAtomValue } from 'jotai';
+import { Provider as JotaiProvider, useAtom, useAtomValue } from 'jotai';
 import { useEffect } from 'react';
 import { ActivityIndicator, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { QueryProvider } from '@/api/QueryProvider';
 import { ThemeProvider } from '@/components/ThemeProvider';
+import type { APP_MODE } from '@/constant';
 import { initAuth } from '@/features/auth/auth';
-import { useTheme } from '@/hooks/useTheme';
+import { useUserProfileById } from '@/services/hooks/userProfile';
+import { QueryProvider } from '@/services/QueryProvider';
 import { authLoadingAtom } from '@/stores/atoms/auth';
+import { userAtom } from '@/stores/atoms/user';
 import { jotaiStore } from '@/stores/store';
+import { useTheme } from '@/theme/hooks/useTheme';
 import '../../global.css';
 
 export const unstable_settings = { initialRouteName: '(tabs)' };
@@ -24,8 +27,8 @@ export default function RootLayout() {
   }, []);
 
   return (
-    <JotaiProvider store={jotaiStore}>
-      <QueryProvider>
+    <QueryProvider>
+      <JotaiProvider store={jotaiStore}>
         <GestureHandlerRootView style={{ flex: 1 }}>
           <BottomSheetModalProvider>
             <ThemeProvider>
@@ -35,15 +38,25 @@ export default function RootLayout() {
             </ThemeProvider>
           </BottomSheetModalProvider>
         </GestureHandlerRootView>
-      </QueryProvider>
-    </JotaiProvider>
+      </JotaiProvider>
+    </QueryProvider>
   );
 }
 
 function InnerApp() {
   const isLoading = useAtomValue(authLoadingAtom);
+  const [user, setUser] = useAtom(userAtom);
+  const { setMode } = useTheme();
 
-  if (isLoading) {
+  const { data: profile, isLoading: isUserLoading, error } = useUserProfileById(user?.id ?? '');
+  useEffect(() => {
+    if (profile) {
+      setUser(profile);
+      setMode(profile.theme as APP_MODE);
+    }
+  }, [profile]);
+
+  if (isLoading || isUserLoading) {
     return (
       <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
         <ActivityIndicator size="large" />

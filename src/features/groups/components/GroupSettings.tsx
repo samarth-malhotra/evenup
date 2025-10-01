@@ -7,7 +7,7 @@ import { FlatList, Image, Modal, Pressable, Switch, Text, TextInput, View } from
 
 import AppHeader from '@/components/AppHeader';
 import BottomSheet from '@/components/BottomSheet';
-import { useTheme } from '@/hooks/useTheme';
+import { useTheme } from '@/theme/hooks/useTheme';
 
 type User = { id: string; name: string; avatar?: string };
 

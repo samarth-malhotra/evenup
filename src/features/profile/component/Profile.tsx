@@ -1,7 +1,7 @@
 // ProfileScreen.tsx
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from 'expo-router';
-import { useAtomValue } from 'jotai';
+import { useAtom } from 'jotai';
 import { useLayoutEffect, useState } from 'react';
 import {
   Platform,
@@ -15,20 +15,20 @@ import {
 
 import AppHeader from '@/components/AppHeader';
 import { Avatar } from '@/components/Avatar';
+import { APP_MODE } from '@/constant';
 import { signOut } from '@/features/auth/auth';
-import { useColor } from '@/hooks/useColor';
-import { useTheme } from '@/hooks/useTheme';
 import { userAtom } from '@/stores/atoms/user';
+import { useColor } from '@/theme/hooks/useColor';
+import { useTheme } from '@/theme/hooks/useTheme';
 
 export default function Profile() {
   const getColor = useColor();
-  const { toggleTheme, mode, theme } = useTheme();
+  const { toggleTheme, mode } = useTheme();
   const navigation = useNavigation();
 
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
-  const user = useAtomValue(userAtom);
-
-  const [darkModeEnabled, setDarkModeEnabled] = useState(mode === 'dark');
+  const [localUser, setLocalUser] = useAtom(userAtom); // minimal/full user for sync reads
+  const [darkModeEnabled, setDarkModeEnabled] = useState(mode === APP_MODE.DARK);
   const [currency, setCurrency] = useState<'INR' | 'USD' | 'EUR'>('INR');
 
   useLayoutEffect(() => {
@@ -52,12 +52,12 @@ export default function Profile() {
       {/* User card */}
       <View style={[styles.userCard, styles.shadow]}>
         <View style={styles.avatarWrap}>
-          <Avatar size={100} name={user?.name ?? ''} />
+          <Avatar size={100} name={localUser?.name ?? localUser?.nickname ?? ''} />
         </View>
         <View style={{ alignItems: 'center' }}>
-          <Text style={styles.userName}>{user?.name}</Text>
-          <Text style={styles.userPhone}>{user?.email}</Text>
-          <Text style={styles.userPhone}>{user?.phone}</Text>
+          <Text style={styles.userName}>{localUser?.name ?? localUser?.nickname}</Text>
+          <Text style={styles.userPhone}>{localUser?.email}</Text>
+          <Text style={styles.userPhone}>{localUser?.phone}</Text>
         </View>
       </View>
 

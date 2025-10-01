@@ -47,3 +47,10 @@ export enum COLOR_SHADE {
   DARK = 'dark',
   DEFAULT = 'DEFAULT',
 }
+
+export enum TOAST_TYPE {
+  SUCCESS = 'success',
+  ERROR = 'error',
+  INFO = 'info',
+  WARNING = 'warning',
+}

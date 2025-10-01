@@ -1,12 +1,12 @@
 // src/lib/auth/auth.ts
 import { RESET } from 'jotai/utils';
 
-import { queryClient } from '@/api/helper/queryClient';
 import { mapSupabaseUserToUser } from '@/features/auth/mappers';
+import { queryClient } from '@/services/helper/queryClient';
+import { supabase } from '@/services/supabase';
 import { authLoadingAtom } from '@/stores/atoms/auth';
 import { userAtom } from '@/stores/atoms/user';
 import { jotaiStore } from '@/stores/store';
-import { supabase } from '@/supabase';
 
 const store = jotaiStore; // shared store
 

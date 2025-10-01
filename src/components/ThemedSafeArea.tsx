@@ -5,7 +5,7 @@ import { ScrollView, StyleSheet, View } from 'react-native';
 import type { Edge } from 'react-native-safe-area-context';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { useColor } from '@/hooks/useColor';
+import { useColor } from '@/theme/hooks/useColor';
 
 type Props = {
   children: React.ReactNode;

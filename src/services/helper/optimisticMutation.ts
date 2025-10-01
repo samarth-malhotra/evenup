@@ -2,6 +2,8 @@
 import type { QueryKey, UseMutateAsyncFunction } from '@tanstack/react-query';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 
+import { normalizeSupabaseError } from '@/services/helper/errors';
+
 /**
  * Configuration for useOptimisticMutation
  *
@@ -16,6 +18,8 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
  * - extraOnMutate: optional side-effects in onMutate (runs after optimisticUpdate)
  * - buildContext: optional function to build context returned to onError/onSettled
  * - replaceOnSuccess: optional function called in onSuccess to replace optimistic items in-place
+ * - onAuthError: optional callback called when an auth-type PostgREST error occurs (PGRST301/302/401)
+ * - throwOnAuthError: if true, auth-errors will be thrown instead of being intercepted (default false)
  */
 export type OptimisticMutateConfig<TData, TVariables, TContext = any> = {
   mutationFn: (vars: TVariables) => Promise<TData>;
@@ -32,6 +36,10 @@ export type OptimisticMutateConfig<TData, TVariables, TContext = any> = {
     variables: TVariables;
     qc: ReturnType<typeof useQueryClient>;
   }) => void;
+
+  // New: auth handling hooks
+  onAuthError?: () => void;
+  throwOnAuthError?: boolean;
 };
 
 /**
@@ -49,54 +57,62 @@ type WrapperReturn<TData, TVariables, TContext> = {
   _raw: ReturnType<typeof useMutation<TData, Error, TVariables, TContext>>;
 };
 
-/**
- * Normalize input which can be a single QueryKey or an array of QueryKeys.
- * Ensures we always work with QueryKey[] internally.
- *
- * @param k - QueryKey | QueryKey[] | undefined
- * @returns QueryKey[]
- */
+/** utility to normalize input keys into QueryKey[] */
 function normalizeKeys(k?: QueryKey | QueryKey[]): QueryKey[] {
   if (!k) return [];
-  // if it's an array-of-keys (each key itself may be an array), return as-is
   if (Array.isArray(k) && k.length && Array.isArray(k[0])) return k as QueryKey[];
-  // otherwise treat single key as [k]
   return Array.isArray(k) ? ([k] as QueryKey[]) : [k];
+}
+
+/** Internal helper: inspect PostgREST-style error and decide handling */
+function handlePostgrestError(
+  err: any,
+  opts?: { onAuthError?: () => void; throwOnAuthError?: boolean }
+) {
+  // guard: if not a Postgrest-like error, rethrow
+  const code = err?.code ?? err?.status ?? null;
+  // If there's no code, treat as generic
+  if (!code || typeof code !== 'string') {
+    return {
+      handled: false,
+      normalized: { type: 'other', message: String(err), original: err } as any,
+    };
+  }
+
+  // use your existing normalize helper
+  const normalized = normalizeSupabaseError(err);
+
+  if (normalized.type === 'not_found') {
+    // for mutations we typically resolve to null and let caller decide
+    return { handled: true, result: null as any };
+  }
+
+  if (normalized.type === 'auth_error') {
+    if (!opts?.throwOnAuthError) {
+      if (opts?.onAuthError) {
+        try {
+          opts.onAuthError();
+        } catch (e) {
+          console.warn('onAuthError threw', e);
+        }
+      }
+      return { handled: true, result: null as any };
+    }
+    return { handled: false, normalized };
+  }
+
+  return { handled: false, normalized };
 }
 
 /**
  * useOptimisticMutation
  *
- * A reusable hook that wraps react-query's useMutation and provides:
+ * Wraps react-query's useMutation adding:
  *  - optimistic cache updates (setQueryData)
  *  - rollback on error using snapshots
  *  - optional in-place replacement on success (replaceOnSuccess)
  *  - optional invalidation of keys onSettled
- *
- * Example usage:
- * ```ts
- * // optimistic add to a list
- * const createGroup = useOptimisticMutation<Group, CreateGroupPayload>({
- *   mutationFn: api.createGroup,
- *   targetQueryKey: QUERY_KEYS.groups.list,
- *   optimisticUpdate: ({ previous, variables }) => {
- *     const tmp = { id: `tmp-${Date.now()}`, name: variables.name, created_at: new Date().toISOString() };
- *     return [tmp, ...(previous ?? [])];
- *   },
- *   replaceOnSuccess: ({ data, variables, qc }) => {
- *     // find tmp by some clientTempId that you passed in variables and replace with server object
- *     qc.setQueryData(QUERY_KEYS.groups.list, (prev: any[] = []) => {
- *       const i = prev.findIndex(p => p.id === variables.__clientTempId);
- *       if (i === -1) return [data, ...prev];
- *       const copy = [...prev]; copy[i] = data; return copy;
- *     });
- *   },
- *   invalidateQueryKeys: [], // optional — empty when using replaceOnSuccess
- * });
- * ```
- *
- * @param config - OptimisticMutateConfig<TData, TVariables, TContext>
- * @returns WrapperReturn<TData, TVariables, TContext>
+ *  - centralized PostgREST error handling (not_found / auth errors)
  */
 export function useOptimisticMutation<TData, TVariables, TContext = any>(
   config: OptimisticMutateConfig<TData, TVariables, TContext>
@@ -104,26 +120,41 @@ export function useOptimisticMutation<TData, TVariables, TContext = any>(
   const qc = useQueryClient();
   const keys = normalizeKeys(config.targetQueryKey);
 
-  const mutation = useMutation<TData, Error, TVariables, TContext>({
-    mutationFn: config.mutationFn,
+  // Wrap the user's mutationFn so we apply normalized PostgREST error policy
+  const wrappedMutationFn = async (vars: TVariables) => {
+    try {
+      return await config.mutationFn(vars);
+    } catch (err: any) {
+      const decision = handlePostgrestError(err, {
+        onAuthError: config.onAuthError,
+        throwOnAuthError: config.throwOnAuthError,
+      });
 
-    /**
-     * onMutate: run before mutationFn
-     * - cancels queries for the target keys
-     * - snapshots previous cache values into previousMap
-     * - runs optimisticUpdate (if provided) to set optimistic cache
-     * - runs extraOnMutate (if provided)
-     * - returns context for rollback (either custom via buildContext or default { previousMap })
-     */
+      if (decision.handled) {
+        // resolve to null for handled cases (e.g., not_found or handled auth)
+        return decision.result as TData;
+      }
+
+      // Not handled -> throw normalized Error so react-query treats as error
+      const message = decision.normalized?.message ?? String(err);
+      const e = new Error(message);
+      (e as any).original = decision.normalized?.original ?? err;
+      throw e;
+    }
+  };
+
+  const mutation = useMutation<TData, Error, TVariables, TContext>({
+    mutationFn: wrappedMutationFn,
+
     onMutate: async (variables) => {
-      // cancel outgoing for all keys to avoid race conditions
+      // cancel outgoing queries for all keys to avoid race conditions
       await Promise.all(keys.map((k) => qc.cancelQueries({ queryKey: k })));
 
       // snapshot previous
       const previousMap = new Map<string, any>();
       keys.forEach((k) => previousMap.set(JSON.stringify(k), qc.getQueryData(k)));
 
-      // Narrow optimisticUpdate to a local const so TypeScript knows it won't change mid-loop
+      // optimistic update
       const optimisticUpdate = config.optimisticUpdate;
       if (optimisticUpdate) {
         keys.forEach((k) => {
@@ -136,16 +167,15 @@ export function useOptimisticMutation<TData, TVariables, TContext = any>(
             });
             qc.setQueryData(k, optimistic);
           } catch (e) {
-            // don't let optimisticUpdate errors break the mutate flow
             console.warn('[useOptimisticMutation] optimisticUpdate failed for key', k, e);
           }
         });
       }
 
-      const extraOnMutate = config.extraOnMutate;
-      if (extraOnMutate) {
+      // extra onMutate side-effects
+      if (config.extraOnMutate) {
         try {
-          extraOnMutate({ qc, variables });
+          config.extraOnMutate({ qc, variables });
         } catch (e) {
           console.warn('[useOptimisticMutation] extraOnMutate failed', e);
         }
@@ -155,10 +185,6 @@ export function useOptimisticMutation<TData, TVariables, TContext = any>(
       return { previousMap } as unknown as TContext;
     },
 
-    /**
-     * onError: rollback using the snapshot in context (if available).
-     * The context shape is whatever buildContext returned, or { previousMap } by default.
-     */
     onError: (_err, _vars, context: any) => {
       try {
         if (context?.previousMap) {
@@ -172,11 +198,6 @@ export function useOptimisticMutation<TData, TVariables, TContext = any>(
       }
     },
 
-    /**
-     * onSuccess:
-     * - if replaceOnSuccess is provided, call it to perform an exact in-place replacement
-     * - if replaceOnSuccess throws, we fallthrough to onSettled (which may invalidate)
-     */
     onSuccess: (data, variables) => {
       const replaceOnSuccess = config.replaceOnSuccess;
       if (replaceOnSuccess) {
@@ -187,14 +208,9 @@ export function useOptimisticMutation<TData, TVariables, TContext = any>(
           console.warn('[useOptimisticMutation] replaceOnSuccess failed', e);
         }
       }
-      // otherwise do nothing here — onSettled will handle invalidation
+      // otherwise leave to onSettled to invalidate
     },
 
-    /**
-     * onSettled:
-     * - best-effort invalidation of configured keys (or the target keys if none configured)
-     * - keep this minimal to avoid extra network calls if replaceOnSuccess already patched cache
-     */
     onSettled: () => {
       const toInvalidate = config.invalidateQueryKeys ?? keys;
       toInvalidate.forEach((k) => {
@@ -207,7 +223,6 @@ export function useOptimisticMutation<TData, TVariables, TContext = any>(
     },
   });
 
-  // normalize mutation status to simple booleans
   const rawStatus = (mutation as unknown as { status?: string }).status ?? 'idle';
   const isLoading = rawStatus === 'loading' || rawStatus === 'pending';
   const isError = rawStatus === 'error';
@@ -226,54 +241,3 @@ export function useOptimisticMutation<TData, TVariables, TContext = any>(
     _raw: mutation,
   } as const;
 }
-
-/**
- * ---------------------------
- * Quick usage examples
- * ---------------------------
- *
- * 1) Optimistic add (prepend) and invalidate on settle:
- *
- * const addItem = useOptimisticMutation<Item, { text: string }>({
- *   mutationFn: api.addItem,
- *   targetQueryKey: ['items', 'list'],
- *   optimisticUpdate: ({ previous, variables }) => {
- *     const tmp = { id: `tmp-${Date.now()}`, text: variables.text, _optimistic: true };
- *     return [tmp, ...(previous ?? [])];
- *   },
- *   invalidateQueryKeys: [['items','list']],
- * });
- *
- * addItem.mutate({ text: 'Buy milk' });
- *
- * 2) Optimistic add with exact replaceOnSuccess using clientTempId:
- *
- * // In component generate clientTempId and include it in variables.__clientTempId
- * const clientTempId = makeClientTempId();
- *
- * const create = useOptimisticMutation<Item, {text: string; __clientTempId?: string}>({
- *   mutationFn: async (vars) => {
- *     const { __clientTempId, ...serverPayload } = vars;
- *     return api.createItem(serverPayload); // returns server item with real id
- *   },
- *   targetQueryKey: ['items','list'],
- *   optimisticUpdate: ({ previous, variables }) => {
- *     const tmp = { id: variables.__clientTempId, text: variables.text, __clientTempId: variables.__clientTempId };
- *     return [tmp, ...(previous ?? [])];
- *   },
- *   replaceOnSuccess: ({ data, variables, qc }) => {
- *     qc.setQueryData(['items','list'], (prev: any[] = []) => {
- *       const idx = prev.findIndex(p => p.__clientTempId === variables.__clientTempId);
- *       if (idx === -1) return [data, ...prev];
- *       const copy = [...prev]; copy[idx] = data; return copy;
- *     });
- *   },
- *   invalidateQueryKeys: [], // handled by replaceOnSuccess
- * });
- *
- * create.mutate({ text: 'Trip to Goa', __clientTempId: clientTempId });
- *
- * ---------------------------
- * End of examples
- * ---------------------------
- */

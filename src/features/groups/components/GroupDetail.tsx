@@ -10,9 +10,9 @@ import TransactionCard from '@/components/TransactionCard';
 import AddBillSheet from '@/features/bills/components/AddBillSheet';
 import { groupExpense } from '@/features/groups/mocks/groupList';
 import { selectGroup } from '@/features/groups/util';
-import { getBoxShadow } from '@/hooks/getBoxShadow';
-import { useColor } from '@/hooks/useColor';
-import { useTheme } from '@/hooks/useTheme';
+import { getBoxShadow } from '@/theme/hooks/getBoxShadow';
+import { useColor } from '@/theme/hooks/useColor';
+import { useTheme } from '@/theme/hooks/useTheme';
 import { formatRs } from '@/utils/formatRs';
 
 // ---------------- Types ----------------

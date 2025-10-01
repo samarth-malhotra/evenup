@@ -1,5 +1,5 @@
 import { COLOR_SHADE } from '@/constant';
-import { useTheme } from '@/hooks/useTheme';
+import { useTheme } from '@/theme/hooks/useTheme';
 import type { ShadeType } from '@/types';
 
 /**

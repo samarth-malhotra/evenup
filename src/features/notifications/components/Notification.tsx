@@ -13,7 +13,7 @@ import {
   splitSections,
   timeAgo,
 } from '@/features/notifications/util';
-import { useTheme } from '@/hooks/useTheme';
+import { useTheme } from '@/theme/hooks/useTheme';
 
 import type { Activity } from '../types';
 

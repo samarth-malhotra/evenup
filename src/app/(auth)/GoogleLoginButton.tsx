@@ -4,7 +4,7 @@ import * as WebBrowser from 'expo-web-browser';
 import { useState } from 'react';
 import { ActivityIndicator, Alert, Pressable, Text, View } from 'react-native';
 
-import { supabase } from '@/supabase';
+import { supabase } from '@/services/supabase';
 
 WebBrowser.maybeCompleteAuthSession();
 

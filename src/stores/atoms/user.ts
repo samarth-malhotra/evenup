@@ -1,5 +1,5 @@
 import { STORAGE_KEYS } from '@/stores/storageKeys';
 import { persistedAtom } from '@/stores/utils/persistedAtom';
-import type { User as EvenUpUser } from '@/types';
+import type { User } from '@/types';
 
-export const userAtom = persistedAtom<EvenUpUser | null>(STORAGE_KEYS.USER, null);
+export const userAtom = persistedAtom<User | null>(STORAGE_KEYS.USER, null);

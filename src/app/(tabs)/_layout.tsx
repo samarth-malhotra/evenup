@@ -108,9 +108,9 @@ import type { ViewStyle } from 'react-native';
 import { Pressable } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { useTheme } from '@/hooks/useTheme';
 import { authLoadingAtom } from '@/stores/atoms/auth';
 import { userAtom } from '@/stores/atoms/user';
+import { useTheme } from '@/theme/hooks/useTheme';
 
 function TabButton(props: any) {
   const { children, onPress, style } = props;
