@@ -9,8 +9,8 @@ import type { TransactionStatus } from '@/components/TransactionCard';
 import TransactionCard from '@/components/TransactionCard';
 import NewGroupSheet from '@/features/groups/components/BottomSheet/CreateGroupSheet';
 import { groups } from '@/features/groups/mocks/groupList';
-import { useColor } from '@/hooks/useColor';
-import { useTheme } from '@/hooks/useTheme';
+import { useColor } from '@/theme/hooks/useColor';
+import { useTheme } from '@/theme/hooks/useTheme';
 
 export default function GroupList() {
   const { theme } = useTheme();

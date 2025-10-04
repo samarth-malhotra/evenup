@@ -29,3 +29,28 @@ export enum FriendStatusEnum {
   Blocked = 'blocked',
   Removed = 'removed',
 }
+// Newly Created will remove above one as we progress
+export enum USER_STATUS {
+  ACTIVE = 'active',
+  INVITED = 'invited',
+  SUSPENDED = 'suspended',
+  DELETED = 'deleted',
+}
+
+export enum APP_MODE {
+  LIGHT = 'light',
+  DARK = 'dark',
+}
+
+export enum COLOR_SHADE {
+  LIGHT = 'light',
+  DARK = 'dark',
+  DEFAULT = 'DEFAULT',
+}
+
+export enum TOAST_TYPE {
+  SUCCESS = 'success',
+  ERROR = 'error',
+  INFO = 'info',
+  WARNING = 'warning',
+}

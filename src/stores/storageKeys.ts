@@ -3,7 +3,9 @@ import { CONFIG } from '@/config';
 
 const PREFIX = `evenup:${CONFIG.APP_VERSION}:`;
 
+// AsynStorage Keys
 export const STORAGE_KEYS = {
+  THEME_PREFERENCE: `${PREFIX}themePreference`,
   USER: `${PREFIX}user`,
   THEME: `${PREFIX}theme`,
   NOTIFICATIONS: `${PREFIX}notifications`,

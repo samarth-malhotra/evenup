@@ -1,10 +1,47 @@
 // src/features/groups.ts
 import { useQuery } from '@tanstack/react-query';
 
-import { useOptimisticMutation } from '@/api/helper/optimisticMutation';
-import { QUERY_KEYS } from '@/api/queryKeys';
-import { supabase } from '@/supabase';
+import { useOptimisticMutation } from '@/services/helper/optimisticMutation';
+import { QUERY_KEYS } from '@/services/helper/queryKeys';
+import { supabase } from '@/services/supabase';
 import type { Group } from '@/types';
+
+// ---------- Hooks / helpers ----------
+export async function fetchGroups(): Promise<Group[]> {
+  const { data, error } = await supabase
+    .from('groups')
+    .select('*')
+    .order('created_at', { ascending: false });
+  if (error) throw error;
+  return data ?? [];
+}
+
+// groups list
+export function useGroups() {
+  return useQuery<Group[], Error>({
+    queryKey: QUERY_KEYS.groups.list,
+    queryFn: fetchGroups,
+    staleTime: 1000 * 60 * 2, // 2 minutes
+    gcTime: 1000 * 60 * 30, // 30 minutes (was gcTime)
+    refetchOnWindowFocus: false,
+  });
+}
+
+export async function fetchGroup(groupId: string): Promise<Group> {
+  const { data, error } = await supabase.from('groups').select('*').eq('id', groupId).single();
+  if (error) throw error;
+  return data;
+}
+// single group
+export function useGroup(groupId: string) {
+  return useQuery<Group, Error>({
+    queryKey: QUERY_KEYS.groups.details(groupId),
+    queryFn: () => fetchGroup(groupId),
+    staleTime: 1000 * 60 * 2,
+    gcTime: 1000 * 60 * 30,
+    enabled: !!groupId, // prevents running when groupId is falsy
+  });
+}
 
 // ---------- API (server-facing) ----------
 export type CreateGroupPayload = {
@@ -20,44 +57,6 @@ export async function createGroupServer(payload: CreateGroupPayload): Promise<Gr
 
   if (error) throw error;
   return data;
-}
-
-// ---------- Hooks / helpers ----------
-export async function fetchGroups(): Promise<Group[]> {
-  const { data, error } = await supabase
-    .from('groups')
-    .select('*')
-    .order('created_at', { ascending: false });
-  if (error) throw error;
-  return data ?? [];
-}
-
-export async function fetchGroup(groupId: string): Promise<Group> {
-  const { data, error } = await supabase.from('groups').select('*').eq('id', groupId).single();
-  if (error) throw error;
-  return data;
-}
-
-// groups list
-export function useGroups() {
-  return useQuery<Group[], Error>({
-    queryKey: QUERY_KEYS.groups.list,
-    queryFn: fetchGroups,
-    staleTime: 1000 * 60 * 2, // 2 minutes
-    gcTime: 1000 * 60 * 30, // 30 minutes (was gcTime)
-    refetchOnWindowFocus: false,
-  });
-}
-
-// single group
-export function useGroup(groupId: string) {
-  return useQuery<Group, Error>({
-    queryKey: QUERY_KEYS.groups.details(groupId),
-    queryFn: () => fetchGroup(groupId),
-    staleTime: 1000 * 60 * 2,
-    gcTime: 1000 * 60 * 30,
-    enabled: !!groupId, // prevents running when groupId is falsy
-  });
 }
 
 /**

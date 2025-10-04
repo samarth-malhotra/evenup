@@ -12,10 +12,10 @@ import ThemedSafeArea from '@/components/ThemedSafeArea';
 import AddBillSheet from '@/features/bills/components/AddBillSheet';
 import CreateGroupSheet from '@/features/groups/components/BottomSheet/CreateGroupSheet';
 import { groups } from '@/features/groups/mocks/groupList';
-import { getBoxShadow } from '@/hooks/getBoxShadow';
-import { useColor } from '@/hooks/useColor';
-import { useTheme } from '@/hooks/useTheme';
 import { userAtom } from '@/stores/atoms/user';
+import { getBoxShadow } from '@/theme/hooks/getBoxShadow';
+import { useColor } from '@/theme/hooks/useColor';
+import { useTheme } from '@/theme/hooks/useTheme';
 import { formatRs } from '@/utils/formatRs';
 
 import TransactionsDemoScreen from './TransactionDemo';
@@ -71,7 +71,7 @@ export default function HomeScreen() {
       headerShown: true,
       header: () => (
         <AppHeader
-          title={`Hi, ${user?.name} 👋`}
+          title={`Hi, ${user?.nickname ?? user?.name} 👋`}
           showBackButton={false}
           rightActions={
             <TouchableOpacity onPress={() => router.push('/notifications')}>
@@ -85,11 +85,6 @@ export default function HomeScreen() {
 
   return (
     <ThemedSafeArea scroll edges={['left', 'right']}>
-      {/* {loadingUser ? (
-        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 20 }}>
-          <ActivityIndicator size="large" />
-        </View>
-      ) : ( */}
       <ScrollView contentContainerStyle={{ paddingBottom: 32 }}>
         {/* Summary */}
         <SectionHeader title="Summary (in August)" />

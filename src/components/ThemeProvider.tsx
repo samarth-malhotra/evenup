@@ -2,12 +2,15 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import React, { createContext, useEffect, useMemo, useState } from 'react';
 import { useColorScheme } from 'react-native';
 
+import { APP_MODE } from '@/constant';
+import { STORAGE_KEYS } from '@/stores/storageKeys';
 import type { ColorTokens, FontTokens, ShadowTokens, SpacingTokens } from '@/theme/tokens';
 import { tokens } from '@/theme/tokens';
 import { flattenObject } from '@/theme/utils';
+import type { AppModeType } from '@/types';
 
-export type ThemePreference = 'light' | 'dark' | 'system';
-export type ResolvedMode = 'light' | 'dark';
+export type ThemePreference = AppModeType | 'system';
+export type ResolvedMode = AppModeType;
 
 export type NestedTheme = {
   colors: ColorTokens;
@@ -28,7 +31,7 @@ export type ThemeContextType = {
 };
 
 /** Build a default theme from static tokens (light) to use as fallback context */
-const defaultResolved: ResolvedMode = 'light';
+const defaultResolved: ResolvedMode = APP_MODE.LIGHT;
 const defaultNestedTheme: NestedTheme = {
   colors: tokens.colors[defaultResolved],
   fontFamily: tokens.fontFamily,
@@ -41,7 +44,7 @@ const noopAsync = async () => {};
 
 /** Default context used when consumer is outside provider */
 const defaultContext: ThemeContextType = {
-  mode: 'light',
+  mode: APP_MODE.LIGHT,
   resolved: defaultResolved,
   setMode: async (m: ThemePreference) => {
     // no-op when outside provider
@@ -55,14 +58,12 @@ const defaultContext: ThemeContextType = {
 
 export const ThemeContext = createContext<ThemeContextType>(defaultContext);
 
-const STORAGE_KEY = 'evenup:themePreference';
-
 export const ThemeProvider: React.FC<{
   children: React.ReactNode;
   initialMode?: ThemePreference;
 }> = ({ children, initialMode }) => {
   const system = useColorScheme();
-  const systemMode: ResolvedMode = system === 'dark' ? 'dark' : 'light';
+  const systemMode: ResolvedMode = system === APP_MODE.DARK ? APP_MODE.DARK : APP_MODE.LIGHT;
 
   const [mode, setModeState] = useState<ThemePreference>(initialMode ?? defaultContext.mode);
   const [loading, setLoading] = useState(true);
@@ -71,9 +72,9 @@ export const ThemeProvider: React.FC<{
     let mounted = true;
     (async () => {
       try {
-        const raw = await AsyncStorage.getItem(STORAGE_KEY);
+        const raw = await AsyncStorage.getItem(STORAGE_KEYS.THEME_PREFERENCE);
         if (!mounted) return;
-        if (raw === 'light' || raw === 'dark' || raw === 'system') setModeState(raw);
+        if (raw === APP_MODE.LIGHT || raw === APP_MODE.DARK || raw === 'system') setModeState(raw);
         else setModeState(initialMode ?? 'system');
       } catch {
         setModeState(initialMode ?? 'system');
@@ -88,12 +89,12 @@ export const ThemeProvider: React.FC<{
 
   const resolved = useMemo<ResolvedMode>(() => {
     if (mode === 'system') return systemMode;
-    return mode === 'dark' ? 'dark' : 'light';
+    return mode === APP_MODE.DARK ? APP_MODE.DARK : APP_MODE.LIGHT;
   }, [mode, systemMode]);
 
   const persistMode = async (m: ThemePreference) => {
     try {
-      await AsyncStorage.setItem(STORAGE_KEY, m);
+      await AsyncStorage.setItem(STORAGE_KEYS.THEME_PREFERENCE, m);
     } catch {
       // ignore
     }
@@ -107,12 +108,12 @@ export const ThemeProvider: React.FC<{
   const toggleTheme = async () => {
     const newPref: ThemePreference =
       mode === 'system'
-        ? resolved === 'dark'
-          ? 'light'
-          : 'dark'
-        : mode === 'dark'
-          ? 'light'
-          : 'dark';
+        ? resolved === APP_MODE.DARK
+          ? APP_MODE.LIGHT
+          : APP_MODE.DARK
+        : mode === APP_MODE.DARK
+          ? APP_MODE.LIGHT
+          : APP_MODE.DARK;
     await setMode(newPref);
   };
 

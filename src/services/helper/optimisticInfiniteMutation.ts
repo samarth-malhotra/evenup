@@ -7,7 +7,7 @@ import {
   prependToFirstPage,
   removeOptimisticFromPages,
   replaceOptimisticInPages,
-} from '@/api/helper/infiniteHelpers';
+} from '@/services/helper/infiniteHelpers';
 
 /**
  * Config:

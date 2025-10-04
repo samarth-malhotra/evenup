@@ -2,7 +2,7 @@ import { memo } from 'react';
 import { Text, TextInput, View } from 'react-native';
 
 import { labelFor, toNum } from '@/features/bills/utils';
-import { useTheme } from '@/hooks/useTheme';
+import { useTheme } from '@/theme/hooks/useTheme';
 import type { SplitMethod } from '@/types';
 
 function ParticipantRow({

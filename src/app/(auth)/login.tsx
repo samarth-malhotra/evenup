@@ -16,7 +16,7 @@ import {
 } from 'react-native';
 
 import GoogleLoginButton from '@/app/(auth)/GoogleLoginButton';
-import { supabase } from '@/supabase';
+import { supabase } from '@/services/supabase';
 
 export default function LoginScreen() {
   const router = useRouter();

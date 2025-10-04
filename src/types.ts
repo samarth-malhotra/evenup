@@ -4,25 +4,31 @@
 
 import type {
   ActivityTypeEnum,
+  APP_MODE,
+  COLOR_SHADE,
   ExpenseStatusEnum,
   FriendStatusEnum,
   MemberRoleEnum,
   SplitMethodEnum,
+  USER_STATUS,
 } from '@/constant';
 
 // Generic base entity (for extendability)
+export type AppModeType = `${APP_MODE}`;
+export type ShadeType = `${COLOR_SHADE}`;
+
 export interface BaseEntity {
   id: string;
 }
 
 // ---------------- Users ----------------
-export interface User extends BaseEntity {
-  email: string;
-  name: string;
-  avatarUrl?: string;
-  phone?: string;
-  createdAt?: string;
-}
+// export interface User extends BaseEntity {
+//   email: string;
+//   name: string;
+//   avatarUrl?: string;
+//   phone?: string;
+//   createdAt?: string;
+// }
 
 // ---------------- Friends ----------------
 export type FriendStatus = `${FriendStatusEnum}`;
@@ -136,3 +142,23 @@ export interface EvenUpMockData {
   activities?: Activity[];
   notifications?: Notification[];
 }
+
+// New types
+export type User = {
+  id: string; // uuid
+  name: string;
+  email: string;
+  phone?: string;
+  avatar_url?: string;
+  currency?: string;
+  language?: string;
+  theme?: APP_MODE; // public.theme_enum (can also be an enum if you share values)
+  nickname?: string;
+  status?: USER_STATUS; // enum instead of string
+  invited_by?: string; // uuid
+  last_active_at?: string; // ISO timestamp string
+  metadata?: Record<string, any>; // jsonb
+  created_at?: string; // ISO timestamp string
+  updated_at?: string; // ISO timestamp string
+  deleted_at?: string; // ISO timestamp string
+};

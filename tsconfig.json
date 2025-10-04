@@ -13,7 +13,8 @@
       "@theme/*": ["./src/theme/*"],
       "@mocks/*": ["./src/mocks/*"],
       "@components/*": ["./src/components/*"],
-      "@stores/*": ["./stores/*"]
+      "@stores/*": ["./src/stores/*"],
+      "@services/*": ["./src/services/*"]
     },
     "types": ["react", "react-native", "nativewind/types", "expo-router"],
     "moduleResolution": "bundler",
@@ -31,7 +32,8 @@
     "**/*.ts",
     "**/*.tsx",
     "nativewind-env.d.ts",
-    "global.d.ts"
+    "global.d.ts",
+    "src/services/hooks"
   ],
   "exclude": ["node_modules", "dist", "build", ".expo"]
 }

@@ -2,20 +2,22 @@
 import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { Provider as JotaiProvider, useAtomValue } from 'jotai';
-import { useEffect } from 'react';
+import { Provider as JotaiProvider, useAtom, useAtomValue } from 'jotai';
+import { useEffect, useMemo } from 'react';
 import { ActivityIndicator, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { QueryProvider } from '@/api/QueryProvider';
 import { ThemeProvider } from '@/components/ThemeProvider';
+import ToastProvider from '@/components/ToastProvider';
 import { initAuth } from '@/features/auth/auth';
-import { useTheme } from '@/hooks/useTheme';
+import { fetchUserProfile } from '@/services/hooks/userProfile';
+import { QueryProvider } from '@/services/QueryProvider';
 import { authLoadingAtom } from '@/stores/atoms/auth';
+import { userAtom } from '@/stores/atoms/user';
 import { jotaiStore } from '@/stores/store';
+import { useTheme } from '@/theme/hooks/useTheme';
 import '../../global.css';
-
 export const unstable_settings = { initialRouteName: '(tabs)' };
 
 export default function RootLayout() {
@@ -24,24 +26,46 @@ export default function RootLayout() {
   }, []);
 
   return (
-    <JotaiProvider store={jotaiStore}>
-      <QueryProvider>
+    <QueryProvider>
+      <JotaiProvider store={jotaiStore}>
         <GestureHandlerRootView style={{ flex: 1 }}>
           <BottomSheetModalProvider>
             <ThemeProvider>
               <SafeAreaProvider>
                 <InnerApp />
+                <ToastProvider />
               </SafeAreaProvider>
             </ThemeProvider>
           </BottomSheetModalProvider>
         </GestureHandlerRootView>
-      </QueryProvider>
-    </JotaiProvider>
+      </JotaiProvider>
+    </QueryProvider>
   );
 }
 
 function InnerApp() {
   const isLoading = useAtomValue(authLoadingAtom);
+  const [user, setUser] = useAtom(userAtom);
+  // const { setMode } = useTheme();
+
+  const userId: string = useMemo(() => user?.id ?? '', [user]);
+
+  // const { data: profile, isLoading: isUserLoading, error } = useUserProfileById(user?.id ?? '');
+  useEffect(() => {
+    async function profile(userId: string) {
+      const result = await fetchUserProfile(userId);
+
+      // console.log('user inn: ', user?.name, user?.nickname, result?.nickname);
+      if (result) {
+        setUser((prev) => ({ ...prev, nickname: result?.nickname }));
+      }
+
+      // setMode(result?.theme as APP_MODE);
+    }
+    if (userId) {
+      profile(userId);
+    }
+  }, [setUser, userId]);
 
   if (isLoading) {
     return (

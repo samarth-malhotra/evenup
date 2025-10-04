@@ -5,13 +5,13 @@ import { useAtomValue } from 'jotai';
 import { useEffect, useRef, useState } from 'react';
 import { Pressable, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
-import { useCreateGroup } from '@/api/calls/groups';
 import { Avatar } from '@/components/Avatar';
 import BottomSheet from '@/components/BottomSheet';
-import { getBoxShadow } from '@/hooks/getBoxShadow';
-import { useColor } from '@/hooks/useColor';
-import { useTheme } from '@/hooks/useTheme';
+import { useCreateGroup } from '@/services/hooks/groups';
 import { userAtom } from '@/stores/atoms/user';
+import { getBoxShadow } from '@/theme/hooks/getBoxShadow';
+import { useColor } from '@/theme/hooks/useColor';
+import { useTheme } from '@/theme/hooks/useTheme';
 import { makeClientTempId } from '@/utils/uid';
 
 type Props = {

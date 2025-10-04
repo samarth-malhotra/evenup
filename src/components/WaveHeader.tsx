@@ -11,7 +11,7 @@ import Svg, {
   LinearGradient as SvgGradient,
 } from 'react-native-svg';
 
-import { useColor } from '@/hooks/useColor';
+import { useColor } from '@/theme/hooks/useColor';
 
 const { width } = Dimensions.get('window');
 

@@ -4,8 +4,8 @@ import React from 'react';
 import { Text, TouchableOpacity, View } from 'react-native';
 
 import WaveHeader from '@/components/WaveHeader';
-import { useColor } from '@/hooks/useColor';
-import { useTheme } from '@/hooks/useTheme';
+import { useColor } from '@/theme/hooks/useColor';
+import { useTheme } from '@/theme/hooks/useTheme';
 
 interface AppHeaderProps {
   title: string;

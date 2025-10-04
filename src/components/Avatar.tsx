@@ -4,7 +4,7 @@ import React, { memo } from 'react';
 import { Image, Text, View } from 'react-native';
 
 import type { NestedTheme } from '@/components/ThemeProvider';
-import { useTheme } from '@/hooks/useTheme';
+import { useTheme } from '@/theme/hooks/useTheme';
 
 export type AvatarProps = {
   name: string;

@@ -8,7 +8,7 @@ import BottomSheet from '@/components/BottomSheet';
 import ParticipantRow from '@/features/bills/components/common/ParticipantRow';
 import { SPLIT_OPTIONS } from '@/features/bills/constant';
 import { toNum } from '@/features/bills/utils';
-import { useTheme } from '@/hooks/useTheme';
+import { useTheme } from '@/theme/hooks/useTheme';
 import type { SplitMethod } from '@/types';
 
 const Pill = memo(function Pill({

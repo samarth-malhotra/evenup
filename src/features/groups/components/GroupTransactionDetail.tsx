@@ -16,8 +16,8 @@ import {
 import AppHeader from '@/components/AppHeader';
 import TransactionCard from '@/components/TransactionCard';
 import AddBillSheet from '@/features/bills/components/AddBillSheet';
-import { useColor } from '@/hooks/useColor';
-import { useTheme } from '@/hooks/useTheme';
+import { useColor } from '@/theme/hooks/useColor';
+import { useTheme } from '@/theme/hooks/useTheme';
 
 // ---------- MOCK (replace with real store/API) ----------
 const mockTransactionBase = {

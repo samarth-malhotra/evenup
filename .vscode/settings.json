@@ -34,7 +34,8 @@
     "@theme": "${workspaceFolder}/src/theme",
     "@mocks": "${workspaceFolder}/src/mocks",
     "@components": "${workspaceFolder}/src/components",
-    "@stores": "${workspaceFolder}/stores"
+    "@stores": "${workspaceFolder}/src/stores",
+    "@services": "${workspaceFolder}/src/services"
   },
 
   // Optional: show quick suggestions for imports and enable auto import suggestions
