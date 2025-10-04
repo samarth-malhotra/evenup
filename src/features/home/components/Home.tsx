@@ -85,11 +85,6 @@ export default function HomeScreen() {
 
   return (
     <ThemedSafeArea scroll edges={['left', 'right']}>
-      {/* {loadingUser ? (
-        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 20 }}>
-          <ActivityIndicator size="large" />
-        </View>
-      ) : ( */}
       <ScrollView contentContainerStyle={{ paddingBottom: 32 }}>
         {/* Summary */}
         <SectionHeader title="Summary (in August)" />

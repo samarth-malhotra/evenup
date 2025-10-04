@@ -1,11 +1,10 @@
 // src/lib/auth/auth.ts
 import { RESET } from 'jotai/utils';
 
-import { mapSupabaseUserToUser } from '@/features/auth/mappers';
 import { queryClient } from '@/services/helper/queryClient';
 import { supabase } from '@/services/supabase';
 import { authLoadingAtom } from '@/stores/atoms/auth';
-import { userAtom } from '@/stores/atoms/user';
+import { setUserFromSupabaseAtom, userAtom } from '@/stores/atoms/user';
 import { jotaiStore } from '@/stores/store';
 
 const store = jotaiStore; // shared store
@@ -28,8 +27,9 @@ export async function initAuth() {
     const {
       data: { session },
     } = await supabase.auth.getSession();
-    const mappedUser = mapSupabaseUserToUser(session?.user ?? null);
-    store.set(userAtom, mappedUser);
+
+    // Use the action atom — it will map and preserve local fields like nickname
+    store.set(setUserFromSupabaseAtom, session?.user ?? null);
   } catch (err) {
     console.warn('Auth init error', err);
   } finally {
@@ -38,9 +38,7 @@ export async function initAuth() {
   }
 
   const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
-    // store.set(userAtom, session?.user ?? null);
-    const mappedUser = mapSupabaseUserToUser(session?.user ?? null);
-    store.set(userAtom, mappedUser);
+    store.set(setUserFromSupabaseAtom, session?.user ?? null);
 
     if (!_event || _event === 'SIGNED_OUT') {
       resetAuthState();

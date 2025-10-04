@@ -3,22 +3,21 @@ import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { Provider as JotaiProvider, useAtom, useAtomValue } from 'jotai';
-import { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
 import { ActivityIndicator, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ThemeProvider } from '@/components/ThemeProvider';
-import type { APP_MODE } from '@/constant';
+import ToastProvider from '@/components/ToastProvider';
 import { initAuth } from '@/features/auth/auth';
-import { useUserProfileById } from '@/services/hooks/userProfile';
+import { fetchUserProfile } from '@/services/hooks/userProfile';
 import { QueryProvider } from '@/services/QueryProvider';
 import { authLoadingAtom } from '@/stores/atoms/auth';
 import { userAtom } from '@/stores/atoms/user';
 import { jotaiStore } from '@/stores/store';
 import { useTheme } from '@/theme/hooks/useTheme';
 import '../../global.css';
-
 export const unstable_settings = { initialRouteName: '(tabs)' };
 
 export default function RootLayout() {
@@ -34,6 +33,7 @@ export default function RootLayout() {
             <ThemeProvider>
               <SafeAreaProvider>
                 <InnerApp />
+                <ToastProvider />
               </SafeAreaProvider>
             </ThemeProvider>
           </BottomSheetModalProvider>
@@ -46,17 +46,28 @@ export default function RootLayout() {
 function InnerApp() {
   const isLoading = useAtomValue(authLoadingAtom);
   const [user, setUser] = useAtom(userAtom);
-  const { setMode } = useTheme();
+  // const { setMode } = useTheme();
 
-  const { data: profile, isLoading: isUserLoading, error } = useUserProfileById(user?.id ?? '');
+  const userId: string = useMemo(() => user?.id ?? '', [user]);
+
+  // const { data: profile, isLoading: isUserLoading, error } = useUserProfileById(user?.id ?? '');
   useEffect(() => {
-    if (profile) {
-      setUser(profile);
-      setMode(profile.theme as APP_MODE);
-    }
-  }, [profile]);
+    async function profile(userId: string) {
+      const result = await fetchUserProfile(userId);
 
-  if (isLoading || isUserLoading) {
+      // console.log('user inn: ', user?.name, user?.nickname, result?.nickname);
+      if (result) {
+        setUser((prev) => ({ ...prev, nickname: result?.nickname }));
+      }
+
+      // setMode(result?.theme as APP_MODE);
+    }
+    if (userId) {
+      profile(userId);
+    }
+  }, [setUser, userId]);
+
+  if (isLoading) {
     return (
       <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
         <ActivityIndicator size="large" />

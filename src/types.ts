@@ -152,7 +152,7 @@ export type User = {
   avatar_url?: string;
   currency?: string;
   language?: string;
-  theme?: string; // public.theme_enum (can also be an enum if you share values)
+  theme?: APP_MODE; // public.theme_enum (can also be an enum if you share values)
   nickname?: string;
   status?: USER_STATUS; // enum instead of string
   invited_by?: string; // uuid
