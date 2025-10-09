@@ -1,87 +1,130 @@
 // app/(auth)/signup.tsx
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
-import { ActivityIndicator, Alert, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import {
+  ActivityIndicator,
+  Alert,
+  KeyboardAvoidingView,
+  Platform,
+  Text,
+  TextInput,
+  TouchableOpacity,
+} from 'react-native';
 
 import { supabase } from '@/services/supabase';
 
+type SignupPayload = {
+  email: string;
+  phone?: string | null;
+  password: string;
+  full_name?: string | null;
+  invited_by?: string | null;
+  metadata?: Record<string, any> | null;
+  language?: string;
+  currency?: string;
+  theme?: string;
+};
+
+const SIGNUP_FUNCTION_URL = 'https://wrnepxzmmuzcsmjmadli.supabase.co/functions/v1/signup';
+
 export default function SignupScreen() {
   const router = useRouter();
+
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
-  const createProfileIfNeeded = async (user: any) => {
-    if (!user?.id) return;
+  const normalize = (v: string | null | undefined): string | null => {
+    if (!v) return null;
+    const t = v.trim();
+    return t === '' ? null : t;
+  };
 
-    // Build profile payload
-    const profile = {
-      id: user.id,
-      email: user.email ?? null,
-      phone: user.phone ?? null,
-      avatar_url: null,
-      currency: 'INR',
-      language: 'en',
-      theme: 'system',
-      nickname: name || user.user_metadata?.full_name || null,
-      status: 'active',
-    };
-
-    // Upsert: will insert if missing, or update existing row (safe for initial creation)
-    const { error: upsertError } = await supabase
-      .from('user_profiles')
-      .upsert(profile, { returning: 'minimal' }); // returning minimal to reduce payload
-
-    if (upsertError) {
-      console.error('Failed to create profile:', upsertError);
-      // Non-blocking: we can still continue, but surface an alert optionally.
-      // Alert.alert('Profile creation failed', upsertError.message);
+  const validate = (): boolean => {
+    if (!email) {
+      Alert.alert('Missing email', 'Email is required.');
+      return false;
     }
+    const emailTrim = email.trim();
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(emailTrim)) {
+      Alert.alert('Invalid email', 'Please enter a valid email address.');
+      return false;
+    }
+
+    if (!password || password.length < 6) {
+      Alert.alert('Invalid password', 'Password must be at least 6 characters.');
+      return false;
+    }
+
+    if (phone) {
+      const digits = phone.replace(/\D/g, '');
+      if (digits.length < 6) {
+        Alert.alert('Invalid phone', 'Please enter a valid phone number.');
+        return false;
+      }
+    }
+
+    return true;
   };
 
   const onSubmit = async () => {
+    if (submitting) return;
+    if (!validate()) return;
+
     setSubmitting(true);
+
     try {
-      const { data, error } = await supabase.auth.signUp({
-        email,
+      const payload: SignupPayload = {
+        email: normalize(email)!,
         password,
-        options: { data: { full_name: name } },
+        full_name: normalize(name),
+        phone: normalize(`+91${phone}`),
+      };
+
+      // call the function
+      const resp = await fetch(SIGNUP_FUNCTION_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
       });
 
-      if (error) {
-        Alert.alert('Error', error.message);
-        return;
-      }
+      const json = await resp.json();
 
-      // If signUp returned a session, the user is already signed in
-      if (data?.session) {
-        // Create profile row (id = user.id) once
-        await createProfileIfNeeded(data.user);
-
-        // Optionally show a success toast
-        Alert.alert('Welcome', 'Account created and signed in.');
-
-        // AuthProvider + layout will redirect automatically, but if you want immediate navigation:
-        // router.replace('/(tabs)');
+      if (resp.status === 201 && json?.ok) {
+        const session = json.session;
+        if (session?.access_token && session?.refresh_token) {
+          // Using supabase-js v2 client (browser / react native)
+          await supabase.auth.setSession({
+            access_token: session.access_token,
+            refresh_token: session.refresh_token,
+          });
+          // Now user is signed in locally. Redirect to app root
+          router.replace('/(tabs)');
+        } else {
+          // fallback: user created but no session provided
+          Alert.alert('Account created', 'Please login with your credentials.');
+        }
+      } else if (resp.status === 409) {
+        // handle conflicts
+        Alert.alert('Already registered', json?.message ?? 'Email or phone already in use');
       } else {
-        // Most common with email confirmation: session not available
-        // You may still want to pre-create an "invited" profile row (optional).
-        // If you want profile only after confirmation, don't create now.
-        Alert.alert(
-          'Check your email',
-          'A confirmation link has been sent. Please verify your email to sign in.'
-        );
+        Alert.alert('Signup failed', json?.error ?? 'Unexpected error');
       }
     } catch (err: any) {
-      Alert.alert('Unexpected error', err?.message ?? String(err));
+      console.error('Signup request error:', err);
+      Alert.alert('Network error', err?.message ?? String(err));
     } finally {
       setSubmitting(false);
     }
   };
 
   return (
-    <View className="flex-1 justify-center bg-white p-5">
+    <KeyboardAvoidingView
+      behavior={Platform.select({ ios: 'padding', android: undefined })}
+      className="flex-1 justify-center bg-white p-5">
       <Text className="mb-5 text-2xl font-bold text-slate-900">Create Account</Text>
 
       <TextInput
@@ -94,9 +137,19 @@ export default function SignupScreen() {
       <TextInput
         value={email}
         onChangeText={setEmail}
-        placeholder="Email"
+        placeholder="Email (required)"
         keyboardType="email-address"
         autoCapitalize="none"
+        autoComplete="email"
+        className="mb-3 rounded-lg border border-slate-200 bg-white px-4 py-3 text-base text-slate-900"
+      />
+
+      <TextInput
+        value={phone}
+        onChangeText={setPhone}
+        placeholder="Phone (optional)"
+        keyboardType="phone-pad"
+        autoComplete="tel"
         className="mb-3 rounded-lg border border-slate-200 bg-white px-4 py-3 text-base text-slate-900"
       />
 
@@ -105,6 +158,7 @@ export default function SignupScreen() {
         onChangeText={setPassword}
         placeholder="Password"
         secureTextEntry
+        textContentType="password"
         className="mb-4 rounded-lg border border-slate-200 bg-white px-4 py-3 text-base text-slate-900"
       />
 
@@ -120,9 +174,9 @@ export default function SignupScreen() {
         )}
       </TouchableOpacity>
 
-      <TouchableOpacity onPress={() => router?.push?.('/login')} className="mt-4 items-center">
+      <TouchableOpacity onPress={() => router.push('/login')} className="mt-4 items-center">
         <Text className="text-blue-600">Already have an account? Log in</Text>
       </TouchableOpacity>
-    </View>
+    </KeyboardAvoidingView>
   );
 }
