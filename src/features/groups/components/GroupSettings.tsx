@@ -1,12 +1,11 @@
 // app/groups/[id]/settings.tsx
-import { Feather, MaterialIcons } from '@expo/vector-icons';
-import { BottomSheetFlatList } from '@gorhom/bottom-sheet';
+import { Feather } from '@expo/vector-icons';
 import { useLocalSearchParams, useNavigation, useRouter } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
 import { FlatList, Image, Modal, Pressable, Switch, Text, TextInput, View } from 'react-native';
 
 import AppHeader from '@/components/AppHeader';
-import BottomSheet from '@/components/BottomSheet';
+import UpdateMemberSheet from '@/features/groups/components/BottomSheet/UpdateMemberSheet';
 import { useTheme } from '@/theme/hooks/useTheme';
 
 type User = { id: string; name: string; avatar?: string };
@@ -186,84 +185,7 @@ export default function GroupSettings() {
       />
 
       {/* ----------------- MEMBERS BOTTOM SHEET (uses avoidScrollView + BottomSheetFlatList) ----------------- */}
-      <BottomSheet
-        open={isMembersSheetOpen}
-        onClose={() => setMembersSheetOpen(false)}
-        avoidScrollView>
-        <BottomSheetFlatList
-          ListHeaderComponent={
-            <View className="px-4 pb-3">
-              <Text className="mb-2 text-lg font-semibold">Add / Remove people</Text>
-
-              {/* Selected horizontal strip */}
-              <FlatList
-                data={tempSelected}
-                keyExtractor={(i) => i.id}
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                contentContainerStyle={{ paddingVertical: 6 }}
-                renderItem={({ item }) => (
-                  <View key={item.id} className="mr-3 items-center">
-                    <View className="relative">
-                      <View className="h-12 w-12 items-center justify-center overflow-hidden rounded-full bg-gray-200">
-                        {item.avatar ? (
-                          <Image source={{ uri: item.avatar }} className="h-12 w-12" />
-                        ) : (
-                          <Text className="text-sm font-medium text-gray-700">
-                            {item.name[0] ?? 'U'}
-                          </Text>
-                        )}
-                      </View>
-                      <Pressable
-                        onPress={() => removeTemp(item.id)}
-                        className="absolute -right-2 -top-2 rounded-full bg-white p-0.5 shadow">
-                        <MaterialIcons name="cancel" size={18} color="#ef4444" />
-                      </Pressable>
-                    </View>
-                    <Text className="mt-1 text-xs">{item.name}</Text>
-                  </View>
-                )}
-              />
-            </View>
-          }
-          data={friends}
-          keyExtractor={(i) => i.id}
-          renderItem={({ item }) => {
-            const checked = !!tempSelected.find((m) => m.id === item.id);
-            return (
-              <Pressable
-                onPress={() => toggleTemp(item)}
-                className="flex-row items-center justify-between border-b border-gray-100 px-4 py-3">
-                <View className="flex-row items-center">
-                  <View className="mr-3 h-10 w-10 items-center justify-center overflow-hidden rounded-full bg-gray-200">
-                    {item.avatar ? (
-                      <Image source={{ uri: item.avatar }} className="h-10 w-10" />
-                    ) : (
-                      <Text className="text-sm font-medium text-gray-700">
-                        {item.name[0] ?? 'U'}
-                      </Text>
-                    )}
-                  </View>
-                  <Text className="text-base">{item.name}</Text>
-                </View>
-                <View
-                  className={`h-5 w-5 items-center justify-center rounded-full border ${checked ? 'border-indigo-600 bg-indigo-600' : 'border-gray-300 bg-white'}`}>
-                  {checked ? <Feather name="check" size={14} color="white" /> : null}
-                </View>
-              </Pressable>
-            );
-          }}
-          ListFooterComponent={
-            <View className="p-4">
-              <Pressable
-                onPress={saveMemberChanges}
-                className="items-center rounded bg-indigo-600 py-3">
-                <Text className="font-semibold text-white">Save</Text>
-              </Pressable>
-            </View>
-          }
-        />
-      </BottomSheet>
+      <UpdateMemberSheet open={isMembersSheetOpen} onClose={() => setMembersSheetOpen(false)} />
 
       {/* ----------------- EDIT GROUP NAME MODAL ----------------- */}
       <Modal

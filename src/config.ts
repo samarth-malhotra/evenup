@@ -11,6 +11,12 @@ type Extra = {
   androidVersionCode?: string | number;
   supabaseUrl?: string;
   supabaseAnonKey?: string;
+  inviteExpiryDays?: number;
+  inviteLimitPerDay?: number;
+  contactsMatchEndpoint?: string;
+  groupInvitesEndpoint?: string;
+  acceptInviteEndpoint?: string;
+  resendInviteEndpoint?: string;
 };
 
 const rawExtra = ((Constants.expoConfig && Constants.expoConfig.extra) ||
@@ -32,4 +38,11 @@ export const CONFIG = {
   ANDROID_VERSION_CODE: Number(rawExtra.androidVersionCode ?? 1),
   SUPABASE_URL: rawExtra.supabaseUrl ?? '',
   SUPABASE_ANON_KEY: rawExtra.supabaseAnonKey ?? '',
+  CONTACTS_MATCH_ENDPOINT: rawExtra.contactsMatchEndpoint ?? '',
+  GROUPS_INVITE_ENDPOINT: rawExtra.groupInvitesEndpoint ?? '',
+  ACCEPT_INVITE_ENDPOINT: rawExtra.acceptInviteEndpoint ?? '',
+  RESEND_INVITE_ENDPOINT: rawExtra.resendInviteEndpoint ?? '',
+
+  INVITE_EXPIRY_DAYS: rawExtra.inviteExpiryDays ?? 7,
+  INVITE_LIMIT_PER_DAY: rawExtra.inviteLimitPerDay ?? 20,
 } as const;

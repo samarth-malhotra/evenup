@@ -1,7 +1,8 @@
 // app.config.js
-import dotenv from 'dotenv';
 import fs from 'fs';
 import path from 'path';
+
+import dotenv from 'dotenv';
 
 // Choose env file based on APP_ENV (dev/staging/production) or NODE_ENV fallback
 const APP_ENV = process.env.APP_ENV || process.env.NODE_ENV || 'development';
@@ -38,6 +39,7 @@ export default ({ config }) => {
     orientation: config.orientation || 'portrait',
     icon: config.icon || './src/assets/icon.png',
     userInterfaceStyle: config.userInterfaceStyle || 'light',
+    platforms: ['ios', 'android', 'web'],
     splash: config.splash || {
       image: './src/assets/splash-icon.png',
       resizeMode: 'contain',
@@ -48,6 +50,17 @@ export default ({ config }) => {
       supportsTablet: true,
       bundleIdentifier: process.env.IOS_BUNDLE_IDENTIFIER || 'com.evenup.app',
       buildNumber: iosBuildNumber,
+      infoPlist: {
+        CFBundleURLTypes: [
+          {
+            CFBundleURLSchemes: ['evenup'],
+          },
+        ],
+        NSContactsUsageDescription: 'Used to find friends from your contacts who are using EvenUp',
+      },
+      entitlements: {
+        'com.apple.developer.associated-domains': ['applinks:evenup.com'],
+      },
     },
     android: {
       ...(config.android || {}),
@@ -58,6 +71,20 @@ export default ({ config }) => {
         backgroundColor: '#ffffff',
       },
       edgeToEdgeEnabled: true,
+      permissions: ['READ_CONTACTS'],
+      intentFilters: [
+        {
+          action: 'VIEW',
+          data: [
+            {
+              scheme: 'https',
+              host: 'evenup.com',
+              pathPrefix: '/',
+            },
+          ],
+          category: ['BROWSABLE', 'DEFAULT'],
+        },
+      ],
     },
     web: {
       ...(config.web || {}),
@@ -84,6 +111,12 @@ export default ({ config }) => {
       // Supabase
       supabaseUrl: process.env.SUPABASE_URL,
       supabaseAnonKey: process.env.SUPABASE_ANON_KEY,
+      inviteExpiryDays: process.env.INVITE_EXPIRY_DAYS,
+      inviteLimitPerDay: process.env.INVITE_LIMIT_PER_DAY,
+      contactsMatchEndpoint: process.env.CONTACTS_MATCH_ENDPOINT,
+      groupInvitesEndpoint: process.env.GROUPS_INVITE_ENDPOINT,
+      acceptInviteEndpoint: process.env.ACCEPT_INVITE_ENDPOINT,
+      resendInviteEndpoint: process.env.RESEND_INVITE_ENDPOINT,
     },
     // If you use EAS updates, set the URL via env or leave as is
     updates: {
