@@ -1,5 +1,4 @@
 // src/screens/ContactList.tsx
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useNavigation, useRouter } from 'expo-router';
 import { useAtomValue, useSetAtom } from 'jotai';
 import { useLayoutEffect, useMemo, useState } from 'react';
@@ -17,6 +16,7 @@ import {
 
 import AppHeader from '@/components/AppHeader';
 import InviteModal from '@/components/InviteModal';
+import { USER_STATUS } from '@/constant';
 import type { ContactDisplayItem } from '@/hooks/useContacts';
 import { useContacts } from '@/hooks/useContacts';
 import { supabase } from '@/services/supabase';
@@ -26,12 +26,30 @@ import {
   selectedGroupIdAtom,
   selectedGroupMembersAtom,
 } from '@/stores/atoms/groups';
-import { encryptPhone, sha256Hex } from '@/utils/hash';
+import { formatPhoneInternational } from '@/utils/normalise';
 
 const CACHE_KEY = 'evenup:contacts:matched:v2';
 // const API_BASE = process.env.EXPO_PUBLIC_API_BASE || ''; // e.g. https://api.yoursvc.com
 // const EDGE_BASE = (process.env.EXPO_PUBLIC_SUPABASE_EDGE_URL || '').replace(/\/$/, '');
+export type GroupInvitePayloadType = {
+  /** Raw phone number (unhashed). Optional if email provided. */
+  phone?: string;
 
+  /** Raw email address (unhashed). Optional if phone provided. */
+  email?: string;
+
+  /** How this invite should behave:
+   * - "new": Always create a placeholder user.
+   * - "existing": Try to find an existing user by phone/email hash.
+   */
+  type: 'new' | 'existing';
+
+  /** Channel used for sending invite — e.g., "whatsapp", "sms", "email". */
+  invite_channel?: 'whatsapp' | 'sms' | 'email' | 'app' | 'other';
+
+  /** Optional name from phonebook/contact list. */
+  contact_name?: string;
+};
 export default function ContactListScreen() {
   const navigation = useNavigation();
   const router = useRouter();
@@ -55,7 +73,7 @@ export default function ContactListScreen() {
     isLoading: loading,
     error,
     // contacts: contactItems,
-    refresh,
+    softRefresh,
   } = useContacts({ forceRefresh: false });
 
   // local state for search + invite modal
@@ -75,20 +93,22 @@ export default function ContactListScreen() {
   }, [contactItems]);
 
   console.log('in contact page: ', groupMemberUserIds);
+  console.log('in contactItems: ', contactItems.length);
+  // console.log('in contact list: ', contactItems[10]?.contact_name, contactItems[10]?.rawPhones);
   // helper to update a single contact in local UI + cache
-  async function upsertContactLocal(item: Partial<ContactDisplayItem> & { localId: string }) {
-    try {
-      const next = (contactItems || []).map((c) =>
-        c.localId === item.localId ? { ...c, ...item } : c
-      );
-      // update UI by forcing a refresh from cache: easiest is to write cache and call refresh() to reload hook
-      await AsyncStorage.setItem(CACHE_KEY, JSON.stringify({ ts: Date.now(), data: next }));
-      // call refresh so hook reads updated cache (useContacts will also attempt to match in background)
-      await refresh();
-    } catch (err) {
-      console.warn('upsertContactLocal error', err);
-    }
-  }
+  // async function upsertContactLocal(item: Partial<ContactDisplayItem> & { localId: string }) {
+  //   try {
+  //     const next = (contactItems || []).map((c) =>
+  //       c.localId === item.localId ? { ...c, ...item } : c
+  //     );
+  //     // update UI by forcing a refresh from cache: easiest is to write cache and call refresh() to reload hook
+  //     await AsyncStorage.setItem(CACHE_KEY, JSON.stringify({ ts: Date.now(), data: next }));
+  //     // call refresh so hook reads updated cache (useContacts will also attempt to match in background)
+  //     await refresh();
+  //   } catch (err) {
+  //     console.warn('upsertContactLocal error', err);
+  //   }
+  // }
 
   // Add existing matched user to group
   // Replace your existing addExistingUserToGroup with this:
@@ -123,22 +143,16 @@ export default function ContactListScreen() {
       const fnUrl = `${FUNCTION_ROOT.replace(/\/$/, '')}/groups/${groupId}/invite`;
 
       // Build body. Only include fields you have. The edge fn requires email or phone.
-      const body: {
-        phone_hash?: string;
-        email_hash?: string;
-        email?: string;
-        contact_name: string;
-        invite_channel: string;
-        type?: string;
-      } = {
+      const body: GroupInvitePayloadType = {
+        type: 'existing',
         contact_name: contact.contact_name ?? '',
         invite_channel: 'app', // or whatsapp/email based on UI
       };
       // prefer phone then email if available
       if (contact.rawPhones && contact.rawPhones.length > 0) {
-        body.phone_hash = await encryptPhone(contact.rawPhones[0]);
+        body.phone = contact.rawPhones[0];
       } else if (contact.rawEmails && contact.rawEmails.length > 0) {
-        body.email_hash = await sha256Hex(contact.rawEmails[0].toLowerCase());
+        // body.email_hash = await sha256Hex(contact.rawEmails[0].toLowerCase());
         body.email = contact.rawEmails[0].toLowerCase();
       } else {
         throw new Error('Contact has neither phone nor email');
@@ -177,6 +191,7 @@ export default function ContactListScreen() {
           name: profileName,
           phone_hash: '',
           email_hash: '',
+          status: USER_STATUS.ACTIVE,
         },
       });
       console.log('atom payload: ', groupId, friendProfileId);
@@ -213,6 +228,7 @@ export default function ContactListScreen() {
 
   // Open invite modal for unmatched contact
   function openInvite(contact: ContactDisplayItem) {
+    console.log('contact modal: ', contact);
     setInviteContact(contact);
     setInviteVisible(true);
   }
@@ -223,11 +239,35 @@ export default function ContactListScreen() {
     try {
       const friendProfileId = result?.friend_profile_id ?? result?.friend_profile_id?.toString?.();
       // optimistic update: mark as invited
-      await upsertContactLocal({
-        localId: contactLocalId,
-        matched: true,
-        status: result?.status ?? 'invited',
-        profile_id: friendProfileId ?? null,
+      // await upsertContactLocal({
+      //   localId: contactLocalId,
+      //   matched: true,
+      //   status: result?.status ?? 'invited',
+      //   profile_id: friendProfileId ?? null,
+      // });
+      // add
+      // const friendProfileId = json?.friend_profile_id ?? json?.friend_profile_id?.toString?.();
+      addMember({
+        groupId: groupId ?? '',
+        memberId: friendProfileId,
+        payload: {
+          id: friendProfileId,
+          name: inviteContact?.contact_name ?? '',
+          phone_hash: '',
+          email_hash: '',
+          status: USER_STATUS.INVITED,
+        },
+      });
+      console.log('updated group member payload: ', {
+        groupId: groupId ?? '',
+        memberId: friendProfileId,
+        payload: {
+          id: friendProfileId,
+          name: inviteContact?.contact_name ?? '',
+          phone_hash: '',
+          email_hash: '',
+          status: USER_STATUS.INVITED,
+        },
       });
       Alert.alert('Invite sent', 'Invite link created and share sheet opened.');
     } catch (err) {
@@ -241,7 +281,8 @@ export default function ContactListScreen() {
   // Render row
   function renderRow({ item }: { item: ContactDisplayItem }) {
     const name = item.contact_name || 'Unknown';
-    const subtitle = item.rawPhones?.[0] ?? item.rawEmails?.[0] ?? '';
+    const subtitle =
+      formatPhoneInternational(item.rawPhones?.[0] ?? '') ?? item.rawEmails?.[0] ?? '';
     const isProcessing = Boolean(processingIds[item.localId]);
     const showAdd =
       !!item.matched &&
@@ -252,7 +293,7 @@ export default function ContactListScreen() {
 
     const showRemove = groupMemberUserIds.includes(item.profile_id ?? '');
 
-    // console.log('show reomve: ', item.profile_id, item.contact_name);
+    console.log('show contact: ', item.profile_id, item.contact_name, item.matched);
 
     return (
       <View style={styles.row}>
@@ -268,7 +309,7 @@ export default function ContactListScreen() {
           {isProcessing ? (
             <ActivityIndicator size="small" />
           ) : showRemove ? (
-            <TouchableOpacity style={styles.inviteBtn} onPress={() => openInvite(item)}>
+            <TouchableOpacity style={styles.inviteBtn} onPress={() => console.log('remove')}>
               <Text style={styles.inviteText}>Remove</Text>
             </TouchableOpacity>
           ) : showAdd ? (
@@ -327,7 +368,7 @@ export default function ContactListScreen() {
   async function onPullToRefresh() {
     try {
       setIsRefreshing(true);
-      await refresh(); // calls your hook’s refresh()
+      await softRefresh(); // calls your hook’s refresh()
     } catch (err) {
       console.warn('Pull-to-refresh error', err);
     } finally {

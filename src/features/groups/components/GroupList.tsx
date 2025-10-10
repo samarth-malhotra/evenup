@@ -8,6 +8,7 @@ import { ActivityIndicator, FlatList, Pressable, Text, TextInput, View } from 'r
 import AppHeader from '@/components/AppHeader';
 import type { TransactionStatus } from '@/components/TransactionCard';
 import TransactionCard from '@/components/TransactionCard';
+import type { GROUP_STATUS, USER_STATUS } from '@/constant';
 import NewGroupSheet from '@/features/groups/components/BottomSheet/CreateGroupSheet';
 // import { groups } from '@/features/groups/mocks/groupList';
 import { useUserGroups } from '@/services/hooks/useUserGroups';
@@ -21,6 +22,7 @@ export type GroupMember = {
   name: string;
   phone_hash: string | null;
   email_hash: string | null;
+  status: USER_STATUS;
 };
 
 export type Group = {
@@ -30,7 +32,7 @@ export type Group = {
   group_name: string;
   id: string;
   simplified: boolean;
-  status: string;
+  status: GROUP_STATUS;
   updated_at: string;
   members: GroupMember[] | [];
   owner: GroupMember;
@@ -82,7 +84,7 @@ export default function GroupList() {
       setError(ApiError.message);
     }
   }, [ApiError, data, isError, setGroups]);
-  console.log('is loading: ', isLoading, groups);
+  console.log('Group List: ', isLoading, groups.length);
   if (isLoading) {
     return (
       <View className="flex-1 items-center justify-center">

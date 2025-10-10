@@ -36,6 +36,11 @@ export enum USER_STATUS {
   SUSPENDED = 'suspended',
   DELETED = 'deleted',
 }
+export enum GROUP_STATUS {
+  ACTIVE = 'active',
+  INVITED = 'invited',
+  DELETED = 'deleted',
+}
 
 export enum APP_MODE {
   LIGHT = 'light',

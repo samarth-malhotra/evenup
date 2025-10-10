@@ -3,6 +3,9 @@ import axios from 'axios';
 import { useState } from 'react';
 import { Alert, Button, Modal, Share, Text, View } from 'react-native';
 
+import type { GroupInvitePayloadType } from '@/features/contacts/components/ContactList';
+import { useAccessToken } from '@/hooks/useAccessToken';
+
 type Props = {
   visible: boolean;
   onClose: () => void;
@@ -13,32 +16,31 @@ type Props = {
 
 export default function InviteModal({ visible, onClose, groupId, contact, onInvited }: Props) {
   const [loading, setLoading] = useState(false);
+  const { accessToken } = useAccessToken(); // keep original hook usage
 
   async function sendInvite({ channel = 'whatsapp', to }: { channel?: string; to: string }) {
     try {
       setLoading(true);
 
-      // ✅ Use your Supabase edge function endpoint
-      const url = `https://wrnepxzmmuzcsmjmadli.supabase.co/functions/v1/groups/${groupId}/invite`;
+      const FUNCTION_ROOT = 'https://wrnepxzmmuzcsmjmadli.supabase.co/functions/v1/groups-invite';
+      const url = `${FUNCTION_ROOT.replace(/\/$/, '')}/groups/${groupId}/invite`;
 
-      const payload = {
+      const payload: GroupInvitePayloadType = {
         contact_name: contact.contact_name,
-        invite_channel: channel,
-        email: contact.emails?.[0] ?? null,
-        phone: contact.phones?.[0] ?? null,
+        invite_channel: 'whatsapp',
+        email: contact.emails?.[0],
+        phone: contact.phones?.[0],
+        type: 'new',
       };
-
       const resp = await axios.post(url, payload, {
         headers: {
           'Content-Type': 'application/json',
-          // include session token for authorization (important!)
-          Authorization: `Bearer ${await getSupabaseAccessToken()}`,
+          Authorization: `Bearer ${accessToken}`,
         },
+        timeout: 15000,
       });
 
-      // ✅ Handle both snake_case and camelCase for safety
       const inviteLink = resp.data.inviteLink || resp.data.invite_link;
-
       if (!inviteLink) {
         Alert.alert('Invite failed', 'No invite link returned from server');
         return;
@@ -51,7 +53,7 @@ export default function InviteModal({ visible, onClose, groupId, contact, onInvi
       onInvited?.(resp.data);
       onClose();
     } catch (err: any) {
-      console.error('sendInvite', err);
+      console.error('error message:', err.message);
       Alert.alert('Invite error', err?.message || String(err));
     } finally {
       setLoading(false);
@@ -59,12 +61,12 @@ export default function InviteModal({ visible, onClose, groupId, contact, onInvi
   }
 
   // 🔒 Example helper (replace with your Supabase auth helper)
-  async function getSupabaseAccessToken() {
-    const { supabase } = await import('@/services/supabase');
-    const session = (await supabase.auth.getSession()).data.session;
-    return session?.access_token;
-  }
-
+  // async function getSupabaseAccessToken() {
+  //   const { supabase } = await import('@/services/supabase');
+  //   const session = (await supabase.auth.getSession()).data.session;
+  //   return session?.access_token;
+  // }
+  // console.log("contact: ", contact);
   return (
     <Modal visible={visible} animationType="slide" onRequestClose={onClose} transparent>
       <View

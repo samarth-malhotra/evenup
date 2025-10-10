@@ -27,6 +27,7 @@ async function fetchUserGroups(userId: string): Promise<Group[]> {
 }
 
 export function useUserGroups(userId?: string) {
+  console.log('group api is called');
   return useQuery({
     queryKey: ['userGroups', userId],
     queryFn: () => {

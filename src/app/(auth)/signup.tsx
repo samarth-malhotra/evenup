@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 
 import { supabase } from '@/services/supabase';
+import { normalizeEmail, normalizePhone } from '@/utils/normalise';
 
 type SignupPayload = {
   email: string;
@@ -78,10 +79,10 @@ export default function SignupScreen() {
 
     try {
       const payload: SignupPayload = {
-        email: normalize(email)!,
+        email: normalizeEmail(email)!,
         password,
         full_name: normalize(name),
-        phone: normalize(`+91${phone}`),
+        phone: normalizePhone(`91${phone}`),
       };
 
       // call the function

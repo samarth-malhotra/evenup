@@ -18,3 +18,22 @@ export function normalizePhoneToE164(
     return null;
   }
 }
+
+/**
+ * Returns libphonenumber-js's international format (with grouping)
+ * Example: "+91 91234 56789"
+ */
+export function formatInternationalWithGrouping(
+  raw: string,
+  defaultCountry: CountryCode = 'IN'
+): string | null {
+  if (!raw) return null;
+  const cleaned = raw.replace(/[^\d+]/g, '');
+  try {
+    const pn = parsePhoneNumberFromString(cleaned, defaultCountry);
+    if (!pn || !pn.isValid()) return null;
+    return pn.formatInternational();
+  } catch {
+    return null;
+  }
+}

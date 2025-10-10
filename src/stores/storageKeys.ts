@@ -10,6 +10,7 @@ export const STORAGE_KEYS = {
   THEME: `${PREFIX}theme`,
   NOTIFICATIONS: `${PREFIX}notifications`,
   GROUPLIST: `${PREFIX}group-list`,
+  PHONECONTACTLIST: `${PREFIX}phone-contact-list`,
 } as const;
 
 // Optional helper type (so TS infers union of all keys)
