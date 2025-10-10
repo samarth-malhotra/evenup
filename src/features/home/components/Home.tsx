@@ -1,7 +1,7 @@
 // app/(tabs)/home.tsx
 import { Feather, Ionicons, MaterialIcons } from '@expo/vector-icons';
 import { router, useNavigation } from 'expo-router';
-import { useAtomValue } from 'jotai';
+import { useAtomValue, useSetAtom } from 'jotai';
 import { useCallback, useLayoutEffect, useState } from 'react';
 import { Image, Pressable, ScrollView, Text, TouchableOpacity, View } from 'react-native';
 
@@ -11,7 +11,7 @@ import SummaryCard from '@/components/SummaryCard';
 import ThemedSafeArea from '@/components/ThemedSafeArea';
 import AddBillSheet from '@/features/bills/components/AddBillSheet';
 import CreateGroupSheet from '@/features/groups/components/BottomSheet/CreateGroupSheet';
-import { groups } from '@/features/groups/mocks/groupList';
+import { groupsAtom, selectedGroupIdAtom } from '@/stores/atoms/groups';
 import { userAtom } from '@/stores/atoms/user';
 import { getBoxShadow } from '@/theme/hooks/getBoxShadow';
 import { useColor } from '@/theme/hooks/useColor';
@@ -57,8 +57,10 @@ export default function HomeScreen() {
   const getColor = useColor();
   const { theme } = useTheme();
   const navigation = useNavigation();
+  const groups = useAtomValue(groupsAtom);
 
   const user = useAtomValue(userAtom);
+  const setSelectedGroupId = useSetAtom(selectedGroupIdAtom);
 
   const [addOpen, setAddOpen] = useState(false);
   const [openCreateGroupSheet, setOpenCreateGroupSheet] = useState(false);
@@ -81,7 +83,7 @@ export default function HomeScreen() {
         />
       ),
     });
-  }, [navigation, user]);
+  }, [getColor, navigation, user]);
 
   return (
     <ThemedSafeArea scroll edges={['left', 'right']}>
@@ -137,13 +139,16 @@ export default function HomeScreen() {
               <Pressable
                 key={g.id}
                 className="items-center"
-                onPress={() => router.push(`/(tabs)/groups/${g.id}`)}>
-                <Avatar name={g.title} imageUri={g.img} size={64} />
+                onPress={() => {
+                  setSelectedGroupId(g.id);
+                  router.push(`/(tabs)/groups/${g.id}`);
+                }}>
+                <Avatar name={g.group_name} imageUri={g.avatar_url ?? ''} size={64} />
                 <Text
                   style={{ color: theme.colors.textPrimary }}
                   className="mt-2 w-[90px] text-center"
                   numberOfLines={1}>
-                  {g.title}
+                  {g.group_name}
                 </Text>
               </Pressable>
             ))}
