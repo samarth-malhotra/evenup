@@ -23,6 +23,7 @@ const DEFAULT_SIZE = 48;
 
 /** helper: get initials from a name, ignoring non-letters */
 function getInitials(name: string) {
+  if (!name) return '';
   return name
     .split(/\s+/) // split on spaces
     .map((word) => word.replace(/[^a-zA-Z]/g, '')) // remove non-letters

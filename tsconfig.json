@@ -30,6 +30,7 @@
     "app/**/*",
     "types/**/*",
     "**/*.ts",
+    "**/*.js",
     "**/*.tsx",
     "nativewind-env.d.ts",
     "global.d.ts",

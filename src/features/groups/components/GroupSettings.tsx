@@ -1,29 +1,25 @@
 // app/groups/[id]/settings.tsx
-import { Feather, MaterialIcons } from '@expo/vector-icons';
-import { BottomSheetFlatList } from '@gorhom/bottom-sheet';
+import { Feather } from '@expo/vector-icons';
 import { useLocalSearchParams, useNavigation, useRouter } from 'expo-router';
-import { useEffect, useMemo, useState } from 'react';
-import { FlatList, Image, Modal, Pressable, Switch, Text, TextInput, View } from 'react-native';
+import { useAtomValue } from 'jotai';
+import { useEffect, useState } from 'react';
+import { FlatList, Modal, Pressable, Switch, Text, TextInput, View } from 'react-native';
 
 import AppHeader from '@/components/AppHeader';
-import BottomSheet from '@/components/BottomSheet';
+import { Avatar } from '@/components/Avatar';
+import UpdateMemberSheet from '@/features/groups/components/BottomSheet/UpdateMemberSheet';
+import { selectedGroupIdAtom, selectedGroupMembersAtom } from '@/stores/atoms/groups';
 import { useTheme } from '@/theme/hooks/useTheme';
 
 type User = { id: string; name: string; avatar?: string };
-
-const mockFriends: User[] = [
-  { id: 'u1', name: 'You' },
-  { id: 'u2', name: 'Anita' },
-  { id: 'u3', name: 'Rohit' },
-  { id: 'u4', name: 'Sneha' },
-  { id: 'u5', name: 'Ramesh' },
-];
 
 export default function GroupSettings() {
   const { theme } = useTheme();
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const navigation = useNavigation();
+  const groupMember = useAtomValue(selectedGroupMembersAtom);
+  const selectedGroupId = useAtomValue(selectedGroupIdAtom);
 
   useEffect(() => {
     navigation.setOptions({
@@ -34,14 +30,9 @@ export default function GroupSettings() {
 
   // --- group state (replace with EvenUp selectors) ---
   const [groupName, setGroupName] = useState('Trip to Goa');
-  const [members, setMembers] = useState<User[]>(
-    mockFriends.filter((f) => ['u1', 'u2', 'u3'].includes(f.id))
-  );
-  const friends = useMemo(() => mockFriends, []);
 
   // UI state
   const [isMembersSheetOpen, setMembersSheetOpen] = useState(false);
-  const [tempSelected, setTempSelected] = useState<User[]>([]);
   const [simplifiedDebts, setSimplifiedDebts] = useState(true);
 
   // Edit name modal state
@@ -55,20 +46,6 @@ export default function GroupSettings() {
   }>({ visible: false });
 
   // helpers
-  const openMembersSheet = () => {
-    setTempSelected([...members]);
-    setMembersSheetOpen(true);
-  };
-  const toggleTemp = (u: User) =>
-    setTempSelected((prev) =>
-      prev.find((m) => m.id === u.id) ? prev.filter((m) => m.id !== u.id) : [...prev, u]
-    );
-  const removeTemp = (id: string) => setTempSelected((prev) => prev.filter((m) => m.id !== id));
-  const saveMemberChanges = () => {
-    setMembers([...tempSelected]);
-    setMembersSheetOpen(false);
-    // TODO: persist to store/API
-  };
 
   const openConfirmModal = (type: 'leave' | 'delete') => {
     setConfirmModal({ visible: true, type });
@@ -94,7 +71,7 @@ export default function GroupSettings() {
     setEditNameModalOpen(false);
     // TODO: persist rename
   };
-
+  console.log('group setting: ', groupMember);
   // Header: static content rendered as FlatList header to avoid nested scroll issues
   const Header = (
     <View className="px-4 pb-2 pt-4">
@@ -119,7 +96,14 @@ export default function GroupSettings() {
       </View>
 
       {/* Add / Remove people */}
-      <Pressable className="flex-row items-center justify-between py-4" onPress={openMembersSheet}>
+      <Pressable
+        className="flex-row items-center justify-between py-4"
+        onPress={() =>
+          router.push({
+            pathname: `/groups/${selectedGroupId}/add-members`,
+            params: { selectedGroupId },
+          })
+        }>
         <View>
           <Text className="text-base">Add / Remove people</Text>
           <Text className="text-xs text-gray-500">Manage group members</Text>
@@ -128,23 +112,26 @@ export default function GroupSettings() {
       </Pressable>
 
       {/* Members preview */}
-      <View className="border-b border-gray-200 py-4">
-        <Text className="mb-2 text-sm text-gray-500">People in group</Text>
-        <View className="flex-row flex-wrap items-center">
-          {members.map((m) => (
-            <View key={m.id} className="mb-3 mr-3 items-center">
-              <View className="h-10 w-10 items-center justify-center overflow-hidden rounded-full bg-gray-200">
-                {m.avatar ? (
+      {groupMember.length && (
+        <View className="border-b border-gray-200 py-4">
+          <Text className="mb-2 text-sm text-gray-500">People in group</Text>
+          <View className="flex-row flex-wrap items-center">
+            {groupMember.map((m) => (
+              <View key={m.id} className="mb-3 mr-3 items-center">
+                <View className="h-10 w-10 items-center justify-center overflow-hidden rounded-full bg-gray-200">
+                  {/* {m.name ? (
                   <Image source={{ uri: m.avatar }} className="h-10 w-10" />
                 ) : (
-                  <Text className="text-sm font-medium text-gray-700">{m.name[0] ?? 'U'}</Text>
-                )}
+                )} */}
+                  {/* <Text className="text-sm font-medium text-gray-700">{m.name[0]}</Text> */}
+                  <Avatar name={m.name} />
+                </View>
+                <Text className="mt-1 text-xs">{m.name}</Text>
               </View>
-              <Text className="mt-1 text-xs">{m.name}</Text>
-            </View>
-          ))}
+            ))}
+          </View>
         </View>
-      </View>
+      )}
 
       {/* Simplified group debts - improved checkbox UI */}
       <View className="flex-row items-center justify-between border-b border-gray-200 py-4">
@@ -186,84 +173,7 @@ export default function GroupSettings() {
       />
 
       {/* ----------------- MEMBERS BOTTOM SHEET (uses avoidScrollView + BottomSheetFlatList) ----------------- */}
-      <BottomSheet
-        open={isMembersSheetOpen}
-        onClose={() => setMembersSheetOpen(false)}
-        avoidScrollView>
-        <BottomSheetFlatList
-          ListHeaderComponent={
-            <View className="px-4 pb-3">
-              <Text className="mb-2 text-lg font-semibold">Add / Remove people</Text>
-
-              {/* Selected horizontal strip */}
-              <FlatList
-                data={tempSelected}
-                keyExtractor={(i) => i.id}
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                contentContainerStyle={{ paddingVertical: 6 }}
-                renderItem={({ item }) => (
-                  <View key={item.id} className="mr-3 items-center">
-                    <View className="relative">
-                      <View className="h-12 w-12 items-center justify-center overflow-hidden rounded-full bg-gray-200">
-                        {item.avatar ? (
-                          <Image source={{ uri: item.avatar }} className="h-12 w-12" />
-                        ) : (
-                          <Text className="text-sm font-medium text-gray-700">
-                            {item.name[0] ?? 'U'}
-                          </Text>
-                        )}
-                      </View>
-                      <Pressable
-                        onPress={() => removeTemp(item.id)}
-                        className="absolute -right-2 -top-2 rounded-full bg-white p-0.5 shadow">
-                        <MaterialIcons name="cancel" size={18} color="#ef4444" />
-                      </Pressable>
-                    </View>
-                    <Text className="mt-1 text-xs">{item.name}</Text>
-                  </View>
-                )}
-              />
-            </View>
-          }
-          data={friends}
-          keyExtractor={(i) => i.id}
-          renderItem={({ item }) => {
-            const checked = !!tempSelected.find((m) => m.id === item.id);
-            return (
-              <Pressable
-                onPress={() => toggleTemp(item)}
-                className="flex-row items-center justify-between border-b border-gray-100 px-4 py-3">
-                <View className="flex-row items-center">
-                  <View className="mr-3 h-10 w-10 items-center justify-center overflow-hidden rounded-full bg-gray-200">
-                    {item.avatar ? (
-                      <Image source={{ uri: item.avatar }} className="h-10 w-10" />
-                    ) : (
-                      <Text className="text-sm font-medium text-gray-700">
-                        {item.name[0] ?? 'U'}
-                      </Text>
-                    )}
-                  </View>
-                  <Text className="text-base">{item.name}</Text>
-                </View>
-                <View
-                  className={`h-5 w-5 items-center justify-center rounded-full border ${checked ? 'border-indigo-600 bg-indigo-600' : 'border-gray-300 bg-white'}`}>
-                  {checked ? <Feather name="check" size={14} color="white" /> : null}
-                </View>
-              </Pressable>
-            );
-          }}
-          ListFooterComponent={
-            <View className="p-4">
-              <Pressable
-                onPress={saveMemberChanges}
-                className="items-center rounded bg-indigo-600 py-3">
-                <Text className="font-semibold text-white">Save</Text>
-              </Pressable>
-            </View>
-          }
-        />
-      </BottomSheet>
+      <UpdateMemberSheet open={isMembersSheetOpen} onClose={() => setMembersSheetOpen(false)} />
 
       {/* ----------------- EDIT GROUP NAME MODAL ----------------- */}
       <Modal
