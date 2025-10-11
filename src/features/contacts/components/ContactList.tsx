@@ -185,7 +185,6 @@ export default function ContactListScreen() {
       const friendProfileId = json?.friend_profile_id ?? json?.friend_profile_id?.toString?.();
       addMember({
         groupId: groupId,
-        memberId: friendProfileId,
         payload: {
           id: friendProfileId,
           name: profileName,
@@ -249,7 +248,6 @@ export default function ContactListScreen() {
       // const friendProfileId = json?.friend_profile_id ?? json?.friend_profile_id?.toString?.();
       addMember({
         groupId: groupId ?? '',
-        memberId: friendProfileId,
         payload: {
           id: friendProfileId,
           name: inviteContact?.contact_name ?? '',

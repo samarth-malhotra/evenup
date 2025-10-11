@@ -8,11 +8,11 @@ import { ActivityIndicator, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { QueryProvider } from '@/components/QueryProvider';
 import { ThemeProvider } from '@/components/ThemeProvider';
 import ToastProvider from '@/components/ToastProvider';
 import { initAuth } from '@/features/auth/auth';
 import { fetchUserProfile } from '@/services/hooks/userProfile';
-import { QueryProvider } from '@/services/QueryProvider';
 import { authLoadingAtom } from '@/stores/atoms/auth';
 import { userAtom } from '@/stores/atoms/user';
 import { jotaiStore } from '@/stores/store';

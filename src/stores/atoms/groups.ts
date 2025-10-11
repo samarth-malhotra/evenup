@@ -31,12 +31,10 @@ export const addGroupMemberAtom = atom(
     set,
     {
       groupId,
-      memberId,
       role = 'member',
       payload,
     }: {
       groupId: string;
-      memberId: string;
       role?: 'owner' | 'member';
       payload: GroupMember;
     }
