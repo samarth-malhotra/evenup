@@ -23,6 +23,12 @@ export const selectedGroupMembersAtom = atom((get) => {
   return group?.members ?? ([] as GroupMember[]);
 });
 
+// derived: owner of selected group
+// export const selectedGroupOwnerAtom = atom((get) => {
+//   const group = get(selectedGroupAtom);
+//   return group?.owner;
+// });
+
 // Writable atom — add a new member of any group
 export const addGroupMemberAtom = atom(
   null,
@@ -48,6 +54,38 @@ export const addGroupMemberAtom = atom(
             ? { owner: payload }
             : {
                 members: [...g.members, payload],
+              }),
+        };
+      })
+    );
+  }
+);
+
+// Writable atom — remove member from  group
+export const removeGroupMemberAtom = atom(
+  null,
+  (
+    get,
+    set,
+    {
+      groupId,
+      role = 'member',
+      memberId,
+    }: {
+      groupId: string;
+      role?: 'owner' | 'member';
+      memberId: string;
+    }
+  ) => {
+    set(groupsAtom, (prev) =>
+      prev.map((g) => {
+        if (g.id !== groupId) return g;
+        return {
+          ...g,
+          ...(role === 'owner'
+            ? { owner: null }
+            : {
+                members: g.members.filter((m) => m.id !== memberId),
               }),
         };
       })

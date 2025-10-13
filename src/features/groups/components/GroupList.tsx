@@ -22,7 +22,8 @@ export type GroupMember = {
   name: string;
   phone_hash: string | null;
   email_hash: string | null;
-  status: USER_STATUS;
+  status: 'active' | 'deleted';
+  account_status: USER_STATUS;
 };
 
 export type Group = {
@@ -35,7 +36,7 @@ export type Group = {
   status: GROUP_STATUS;
   updated_at: string;
   members: GroupMember[] | [];
-  owner: GroupMember;
+  owner: GroupMember | null;
 };
 
 export default function GroupList() {
