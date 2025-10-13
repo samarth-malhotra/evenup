@@ -124,7 +124,7 @@ export default function GroupSettings() {
                 ) : (
                 )} */}
                   {/* <Text className="text-sm font-medium text-gray-700">{m.name[0]}</Text> */}
-                  <Avatar name={m.name} />
+                  <Avatar name={m.name ?? ''} />
                 </View>
                 <Text className="mt-1 text-xs">{m.name}</Text>
               </View>
