@@ -3,7 +3,7 @@ import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useNavigation, useRouter } from 'expo-router';
 import { useAtomValue } from 'jotai';
 import { useCallback, useLayoutEffect, useRef, useState } from 'react';
-import { FlatList, Pressable, Text, TouchableOpacity, View } from 'react-native';
+import { FlatList, Image, Pressable, Text, TouchableOpacity, View } from 'react-native';
 
 import AppHeader from '@/components/AppHeader';
 import BottomSheet from '@/components/BottomSheet';
@@ -19,6 +19,48 @@ import { getBoxShadow } from '@/theme/hooks/getBoxShadow';
 import { useColor } from '@/theme/hooks/useColor';
 import { useTheme } from '@/theme/hooks/useTheme';
 import { formatRs } from '@/utils/formatRs';
+
+function AvatarSmall({
+  uri,
+  name,
+  size = 40,
+}: {
+  uri?: string | null;
+  name?: string | null;
+  size?: number;
+}) {
+  const initials = (() => {
+    if (!name) return '?';
+    const parts = String(name).trim().split(/\s+/);
+    if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+    return (parts[0][0] + parts[1][0]).toUpperCase();
+  })();
+
+  const style = {
+    width: size,
+    height: size,
+    borderRadius: size / 2,
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
+    overflow: 'hidden' as const,
+  };
+
+  if (uri) {
+    return <Image source={{ uri }} style={style as any} />;
+  }
+
+  return (
+    <View
+      style={{
+        ...style,
+        backgroundColor: '#E5E7EB',
+        alignItems: 'center',
+        justifyContent: 'center',
+      }}>
+      <Text style={{ fontWeight: '600', color: '#111827' }}>{initials}</Text>
+    </View>
+  );
+}
 
 export default function GroupDetailScreen() {
   const { theme } = useTheme();
@@ -251,14 +293,32 @@ export default function GroupDetailScreen() {
           className="mb-3 text-center text-lg font-semibold">
           Select payer
         </Text>
+
+        {/* member list (shows avatar, real name, subtle phone) */}
         <View className="p-2">
           {groupMembers?.map((m) => (
             <Pressable
               key={m.id}
               onPress={() => handleSelectPaidBy(m.id)}
-              className="rounded-lg px-2 py-3"
+              className="flex-row items-center rounded-lg px-2 py-3"
               style={{ backgroundColor: theme.colors.gray50, marginBottom: 8 }}>
-              <Text style={{ color: theme.colors.textPrimary }}>{m.name}</Text>
+              <View className="pr-3">
+                <AvatarSmall
+                  uri={m.avatar_url ?? m.avatarUrl}
+                  name={m.name ?? m.nickname}
+                  size={40}
+                />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={{ color: theme.colors.textPrimary }} className="text-base">
+                  {m.name ?? m.nickname ?? m.email ?? m.id}
+                </Text>
+                {m.phone ? (
+                  <Text style={{ color: theme.colors.textSecondary }} className="text-xs">
+                    {m.phone}
+                  </Text>
+                ) : null}
+              </View>
             </Pressable>
           ))}
         </View>
@@ -271,25 +331,56 @@ export default function GroupDetailScreen() {
           className="mb-3 text-center text-lg font-semibold">
           Select participants
         </Text>
+
         <View className="p-2">
-          {groupMembers?.map((m) => (
-            <Pressable
-              key={m.id}
-              onPress={() => toggleMulti(m.id)}
-              className="mb-2 rounded-lg px-2 py-3"
-              style={{
-                backgroundColor: multiSelected[m.id]
-                  ? theme.colors.primary.DEFAULT
-                  : theme.colors.gray50,
-              }}>
-              <Text
+          {groupMembers?.map((m) => {
+            const selected = !!multiSelected[m.id];
+            return (
+              <Pressable
+                key={m.id}
+                onPress={() => toggleMulti(m.id)}
+                className="mb-2 rounded-lg px-2 py-3"
                 style={{
-                  color: multiSelected[m.id] ? theme.colors.textWhite : theme.colors.textPrimary,
+                  backgroundColor: selected ? theme.colors.primary.DEFAULT : theme.colors.gray50,
+                  flexDirection: 'row',
+                  alignItems: 'center',
                 }}>
-                {m.name}
-              </Text>
-            </Pressable>
-          ))}
+                <View className="pr-3">
+                  <AvatarSmall
+                    uri={m.avatar_url ?? m.avatarUrl}
+                    name={m.name ?? m.nickname}
+                    size={40}
+                  />
+                </View>
+
+                <View style={{ flex: 1 }}>
+                  <Text
+                    style={{
+                      color: selected ? theme.colors.textWhite : theme.colors.textPrimary,
+                      fontSize: 16,
+                    }}>
+                    {m.name ?? m.nickname ?? m.email ?? m.id}
+                  </Text>
+                  {m.phone ? (
+                    <Text
+                      style={{
+                        color: selected ? theme.colors.textWhite : theme.colors.textSecondary,
+                        fontSize: 12,
+                      }}>
+                      {m.phone}
+                    </Text>
+                  ) : null}
+                </View>
+
+                {/* simple selected indicator */}
+                {selected ? (
+                  <View style={{ paddingHorizontal: 8 }}>
+                    <Text style={{ color: theme.colors.textWhite }}>✓</Text>
+                  </View>
+                ) : null}
+              </Pressable>
+            );
+          })}
         </View>
 
         <View className="flex-row justify-between px-3 py-2">

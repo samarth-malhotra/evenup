@@ -1,13 +1,55 @@
 import { memo } from 'react';
-import { Text, TextInput, View } from 'react-native';
+import { Image, Text, TextInput, View } from 'react-native';
 
 import { labelFor, toNum } from '@/features/bills/utils';
 import { useTheme } from '@/theme/hooks/useTheme';
 import type { SplitMethod } from '@/types';
 
+function Avatar({
+  uri,
+  name,
+  size = 40,
+}: {
+  uri?: string | null;
+  name?: string | null;
+  size?: number;
+}) {
+  const initials = (() => {
+    if (!name) return '?';
+    const parts = String(name).trim().split(/\s+/);
+    if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+    return (parts[0][0] + parts[1][0]).toUpperCase();
+  })();
+
+  const avatarStyle = {
+    width: size,
+    height: size,
+    borderRadius: size / 2,
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
+  };
+
+  if (uri) {
+    return <Image source={{ uri }} style={avatarStyle as any} />;
+  }
+
+  // fallback initials circle
+  return (
+    <View
+      style={{
+        ...avatarStyle,
+        backgroundColor: '#E5E7EB', // light gray fallback (tailwind gray-200)
+      }}>
+      <Text style={{ fontWeight: '600', color: '#111827' /* gray-900 */ }}>{initials}</Text>
+    </View>
+  );
+}
+
 function ParticipantRow({
   id,
   displayName,
+  avatarUrl,
+  phone,
   mode,
   amount,
   equalPerPerson,
@@ -21,6 +63,8 @@ function ParticipantRow({
 }: {
   id: string;
   displayName?: string; // prefer this over labelFor(id)
+  avatarUrl?: string | null;
+  phone?: string | null;
   mode: SplitMethod;
   amount: number;
   equalPerPerson: number;
@@ -48,14 +92,32 @@ function ParticipantRow({
   // prefer displayName if provided, otherwise fallback to labelFor(id)
   const label = displayName ?? labelFor(id);
 
+  // subtle phone line, shown only when available
+  const phoneLine = phone ? String(phone) : null;
+
   return (
     <View
       style={{ borderColor: theme.colors.border }}
-      className="flex-row items-center border-b py-2">
-      <Text style={{ color: theme.colors.textPrimary }} className="w-28 pr-2">
-        {label}
-      </Text>
+      className="flex-row items-center border-b py-3">
+      {/* Left: avatar + name / phone */}
+      <View className="flex-row items-center pr-3" style={{ width: 160 }}>
+        <View className="pr-3">
+          <Avatar uri={avatarUrl} name={label} size={40} />
+        </View>
 
+        <View className="flex-1">
+          <Text style={{ color: theme.colors.textPrimary }} className="text-sm font-medium">
+            {label}
+          </Text>
+          {phoneLine ? (
+            <Text style={{ color: theme.colors.textSecondary }} className="text-xs">
+              {phoneLine}
+            </Text>
+          ) : null}
+        </View>
+      </View>
+
+      {/* Right: mode-specific inputs and amount */}
       {mode === 'equal' && (
         <Text
           style={{ color: theme.colors.textPrimary }}
