@@ -7,32 +7,34 @@ import type { SplitMethod } from '@/types';
 
 function ParticipantRow({
   id,
+  displayName,
   mode,
   amount,
   equalPerPerson,
-  percentStr,
-  exactStr,
-  shareStr,
-  totalShares,
+  percentStr = '',
+  exactStr = '',
+  shareStr = '',
+  totalShares = 0,
   onChangeExact,
   onChangePercent,
   onChangeShare,
 }: {
   id: string;
+  displayName?: string; // prefer this over labelFor(id)
   mode: SplitMethod;
   amount: number;
   equalPerPerson: number;
-  percentStr: string;
-  exactStr: string;
-  shareStr: string;
-  totalShares: number;
+  percentStr?: string;
+  exactStr?: string;
+  shareStr?: string;
+  totalShares?: number;
   onChangeExact: (id: string, v: string) => void;
   onChangePercent: (id: string, v: string) => void;
   onChangeShare: (id: string, v: string) => void;
 }) {
   const { theme } = useTheme();
-  const pct = toNum(percentStr);
-  const shares = toNum(shareStr);
+  const pct = toNum(percentStr || '0');
+  const shares = toNum(shareStr || '0');
   const amountFromPct = amount * (pct / 100);
   const amountFromShare = totalShares > 0 ? (amount * shares) / totalShares : 0;
 
@@ -42,12 +44,16 @@ function ParticipantRow({
     borderColor: theme.colors.border,
     backgroundColor: theme.colors.inputBackground,
   };
+
+  // prefer displayName if provided, otherwise fallback to labelFor(id)
+  const label = displayName ?? labelFor(id);
+
   return (
     <View
       style={{ borderColor: theme.colors.border }}
       className="flex-row items-center border-b py-2">
       <Text style={{ color: theme.colors.textPrimary }} className="w-28 pr-2">
-        {labelFor(id)}
+        {label}
       </Text>
 
       {mode === 'equal' && (
@@ -75,7 +81,7 @@ function ParticipantRow({
             </View>
           </View>
           <Text style={{ color: theme.colors.textPrimary }} className="w-24 text-right">
-            ₹{toNum(exactStr).toFixed(2)}
+            ₹{toNum(exactStr || '0').toFixed(2)}
           </Text>
         </>
       )}

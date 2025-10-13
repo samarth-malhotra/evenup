@@ -19,23 +19,29 @@ import { useTheme } from '@/theme/hooks/useTheme';
 
 export type GroupMember = {
   id: string;
-  name: string;
+  name: string | null;
+  phone: string | null;
+  email: string | null;
   phone_hash: string | null;
   email_hash: string | null;
-  status: USER_STATUS;
+  avatar_url: string | null;
+  currency: string;
+  language: string;
+  account_status: USER_STATUS;
+  status: string;
+  role: 'member' | 'owner';
 };
 
 export type Group = {
+  id: string;
+  group_name: string;
   avatar_url: string | null;
   created_at: string;
+  updated_at: string;
   created_by: string;
-  group_name: string;
-  id: string;
   simplified: boolean;
   status: GROUP_STATUS;
-  updated_at: string;
-  members: GroupMember[] | [];
-  owner: GroupMember;
+  members: GroupMember[];
 };
 
 export default function GroupList() {

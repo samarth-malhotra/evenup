@@ -1,6 +1,8 @@
+// features/bills/components/AddBillSheet.tsx
 import { MaterialIcons } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import dayjs from 'dayjs';
+import { useAtomValue } from 'jotai';
 import React, { memo, useCallback, useEffect, useMemo, useState } from 'react';
 import { Pressable, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
@@ -8,6 +10,8 @@ import BottomSheet from '@/components/BottomSheet';
 import ParticipantRow from '@/features/bills/components/common/ParticipantRow';
 import { SPLIT_OPTIONS } from '@/features/bills/constant';
 import { toNum } from '@/features/bills/utils';
+import { selectedGroupMembersAtom } from '@/stores/atoms/groups';
+import { userAtom } from '@/stores/atoms/user';
 import { useTheme } from '@/theme/hooks/useTheme';
 import type { SplitMethod } from '@/types';
 
@@ -31,8 +35,6 @@ const Pill = memo(function Pill({
   );
 });
 
-/** One stable row for all modes (prevents remounts when mode changes) */
-
 export default function AddBillSheet({
   open,
   onClose,
@@ -55,12 +57,15 @@ export default function AddBillSheet({
   onSelectParticipants?: () => Promise<string[]> | string[] | void;
 }) {
   const { theme } = useTheme();
+  const groupMembers = useAtomValue(selectedGroupMembersAtom) as Array<any> | undefined;
+  const user = useAtomValue(userAtom) as { id?: string } | undefined;
+
   const [title, setTitle] = useState('');
   const [amountStr, setAmountStr] = useState('');
   const [date, setDate] = useState(new Date());
   const [showDatePicker, setShowDatePicker] = useState(false);
-  const [paidBy, setPaidBy] = useState('');
-  const [participants, setParticipants] = useState<string[]>([]);
+  const [paidBy, setPaidBy] = useState(''); // stores member id
+  const [participants, setParticipants] = useState<string[]>([]); // array of member ids
   const [splitMethod, setSplitMethod] = useState<SplitMethod>('equal');
 
   const [exactMap, setExactMap] = useState<Record<string, string>>({});
@@ -77,7 +82,48 @@ export default function AddBillSheet({
     [amount, participants.length]
   );
 
-  // prefill only when keys missing (prevents “jumping” when switching modes)
+  // build a quick id -> member map for fast lookup
+  const membersMap = useMemo(() => {
+    const m: Record<string, any> = {};
+    (groupMembers || []).forEach((gm: any) => {
+      if (gm && gm.id) m[gm.id] = gm;
+    });
+    return m;
+  }, [groupMembers]);
+
+  // Helper: resolve display name for an id (shows "You" if logged-in user)
+  const getDisplayName = useCallback(
+    (id?: string) => {
+      if (!id) return '';
+      if (user?.id && id === user.id) return 'You';
+
+      const gm = membersMap[id];
+
+      const possible =
+        gm?.name ??
+        gm?.nickname ??
+        gm?.display_name ??
+        gm?.label ??
+        gm?.full_name ??
+        gm?.user_name ??
+        gm?.email ??
+        gm?.phone ??
+        null;
+
+      if (possible) return String(possible);
+
+      return id; // fallback to id (or '' if you'd rather hide it)
+    },
+    [membersMap, user?.id]
+  );
+
+  // Debugging: uncomment to inspect groupMembers shape and membersMap keys
+  // useEffect(() => {
+  //   console.log('groupMembers =>', JSON.stringify(groupMembers, null, 2));
+  //   console.log('membersMap keys =>', Object.keys(membersMap).slice(0, 50));
+  // }, [groupMembers, membersMap]);
+
+  // Prefill logic (unchanged)
   useEffect(() => {
     if (!participants.length) return;
     if (splitMethod === 'exact') {
@@ -155,6 +201,20 @@ export default function AddBillSheet({
     setShareMap((m) => ({ ...m, [id]: v }));
   }, []);
 
+  // map paidBy id -> friendly label
+  const paidByLabel = useMemo(() => {
+    if (!paidBy) return 'Select person';
+    return getDisplayName(paidBy) || paidBy;
+  }, [paidBy, getDisplayName]);
+
+  // participants label (optional: show comma-list if small, otherwise count)
+  const participantsLabel = useMemo(() => {
+    if (!participants.length) return 'Select members';
+    // show names if <= 3, otherwise show count
+    const names = participants.map((id) => getDisplayName(id) || id).filter(Boolean);
+    return names.length <= 3 ? names.join(', ') : `${participants.length} selected`;
+  }, [participants, getDisplayName]);
+
   const handlePaidByPress = useCallback(async () => {
     if (!onSelectPaidBy) return console.log('Open your "Paid by" picker');
     const res = await onSelectPaidBy();
@@ -225,8 +285,6 @@ export default function AddBillSheet({
     exactSum,
     perPersonFinal,
   ]);
-
-  /** ---------------- Gorhom Bottom Sheet (Modal) ---------------- */
 
   return (
     <BottomSheet open={open} onClose={onClose}>
@@ -308,6 +366,7 @@ export default function AddBillSheet({
           />
         </Pressable>
       </View>
+
       {showDatePicker && (
         <View className="mb-2">
           <DateTimePicker
@@ -322,7 +381,7 @@ export default function AddBillSheet({
         </View>
       )}
 
-      {/* Paid by */}
+      {/* Paid by (shows friendly name now) */}
       <View className="mb-3 flex-row items-center">
         <Text
           style={{ color: theme.colors.textSecondary }}
@@ -334,11 +393,9 @@ export default function AddBillSheet({
           style={{ borderColor: theme.colors.border, backgroundColor: theme.colors.background }}
           className="h-11 flex-1 flex-row items-center justify-between rounded-xl border px-4">
           <Text
-            style={{
-              color: paidBy ? theme.colors.textPrimary : theme.colors.textSecondary,
-            }}
+            style={{ color: paidBy ? theme.colors.textPrimary : theme.colors.textSecondary }}
             className={'text-base'}>
-            {paidBy || 'Select person'}
+            {paidByLabel}
           </Text>
           <MaterialIcons
             name="expand-more"
@@ -348,7 +405,7 @@ export default function AddBillSheet({
         </Pressable>
       </View>
 
-      {/* People */}
+      {/* People (shows either names or count) */}
       <View className="mb-3 flex-row items-center">
         <Text
           style={{ color: theme.colors.textSecondary }}
@@ -364,7 +421,7 @@ export default function AddBillSheet({
               color: participants.length ? theme.colors.textPrimary : theme.colors.textSecondary,
             }}
             className={'text-base'}>
-            {participants.length ? `${participants.length} selected` : 'Select members'}
+            {participantsLabel}
           </Text>
           <MaterialIcons name="group-add" size={22} style={{ color: theme.colors.textSecondary }} />
         </Pressable>
@@ -396,6 +453,8 @@ export default function AddBillSheet({
             <ParticipantRow
               key={id}
               id={id}
+              // pass displayName so ParticipantRow can render friendly label (You / name)
+              displayName={getDisplayName(id)}
               mode={splitMethod}
               amount={amount}
               equalPerPerson={equalPerPerson}
