@@ -1,42 +1,17 @@
 // import groups from '@/app/(tabs)/groups';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { router, useNavigation } from 'expo-router';
-import { useAtom, useAtomValue, useSetAtom } from 'jotai';
-import { useEffect, useLayoutEffect, useState } from 'react';
+import { useAtomValue } from 'jotai';
+import { useLayoutEffect, useState } from 'react';
 import { ActivityIndicator, FlatList, Pressable, Text, TextInput, View } from 'react-native';
 
 import AppHeader from '@/components/AppHeader';
-import type { TransactionStatus } from '@/components/TransactionCard';
 import TransactionCard from '@/components/TransactionCard';
-import type { GROUP_STATUS, USER_STATUS } from '@/constant';
 import NewGroupSheet from '@/features/groups/components/BottomSheet/CreateGroupSheet';
-// import { groups } from '@/features/groups/mocks/groupList';
-import { useUserGroups } from '@/services/hooks/useUserGroups';
-import { groupsAtom, selectedGroupIdAtom } from '@/stores/atoms/groups';
+import { useGroupsList } from '@/features/groups/hooks/useGroupsList';
 import { userAtom } from '@/stores/atoms/user';
 import { useColor } from '@/theme/hooks/useColor';
 import { useTheme } from '@/theme/hooks/useTheme';
-
-export type GroupMember = {
-  id: string;
-  name: string;
-  phone_hash: string | null;
-  email_hash: string | null;
-  status: USER_STATUS;
-};
-
-export type Group = {
-  avatar_url: string | null;
-  created_at: string;
-  created_by: string;
-  group_name: string;
-  id: string;
-  simplified: boolean;
-  status: GROUP_STATUS;
-  updated_at: string;
-  members: GroupMember[] | [];
-  owner: GroupMember;
-};
 
 export default function GroupList() {
   const { theme } = useTheme();
@@ -44,18 +19,14 @@ export default function GroupList() {
   const navigation = useNavigation();
   const [q, setQ] = useState('');
   const [openNewGroupSheet, setOpenNewGroupSheet] = useState(false);
-  // const [loading, setLoading] = useState<boolean>(true);
-  const [error, setError] = useState<string | null>(null);
-  const [groups, setGroups] = useAtom<Group[]>(groupsAtom);
-  const setSelectedGroupId = useSetAtom(selectedGroupIdAtom);
   const user = useAtomValue(userAtom);
-  const { data, isLoading, isError, error: ApiError, refetch } = useUserGroups(user?.id);
-
-  // const filtered = useMemo(() => {
-  //   const t = q.trim().toLowerCase();
-  //   if (!t) return groups;
-  //   return groups.filter((g) => g.title.toLowerCase().includes(t));
-  // }, [q]);
+  const {
+    data: groupsList,
+    isLoading,
+    isError,
+    error: ApiError,
+    refetch,
+  } = useGroupsList(user?.id);
 
   useLayoutEffect(() => {
     navigation.setOptions({
@@ -78,13 +49,7 @@ export default function GroupList() {
     });
   }, [getColor, navigation]);
 
-  useEffect(() => {
-    if (data) setGroups(data);
-    if (isError) {
-      setError(ApiError.message);
-    }
-  }, [ApiError, data, isError, setGroups]);
-  console.log('Group List: ', isLoading, groups.length);
+  console.log('Group List: ', isLoading, groupsList?.length);
   if (isLoading) {
     return (
       <View className="flex-1 items-center justify-center">
@@ -112,7 +77,7 @@ export default function GroupList() {
 
       {/* List */}
       <FlatList
-        data={groups}
+        data={groupsList}
         keyExtractor={(i) => i.id}
         showsVerticalScrollIndicator={false}
         ListEmptyComponent={<Text>No Groups, please add</Text>}
@@ -120,15 +85,14 @@ export default function GroupList() {
           <TransactionCard
             className="mx-2 mb-2"
             onPress={() => {
-              setSelectedGroupId(item.id);
               router.push(`/(tabs)/groups/${item.id}`);
             }}
-            title={item.group_name}
+            title={item.name}
             subtitle={''}
-            avatarInitials={item.group_name}
+            avatarInitials={item.name}
             img={item.avatar_url ?? ''}
             amount={'100'}
-            status={item.status as TransactionStatus}
+            // status={item.status as unknown as TransactionStatus}
           />
         )}
       />

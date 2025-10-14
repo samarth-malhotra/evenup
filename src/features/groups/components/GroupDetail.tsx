@@ -1,5 +1,5 @@
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
-import { useNavigation, useRouter } from 'expo-router';
+import { useLocalSearchParams, useNavigation, useRouter } from 'expo-router';
 import { useAtomValue } from 'jotai';
 import { useCallback, useLayoutEffect, useState } from 'react';
 import { FlatList, Pressable, Text, TouchableOpacity, View } from 'react-native';
@@ -8,8 +8,9 @@ import AppHeader from '@/components/AppHeader';
 import SummaryCard from '@/components/SummaryCard';
 import TransactionCard from '@/components/TransactionCard';
 import AddBillSheet from '@/features/bills/components/AddBillSheet';
+import { useGroupDetail } from '@/features/groups/hooks/useGroupDetail';
 import { groupExpense } from '@/features/groups/mocks/groupList';
-import { selectedGroupAtom, selectedGroupIdAtom } from '@/stores/atoms/groups';
+import { userAtom } from '@/stores/atoms/user';
 import { getBoxShadow } from '@/theme/hooks/getBoxShadow';
 import { useColor } from '@/theme/hooks/useColor';
 import { useTheme } from '@/theme/hooks/useTheme';
@@ -35,27 +36,25 @@ export type Expense = {
 
 // ---------------- Screen ----------------
 export default function GroupDetailScreen() {
-  // const { id, isNewgroup } = useLocalSearchParams<{ id: string; isNewgroup?: string }>();
+  const { id: groupId } = useLocalSearchParams<{ id: string }>();
   const { theme } = useTheme();
   const getColor = useColor();
-  const selectedGroupId = useAtomValue(selectedGroupIdAtom);
-  const selectedGroup = useAtomValue(selectedGroupAtom);
-  // const { id, isNewgroup } = useLocalSearchParams<{ id: string; isNewgroup: boolean }>();
   const navigation = useNavigation();
   const router = useRouter();
   const transactions = [];
 
-  // const group = selectGroup(id);
+  const user = useAtomValue(userAtom);
+  const { data: selectedGroup, isFetching, isLoading } = useGroupDetail(user?.id, groupId);
 
   const [addOpen, setAddOpen] = useState(false);
 
   // ---------------- Handlers ----------------
   const handleSettleUp = () => {
-    router.push({ pathname: `/groups/${selectedGroupId}/settle-up`, params: { selectedGroupId } });
+    router.push({ pathname: `/groups/${groupId}/settle-up`, params: { groupId } });
   };
 
   const handleSetting = () => {
-    router.push({ pathname: `/groups/${selectedGroupId}/settings`, params: { selectedGroupId } });
+    router.push({ pathname: `/groups/${groupId}/settings`, params: { groupId } });
   };
 
   // ---------------- Header ----------------
@@ -64,7 +63,7 @@ export default function GroupDetailScreen() {
       headerShown: true,
       header: () => (
         <AppHeader
-          title={selectedGroup?.group_name ?? 'Group'}
+          title={selectedGroup?.name ?? 'Group'}
           showBackButton
           rightActions={
             <View className="flex-row gap-4">
@@ -83,26 +82,24 @@ export default function GroupDetailScreen() {
         />
       ),
     });
-  }, [navigation, selectedGroup?.group_name, handleSettleUp, getColor, handleSetting]);
-
-  // remove
-  // clearMatchCache();
+  }, [navigation, selectedGroup?.name, handleSettleUp, getColor, handleSetting]);
 
   const openPaidByPicker = useCallback(async () => 'Anita', []);
   const openParticipantsPicker = useCallback(async () => ['You', 'Anita', 'Rohit'], []);
-  // const [isMembersSheetOpen, setMembersSheetOpen] = useState(false);
-  console.log(
-    'Group Details - memeber: ',
-    selectedGroup,
-    selectedGroup?.members?.length,
-    selectedGroup?.owner.name
-  );
-  console.log('Group Details - selectedGroupId: ', selectedGroupId);
 
+  console.log('Group Details - groupId: ', selectedGroup, groupId, isFetching, isLoading);
+
+  if (!selectedGroup && isFetching) {
+    return <Text className="p-4 text-gray-400">Loading group details...</Text>;
+  }
+
+  if (!selectedGroup) {
+    return <Text className="p-4 text-red-500">Group not found</Text>;
+  }
   // ---------------- Render ----------------
   return (
     <View className="mt-2 flex-1">
-      {selectedGroup && selectedGroup.members.length > 0 ? (
+      {selectedGroup && (selectedGroup?.members?.length ?? 0) > 0 ? (
         <View className="mt-2 flex-1 ">
           {transactions.length ? (
             <>
@@ -132,14 +129,12 @@ export default function GroupDetailScreen() {
                 renderItem={({ item }) => {
                   return (
                     <TransactionCard
-                      onPress={() =>
-                        router.push(`/groups/${selectedGroupId}/transactions/${item.id}`)
-                      }
+                      onPress={() => router.push(`/groups/${groupId}/transactions/${item.id}`)}
                       title={item.title}
                       subtitle={`Paid by - ${item.paidBy} @ ${item.createdAt}`}
                       avatarInitials={item.avatarInitials}
                       amount={item.amount}
-                      status={item.status}
+                      // status={item.status}
                       hasAttachment={item.hasAttachment}
                     />
                   );
@@ -186,8 +181,8 @@ export default function GroupDetailScreen() {
             className="flex-row items-center justify-between py-4"
             onPress={() =>
               router.push({
-                pathname: `/groups/${selectedGroupId}/add-members`,
-                params: { selectedGroupId },
+                pathname: `/groups/${groupId}/add-members`,
+                params: { groupId },
               })
             }>
             <View>
