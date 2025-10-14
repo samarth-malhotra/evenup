@@ -1,5 +1,5 @@
 // src/components/ContactList.tsx
-import { useNavigation } from 'expo-router';
+import { useLocalSearchParams, useNavigation } from 'expo-router';
 import { useAtomValue } from 'jotai';
 import React, { useCallback, useLayoutEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Alert, Keyboard, SectionList, Share, Text, View } from 'react-native';
@@ -11,10 +11,12 @@ import type { InviteOption } from '@/features/contacts/components/InviteModal';
 import InviteModal from '@/features/contacts/components/InviteModal';
 import SearchBar from '@/features/contacts/components/SearchBar';
 import useFriends from '@/features/contacts/hooks/useFriends';
-import useGroupMutations from '@/features/contacts/hooks/useGroupMutations';
+import useAddMemberMutation from '@/features/groups/hooks/useAddMemberInGroupMutations';
+import useDeleteMemberMutation from '@/features/groups/hooks/useDeleteMemberFromGroupMutations';
+import { useGroupDetail } from '@/features/groups/hooks/useGroupDetail';
+import type { GroupDetails } from '@/features/groups/types';
 import usePhoneContacts from '@/hooks/usePhoneContacts';
 import type { ContactItem as ContactItemType } from '@/stores/atoms/contacts';
-import { selectedGroupAtom } from '@/stores/atoms/groups';
 import { userAtom } from '@/stores/atoms/user';
 import { sha256Hex } from '@/utils/hash';
 import { formatPhoneInternational, normalizeEmail, normalizePhone } from '@/utils/normalise';
@@ -23,21 +25,34 @@ import { formatPhoneInternational, normalizeEmail, normalizePhone } from '@/util
 const normalize = (s?: string) => (s || '').toLowerCase().trim();
 const capitalize = (s?: string | null) => (s ? s.charAt(0).toUpperCase() + s.slice(1) : '');
 
-const useStatusMap = (selectedGroup?: any) =>
+const useStatusMap = (selectedGroup: GroupDetails | null) =>
   useMemo(() => {
+    // If selectedGroup is null or undefined, return an empty Map
+    if (!selectedGroup) {
+      return new Map<string, 'owner' | 'member' | undefined>();
+    }
     const m = new Map<string, 'owner' | 'member' | undefined>();
-    const ownerId = selectedGroup?.owner?.id ?? null;
-    for (const mem of selectedGroup?.members ?? []) if (mem?.id) m.set(mem.id, 'member');
-    if (ownerId) m.set(ownerId, 'owner');
+    // Iterate over the users array, if available
+    selectedGroup?.members?.forEach((user) => {
+      if (user?.id) {
+        const role = user.role === 'owner' ? 'owner' : 'member';
+        m.set(user.id, role);
+      }
+    });
+
     return m;
   }, [selectedGroup]);
 
 // ---------- main component ----------
 const ContactList: React.FC = () => {
   const { contacts: phoneContacts = [], loading: phoneLoading } = usePhoneContacts();
-  const selectedGroup = useAtomValue(selectedGroupAtom);
   const user = useAtomValue(userAtom);
   const navigation = useNavigation();
+  const { id: groupId } = useLocalSearchParams<{ id: string }>();
+
+  const { data: selectedGroup } = useGroupDetail(user?.id, groupId);
+
+  console.log('in contact: selectedGroup: ', selectedGroup?.id, groupId);
 
   const [query, setQuery] = useState('');
   const [inviteModalVisible, setInviteModalVisible] = useState(false);
@@ -55,17 +70,17 @@ const ContactList: React.FC = () => {
     isError: friendsError,
     refetch,
   } = useFriends(user?.id);
-  // --- mutations ---
 
-  const { deleteMember, inviteMember, isDeleting, isInviting } = useGroupMutations();
+  const { inviteMember, isInviting } = useAddMemberMutation();
+  const { deleteMember, isDeleting } = useDeleteMemberMutation();
 
   // --- layout header ---
   useLayoutEffect(() => {
     navigation.setOptions({
       headerShown: true,
-      header: () => <AppHeader title={selectedGroup?.group_name ?? 'Contacts'} showBackButton />,
+      header: () => <AppHeader title={selectedGroup?.name ?? 'Contacts'} showBackButton />,
     });
-  }, [navigation, selectedGroup?.group_name, isFetching]);
+  }, [navigation, selectedGroup?.name, isFetching]);
 
   // --- derived / memos ---
   const statusMap = useStatusMap(selectedGroup);

@@ -1,7 +1,7 @@
-// src/hooks/useUserGroups.ts
-import { useQuery } from '@tanstack/react-query';
+// src/hooks/useGroupsList.ts
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 
-import type { Group } from '@/features/groups/components/GroupList';
+import type { Group } from '@/features/groups/types';
 import { supabase } from '@/services/supabase'; // adjust path
 // import type { Group } from '@/types/evenup';
 
@@ -26,19 +26,27 @@ async function fetchUserGroups(userId: string): Promise<Group[]> {
   return data as unknown as Group[];
 }
 
-export function useUserGroups(userId?: string) {
-  console.log('group api is called');
-  return useQuery({
-    queryKey: ['userGroups', userId],
-    queryFn: () => {
+export function useGroupsList(userId?: string) {
+  const queryClient = useQueryClient();
+
+  const query = useQuery({
+    queryKey: ['groups', userId],
+    queryFn: async () => {
       if (!userId) throw new Error('userId is required');
-      return fetchUserGroups(userId);
+      return (await fetchUserGroups(userId)) ?? [];
     },
     enabled: Boolean(userId),
-    staleTime: 5_000, // 5 seconds
-    gcTime: 5 * 60_000, // 5 minutes
+    staleTime: 30_000,
+    refetchOnMount: false,
+    // refetchOnMount: 'always',
+    //staleTime: 0,
+    gcTime: 5 * 60_000,
     refetchOnWindowFocus: true,
     refetchOnReconnect: true,
     retry: 1,
   });
+
+  const readCached = () => queryClient.getQueryData(['groups', userId]);
+
+  return { ...query, readCached };
 }

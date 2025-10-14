@@ -8,18 +8,25 @@ import { FlatList, Modal, Pressable, Switch, Text, TextInput, View } from 'react
 import AppHeader from '@/components/AppHeader';
 import { Avatar } from '@/components/Avatar';
 import UpdateMemberSheet from '@/features/groups/components/BottomSheet/UpdateMemberSheet';
-import { selectedGroupIdAtom, selectedGroupMembersAtom } from '@/stores/atoms/groups';
+import { useDeleteGroup } from '@/features/groups/hooks/useDeleteGroupMutation';
+import useDeleteMemberMutation from '@/features/groups/hooks/useDeleteMemberFromGroupMutations';
+import { useGroupDetail } from '@/features/groups/hooks/useGroupDetail';
+import type { GroupMember } from '@/features/groups/types';
+import { userAtom } from '@/stores/atoms/user';
 import { useTheme } from '@/theme/hooks/useTheme';
 
-type User = { id: string; name: string; avatar?: string };
+// type User = { id: string; name: string; avatar?: string };
 
 export default function GroupSettings() {
   const { theme } = useTheme();
-  const { id } = useLocalSearchParams<{ id: string }>();
+  const { id: groupId } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const navigation = useNavigation();
-  const groupMember = useAtomValue(selectedGroupMembersAtom);
-  const selectedGroupId = useAtomValue(selectedGroupIdAtom);
+  const user = useAtomValue(userAtom);
+  const { data: group, isFetching } = useGroupDetail(user?.id, groupId);
+
+  const groupMember: GroupMember[] = group?.members ?? [];
+  const deleteMutation = useDeleteGroup(user?.id ?? '');
 
   useEffect(() => {
     navigation.setOptions({
@@ -29,7 +36,7 @@ export default function GroupSettings() {
   }, [navigation]);
 
   // --- group state (replace with EvenUp selectors) ---
-  const [groupName, setGroupName] = useState('Trip to Goa');
+  const [groupName, setGroupName] = useState(group?.name ?? '');
 
   // UI state
   const [isMembersSheetOpen, setMembersSheetOpen] = useState(false);
@@ -38,6 +45,7 @@ export default function GroupSettings() {
   // Edit name modal state
   const [isEditNameModalOpen, setEditNameModalOpen] = useState(false);
   const [editedName, setEditedName] = useState(groupName);
+  const { deleteMember, isDeleting } = useDeleteMemberMutation();
 
   // Confirm action modal (leave / delete)
   const [confirmModal, setConfirmModal] = useState<{
@@ -56,11 +64,24 @@ export default function GroupSettings() {
     setConfirmModal({ visible: false });
     if (type === 'leave') {
       // TODO: call leave API
+      if (groupId && user?.id) {
+        console.log('leaving group :', groupId, user?.id);
+        deleteMember({
+          groupId: groupId,
+          memberId: user.id,
+          removedBy: user.id,
+        });
+        // router.push('(tabs)/groups');
+      }
       router.back();
     } else if (type === 'delete') {
       // TODO: call delete API
-      router.back();
+      // router.back();
+      if (groupId && user?.id) {
+        deleteMutation.mutate({ groupId: groupId });
+      }
     }
+    router.push('(tabs)/groups');
   };
 
   // Confirm rename from modal
@@ -71,7 +92,7 @@ export default function GroupSettings() {
     setEditNameModalOpen(false);
     // TODO: persist rename
   };
-  console.log('group setting: ', groupMember);
+  // console.log('group setting: ', groupMember);
   // Header: static content rendered as FlatList header to avoid nested scroll issues
   const Header = (
     <View className="px-4 pb-2 pt-4">
@@ -100,8 +121,8 @@ export default function GroupSettings() {
         className="flex-row items-center justify-between py-4"
         onPress={() =>
           router.push({
-            pathname: `/groups/${selectedGroupId}/add-members`,
-            params: { selectedGroupId },
+            pathname: `/groups/${groupId}/add-members`,
+            params: { groupId },
           })
         }>
         <View>
@@ -112,7 +133,7 @@ export default function GroupSettings() {
       </Pressable>
 
       {/* Members preview */}
-      {groupMember.length && (
+      {groupMember?.length && (
         <View className="border-b border-gray-200 py-4">
           <Text className="mb-2 text-sm text-gray-500">People in group</Text>
           <View className="flex-row flex-wrap items-center">
@@ -151,15 +172,19 @@ export default function GroupSettings() {
         />
       </View>
 
-      {/* Leave / Delete */}
-      <Pressable
-        className="border-b border-gray-200 py-4"
-        onPress={() => openConfirmModal('leave')}>
-        <Text className="text-base">Leave group</Text>
-      </Pressable>
+      {/* Leave button only visible when 1+ people is group member */}
+      {(groupMember?.length ?? 0) > 1 && (
+        <Pressable
+          className="border-b border-gray-200 py-4"
+          onPress={() => openConfirmModal('leave')}>
+          <Text className="text-base">Leave group</Text>
+        </Pressable>
+      )}
+      {/* {!groupMember.find((m) => m.role === 'owner') && ( */}
       <Pressable className="py-4" onPress={() => openConfirmModal('delete')}>
         <Text className="text-base text-red-600">Delete group</Text>
       </Pressable>
+      {/* )} */}
     </View>
   );
 

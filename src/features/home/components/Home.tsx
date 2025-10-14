@@ -1,7 +1,7 @@
 // app/(tabs)/home.tsx
 import { Feather, Ionicons, MaterialIcons } from '@expo/vector-icons';
 import { router, useNavigation } from 'expo-router';
-import { useAtomValue, useSetAtom } from 'jotai';
+import { useAtomValue } from 'jotai';
 import { useCallback, useLayoutEffect, useState } from 'react';
 import { Image, Pressable, ScrollView, Text, TouchableOpacity, View } from 'react-native';
 
@@ -11,7 +11,7 @@ import SummaryCard from '@/components/SummaryCard';
 import ThemedSafeArea from '@/components/ThemedSafeArea';
 import AddBillSheet from '@/features/bills/components/AddBillSheet';
 import CreateGroupSheet from '@/features/groups/components/BottomSheet/CreateGroupSheet';
-import { groupsAtom, selectedGroupIdAtom } from '@/stores/atoms/groups';
+import { useGroupsList } from '@/features/groups/hooks/useGroupsList';
 import { userAtom } from '@/stores/atoms/user';
 import { getBoxShadow } from '@/theme/hooks/getBoxShadow';
 import { useColor } from '@/theme/hooks/useColor';
@@ -57,16 +57,22 @@ export default function HomeScreen() {
   const getColor = useColor();
   const { theme } = useTheme();
   const navigation = useNavigation();
-  const groups = useAtomValue(groupsAtom);
 
   const user = useAtomValue(userAtom);
-  const setSelectedGroupId = useSetAtom(selectedGroupIdAtom);
 
   const [addOpen, setAddOpen] = useState(false);
   const [openCreateGroupSheet, setOpenCreateGroupSheet] = useState(false);
 
   const openPaidByPicker = useCallback(async () => 'Anita', []);
   const openParticipantsPicker = useCallback(async () => ['You', 'Anita', 'Rohit'], []);
+
+  const {
+    data: groupsList,
+    isLoading,
+    isError,
+    error: ApiError,
+    refetch,
+  } = useGroupsList(user?.id);
 
   useLayoutEffect(() => {
     navigation.setOptions({
@@ -133,22 +139,23 @@ export default function HomeScreen() {
 
         {/* Groups */}
         <SectionHeader title="Groups" />
-        {groups.length > 0 ? (
+        {isLoading ? (
+          <Text>Loading</Text>
+        ) : (groupsList?.length ?? 0) > 0 ? (
           <ScrollView className="mb-4 pl-2" horizontal showsHorizontalScrollIndicator={false}>
-            {groups.map((g) => (
+            {groupsList?.map((g) => (
               <Pressable
                 key={g.id}
                 className="items-center"
                 onPress={() => {
-                  setSelectedGroupId(g.id);
                   router.push(`/(tabs)/groups/${g.id}`);
                 }}>
-                <Avatar name={g.group_name} imageUri={g.avatar_url ?? ''} size={64} />
+                <Avatar name={g.name} imageUri={g.avatar_url ?? ''} size={64} />
                 <Text
                   style={{ color: theme.colors.textPrimary }}
                   className="mt-2 w-[90px] text-center"
                   numberOfLines={1}>
-                  {g.group_name}
+                  {g.name}
                 </Text>
               </Pressable>
             ))}
