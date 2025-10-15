@@ -87,8 +87,6 @@ export default function GroupDetailScreen() {
   const openPaidByPicker = useCallback(async () => 'Anita', []);
   const openParticipantsPicker = useCallback(async () => ['You', 'Anita', 'Rohit'], []);
 
-  console.log('Group Details - groupId: ', selectedGroup, groupId, isFetching, isLoading);
-
   if (!selectedGroup && isFetching) {
     return <Text className="p-4 text-gray-400">Loading group details...</Text>;
   }

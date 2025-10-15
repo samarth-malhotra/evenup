@@ -2,11 +2,23 @@
 import { Feather } from '@expo/vector-icons';
 import { useLocalSearchParams, useNavigation, useRouter } from 'expo-router';
 import { useAtomValue } from 'jotai';
-import { useEffect, useState } from 'react';
-import { FlatList, Modal, Pressable, Switch, Text, TextInput, View } from 'react-native';
+import { useEffect, useMemo, useState } from 'react';
+import {
+  Alert,
+  FlatList,
+  Modal,
+  Pressable,
+  Share,
+  Switch,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 
 import AppHeader from '@/components/AppHeader';
 import { Avatar } from '@/components/Avatar';
+import { USER_STATUS } from '@/constant';
 import UpdateMemberSheet from '@/features/groups/components/BottomSheet/UpdateMemberSheet';
 import { useDeleteGroup } from '@/features/groups/hooks/useDeleteGroupMutation';
 import useDeleteMemberMutation from '@/features/groups/hooks/useDeleteMemberFromGroupMutations';
@@ -14,8 +26,51 @@ import { useGroupDetail } from '@/features/groups/hooks/useGroupDetail';
 import type { GroupMember } from '@/features/groups/types';
 import { userAtom } from '@/stores/atoms/user';
 import { useTheme } from '@/theme/hooks/useTheme';
+import { formatPhoneInternational, normalizeEmail } from '@/utils/normalise';
 
 // type User = { id: string; name: string; avatar?: string };
+
+function renderMember({ item }: { item: GroupMember }) {
+  const name = item.name ?? item.email ?? item.phone ?? 'Unknown';
+
+  return (
+    <View className="flex-row items-center border-b border-gray-200 px-2 py-3">
+      <Avatar name={item.name} />
+
+      <View className="ml-3 flex-1">
+        <View className="flex-row items-center">
+          <Text className="text-base font-medium">{name}</Text>
+          {item.role === 'owner' && (
+            <View className="ml-2 rounded-full bg-blue-100 px-2 py-0.5">
+              <Text className="text-xs text-blue-700">Owner</Text>
+            </View>
+          )}
+          {item.account_status === USER_STATUS.INVITED && (
+            <View className="ml-2 rounded-full bg-yellow-100 px-2 py-0.5">
+              <Text className="text-xs text-yellow-800">Pending</Text>
+            </View>
+          )}
+        </View>
+        {item.phone && (
+          <Text className="text-sm text-gray-500">{formatPhoneInternational(item.phone)}</Text>
+        )}
+        {item.email && <Text className="text-sm text-gray-500">{normalizeEmail(item.email)}</Text>}
+      </View>
+
+      <View className="ml-2 flex-row items-center">
+        {item.account_status === USER_STATUS.INVITED && (
+          <TouchableOpacity
+            className="rounded-md border px-3 py-1"
+            onPress={() => {
+              // if (onInvite) onInvite(item.email ?? item.phone);
+            }}>
+            <Text className="text-sm">Resend</Text>
+          </TouchableOpacity>
+        )}
+      </View>
+    </View>
+  );
+}
 
 export default function GroupSettings() {
   const { theme } = useTheme();
@@ -27,6 +82,19 @@ export default function GroupSettings() {
 
   const groupMember: GroupMember[] = group?.members ?? [];
   const deleteMutation = useDeleteGroup(user?.id ?? '');
+
+  const inviteLink = useMemo(() => `https://evenup.app/invite?group=${group?.id}`, [group?.id]);
+
+  async function handleShareInvite() {
+    try {
+      await Share.share({
+        message: `Join my EvenUp group: ${inviteLink}`,
+        url: inviteLink,
+      });
+    } catch (err) {
+      Alert.alert('Share failed', (err as Error).message ?? 'Could not share invite link');
+    }
+  }
 
   useEffect(() => {
     navigation.setOptions({
@@ -132,27 +200,14 @@ export default function GroupSettings() {
         <Feather name="chevron-right" size={24} color="#6b7280" />
       </Pressable>
 
-      {/* Members preview */}
-      {groupMember?.length && (
-        <View className="border-b border-gray-200 py-4">
-          <Text className="mb-2 text-sm text-gray-500">People in group</Text>
-          <View className="flex-row flex-wrap items-center">
-            {groupMember.map((m) => (
-              <View key={m.id} className="mb-3 mr-3 items-center">
-                <View className="h-10 w-10 items-center justify-center overflow-hidden rounded-full bg-gray-200">
-                  {/* {m.name ? (
-                  <Image source={{ uri: m.avatar }} className="h-10 w-10" />
-                ) : (
-                )} */}
-                  {/* <Text className="text-sm font-medium text-gray-700">{m.name[0]}</Text> */}
-                  <Avatar name={m.name} />
-                </View>
-                <Text className="mt-1 text-xs">{m.name}</Text>
-              </View>
-            ))}
-          </View>
-        </View>
-      )}
+      {/* Members list */}
+      <FlatList
+        data={group?.members ?? []}
+        keyExtractor={(m) => m.id}
+        renderItem={renderMember}
+        style={{ maxHeight: 340 }}
+        ListHeaderComponent={<Text className="mb-2 text-sm text-gray-500">Group Member(s)</Text>}
+      />
 
       {/* Simplified group debts - improved checkbox UI */}
       <View className="flex-row items-center justify-between border-b border-gray-200 py-4">
@@ -170,6 +225,21 @@ export default function GroupSettings() {
           thumbColor={simplifiedDebts ? '#fff' : undefined}
           trackColor={{ false: '#E5E7EB', true: '#6C5CE7' }}
         />
+      </View>
+
+      {/* Invite link */}
+      <View className="mt-4 rounded-md border bg-gray-50 p-3">
+        <Text className="mb-2 text-sm text-gray-500">Invite link</Text>
+        <View className="flex-row items-center">
+          <Text numberOfLines={1} className="flex-1 text-sm">
+            {inviteLink}
+          </Text>
+          <TouchableOpacity
+            onPress={handleShareInvite}
+            className="ml-2 rounded-md bg-gray-100 px-3 py-2">
+            <Text>Share</Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
       {/* Leave button only visible when 1+ people is group member */}

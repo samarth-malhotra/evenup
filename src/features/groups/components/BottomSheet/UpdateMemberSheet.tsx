@@ -28,7 +28,6 @@ export default function UpdateMemberSheet({ open, onClose }: Props) {
     mockFriends.filter((f) => ['u1', 'u2', 'u3'].includes(f.id))
   );
   const friends = useMemo(() => mockFriends, []);
-  console.log('openL ', open);
   const removeTemp = (id: string) => setTempSelected((prev) => prev.filter((m) => m.id !== id));
   const toggleTemp = (u: User) =>
     setTempSelected((prev) =>
