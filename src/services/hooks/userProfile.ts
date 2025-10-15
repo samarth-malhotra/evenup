@@ -4,7 +4,7 @@ import type { APP_MODE } from '@/constant';
 import { normalizeSupabaseError } from '@/services/helper/errors';
 import { useOptimisticMutation } from '@/services/helper/optimisticMutation';
 import { QUERY_KEYS } from '@/services/helper/queryKeys';
-import { supabase } from '@/services/supabase';
+import { supabase } from '@/services/supabase/supabase';
 import { showToast } from '@/stores/atoms/toast';
 import type { User } from '@/types';
 

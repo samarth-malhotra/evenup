@@ -11,7 +11,7 @@ import {
   TouchableOpacity,
 } from 'react-native';
 
-import { supabase } from '@/services/supabase';
+import { supabase } from '@/services/supabase/supabase';
 import { normalizeEmail, normalizePhone } from '@/utils/normalise';
 
 type SignupPayload = {

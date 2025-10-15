@@ -2,12 +2,13 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 
 import type { Group } from '@/features/groups/types';
-import { supabase } from '@/services/supabase'; // adjust path
+import { RPCFunctions } from '@/services/supabase/RPCFunctions';
+import { supabase } from '@/services/supabase/supabase'; // adjust path
 // import type { Group } from '@/types/evenup';
 
 async function fetchUserGroups(userId: string): Promise<Group[]> {
   // NOTE: rpc returns data as JSON (jsonb). The exact shape depends on your function.
-  const { data, error } = await supabase.rpc('get_user_groups', { p_user_id: userId }); // <-- named param must match function
+  const { data, error } = await supabase.rpc(RPCFunctions.getGroupList, { p_user_id: userId }); // <-- named param must match function
 
   if (error) {
     // Bubble up error to react-query so user can handle retries, etc.

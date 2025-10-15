@@ -3,13 +3,14 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
 
 import type { Group } from '@/features/groups/types';
-import { supabase } from '@/services/supabase';
+import { RPCFunctions } from '@/services/supabase/RPCFunctions';
+import { supabase } from '@/services/supabase/supabase';
 
 /**
  * Calls Supabase RPC to soft delete a group
  */
 async function deleteGroup(groupId: string, userId: string) {
-  const { data, error } = await supabase.rpc('delete_group', {
+  const { data, error } = await supabase.rpc(RPCFunctions.deleteGroup, {
     group_id: groupId,
     user_id: userId,
   });

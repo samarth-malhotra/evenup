@@ -1,4 +1,4 @@
-import { supabase } from '@/services/supabase';
+import { supabase } from '@/services/supabase/supabase';
 
 type FriendRPC = {
   friendship_id: string;
