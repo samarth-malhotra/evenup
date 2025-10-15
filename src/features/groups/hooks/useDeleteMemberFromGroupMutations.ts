@@ -3,7 +3,8 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Alert } from 'react-native';
 
 import type { GroupDetails } from '@/features/groups/types';
-import { supabase } from '@/services/supabase';
+import { RPCFunctions } from '@/services/supabase/RPCFunctions';
+import { supabase } from '@/services/supabase/supabase';
 
 /**
  * Query-only optimistic updates for group member mutations:
@@ -29,7 +30,7 @@ export default function useDeleteMemberMutation() {
 
   const deleteMemberMutation = useMutation<unknown, Error, DeleteVars, DeleteContext>({
     mutationFn: async ({ groupId, memberId, removedBy }: DeleteVars) => {
-      const { data, error } = await supabase.rpc('delete_group_member', {
+      const { data, error } = await supabase.rpc(RPCFunctions.deleteGroupMember, {
         p_group_id: groupId,
         p_user_id: memberId,
         p_removed_by: removedBy,

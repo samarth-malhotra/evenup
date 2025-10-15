@@ -8,8 +8,8 @@ import { useTheme } from '@/theme/hooks/useTheme';
 
 export type AvatarProps = {
   name: string;
-  imageUri?: string;
-  icon?: React.ReactNode;
+  imageUri?: string | null;
+  icon?: React.ReactNode | null;
   size?: number; // diameter
   className?: string;
   testID?: string;
@@ -23,14 +23,24 @@ const DEFAULT_SIZE = 48;
 
 /** helper: get initials from a name, ignoring non-letters */
 function getInitials(name: string) {
-  if (!name) return '';
-  return name
-    .split(/\s+/) // split on spaces
-    .map((word) => word.replace(/[^a-zA-Z]/g, '')) // remove non-letters
-    .filter(Boolean) // drop empty
-    .map((word) => word[0]?.toUpperCase())
-    .join('')
-    .slice(0, 2); // max 2 chars
+  if (!name?.trim()) return '?';
+
+  const words = name
+    .trim()
+    .split(/\s+/)
+    .map((w) => w.replace(/[^a-zA-Z]/g, '').toUpperCase())
+    .filter(Boolean);
+
+  if (words.length === 0) return '?';
+
+  if (words.length === 1) {
+    // Single word → take first two letters
+    const initials = words[0].slice(0, 2);
+    return initials || '?';
+  }
+
+  // Multiple words → first letter of first two words
+  return (words[0][0] + words[1][0]).toUpperCase();
 }
 
 export const Avatar: React.FC<AvatarProps> = memo(

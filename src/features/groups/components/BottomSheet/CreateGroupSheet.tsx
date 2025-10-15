@@ -14,6 +14,7 @@ import {
 
 import { Avatar } from '@/components/Avatar';
 import BottomSheet from '@/components/BottomSheet';
+import { MIN_GROUP_NAME_LENGTH } from '@/constant';
 import useCreateGroupMutation from '@/features/groups/hooks/useCreateGroupMutation';
 import { userAtom } from '@/stores/atoms/user';
 import { getBoxShadow } from '@/theme/hooks/getBoxShadow';
@@ -95,14 +96,21 @@ export default function CreateGroupBottomSheet({
 
       <TouchableOpacity
         onPress={handleCreate}
-        disabled={isCreating}
+        disabled={isCreating || name.trim().length < MIN_GROUP_NAME_LENGTH}
         className={`items-center justify-center rounded-md py-3 ${
-          isCreating ? 'bg-gray-300' : 'bg-blue-600'
+          isCreating || name.trim().length < MIN_GROUP_NAME_LENGTH ? 'bg-black-600' : 'bg-blue-600'
         }`}>
         {isCreating ? (
           <ActivityIndicator />
         ) : (
-          <Text className="font-medium text-white">Create group</Text>
+          <Text
+            className={`font-medium ${
+              isCreating || name.trim().length < MIN_GROUP_NAME_LENGTH
+                ? 'bg-gray-600'
+                : 'text-white'
+            } `}>
+            Create group
+          </Text>
         )}
       </TouchableOpacity>
     </BottomSheet>

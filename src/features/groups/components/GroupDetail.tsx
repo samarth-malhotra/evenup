@@ -1,7 +1,7 @@
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useLocalSearchParams, useNavigation, useRouter } from 'expo-router';
-import { useAtomValue } from 'jotai';
-import { useCallback, useLayoutEffect, useState } from 'react';
+import { useAtomValue, useSetAtom } from 'jotai';
+import { useCallback, useEffect, useLayoutEffect, useState } from 'react';
 import { FlatList, Pressable, Text, TouchableOpacity, View } from 'react-native';
 
 import AppHeader from '@/components/AppHeader';
@@ -10,6 +10,7 @@ import TransactionCard from '@/components/TransactionCard';
 import AddBillSheet from '@/features/bills/components/AddBillSheet';
 import { useGroupDetail } from '@/features/groups/hooks/useGroupDetail';
 import { groupExpense } from '@/features/groups/mocks/groupList';
+import { addToastAtom } from '@/stores/atoms/toast';
 import { userAtom } from '@/stores/atoms/user';
 import { getBoxShadow } from '@/theme/hooks/getBoxShadow';
 import { useColor } from '@/theme/hooks/useColor';
@@ -44,9 +45,18 @@ export default function GroupDetailScreen() {
   const transactions = [];
 
   const user = useAtomValue(userAtom);
-  const { data: selectedGroup, isFetching, isLoading } = useGroupDetail(user?.id, groupId);
+  const { data: selectedGroup, isFetching, isError, error } = useGroupDetail(user?.id, groupId);
 
   const [addOpen, setAddOpen] = useState(false);
+  const addToast = useSetAtom(addToastAtom);
+
+  useEffect(() => {
+    if (isError && error) {
+      const msg = error.message ?? 'Failed to load group';
+      router.push('/(tabs)/groups');
+      addToast({ title: 'Error', message: msg, type: 'error' });
+    }
+  }, [isError, error, addToast, router]);
 
   // ---------------- Handlers ----------------
   const handleSettleUp = () => {
@@ -86,8 +96,6 @@ export default function GroupDetailScreen() {
 
   const openPaidByPicker = useCallback(async () => 'Anita', []);
   const openParticipantsPicker = useCallback(async () => ['You', 'Anita', 'Rohit'], []);
-
-  console.log('Group Details - groupId: ', selectedGroup, groupId, isFetching, isLoading);
 
   if (!selectedGroup && isFetching) {
     return <Text className="p-4 text-gray-400">Loading group details...</Text>;

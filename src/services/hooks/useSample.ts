@@ -4,7 +4,7 @@ import React from 'react';
 
 import { useOptimisticMutation } from '@/services/helper/optimisticMutation';
 import { QUERY_KEYS } from '@/services/helper/queryKeys';
-import { supabase } from '@/services/supabase';
+import { supabase } from '@/services/supabase/supabase';
 import type { User } from '@/types';
 
 /**

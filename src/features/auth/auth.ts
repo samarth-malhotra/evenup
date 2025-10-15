@@ -2,7 +2,7 @@
 import { RESET } from 'jotai/utils';
 
 import { queryClient } from '@/services/helper/queryClient';
-import { supabase } from '@/services/supabase';
+import { supabase } from '@/services/supabase/supabase';
 import { authLoadingAtom } from '@/stores/atoms/auth';
 import { setUserFromSupabaseAtom, userAtom } from '@/stores/atoms/user';
 import { jotaiStore } from '@/stores/store';

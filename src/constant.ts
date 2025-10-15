@@ -59,3 +59,5 @@ export enum TOAST_TYPE {
   INFO = 'info',
   WARNING = 'warning',
 }
+
+export const MIN_GROUP_NAME_LENGTH = 3;

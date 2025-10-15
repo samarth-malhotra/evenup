@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 
-import { supabase } from '@/services/supabase';
+import { supabase } from '@/services/supabase/supabase';
 
 /**
  * Hook to get and track the current Supabase access token.
