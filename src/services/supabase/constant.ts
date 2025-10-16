@@ -23,4 +23,8 @@ export const rpc = {
   getUserProfileById: 'get_user_profile_by_id',
   updateUserProfile: 'update_user_profile',
   getFriendList: 'get_friends',
+  create_group_transaction_with_splits: 'create_group_transaction_with_splits',
+  get_group_transactions_paginated: 'get_group_transactions_paginated',
+  get_transaction_details: 'get_transaction_details',
+  create_transaction_comment: 'create_transaction_comment',
 } as const;
