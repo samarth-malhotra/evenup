@@ -1,7 +1,9 @@
+// app/groups/[id]/transactions/[txId].tsx
 import { Ionicons } from '@expo/vector-icons';
+import { useNavigation } from '@react-navigation/native';
 import { useLocalSearchParams } from 'expo-router';
 import { useAtomValue } from 'jotai';
-import { useState } from 'react';
+import { useLayoutEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   FlatList,
@@ -12,6 +14,7 @@ import {
   View,
 } from 'react-native';
 
+import AppHeader from '@/components/AppHeader';
 import TransactionCard from '@/components/TransactionCard';
 import {
   useAddTransactionComment,
@@ -22,73 +25,157 @@ import { useTheme } from '@/theme/hooks/useTheme';
 
 export default function GroupTransactionDetail() {
   const { txId } = useLocalSearchParams<{ txId: string }>();
+  const navigation = useNavigation();
   const { theme } = useTheme();
   const currentUser = useAtomValue(userAtom);
-  const { data: tx, isFetching } = useTransactionDetails(txId);
+
+  const { data: tx, isFetching, isError, error } = useTransactionDetails(txId);
   const addComment = useAddTransactionComment();
-  const [text, setText] = useState('');
+  const [commentText, setCommentText] = useState('');
+
+  // header uses tx.title when available
+  useLayoutEffect(() => {
+    navigation.setOptions({
+      headerShown: true,
+      header: () => (
+        <AppHeader
+          title={tx?.title ?? 'Transaction'}
+          showBackButton
+          rightActions={
+            <Pressable
+              onPress={() => {
+                /* open edit */
+              }}
+              className="p-2">
+              <Ionicons name="create-outline" size={22} color={theme.colors.textWhite} />
+            </Pressable>
+          }
+        />
+      ),
+    });
+  }, [navigation, tx?.title, theme.colors.textWhite]);
+
+  const payerAmount = useMemo(
+    () => tx?.participants?.find((p) => p.userId === tx?.paidBy)?.amount ?? tx?.amount ?? 0,
+    [tx]
+  );
 
   const handleAddComment = () => {
-    if (!text.trim()) return;
-    addComment.mutate({ transaction_id: txId!, created_by: currentUser?.id!, body: text });
-    setText('');
+    const text = commentText.trim();
+    if (!text || !txId || !currentUser?.id) return;
+    addComment.mutate({ transaction_id: txId, created_by: currentUser.id, body: text });
+    setCommentText('');
   };
 
-  if (isFetching)
+  if (isFetching) {
     return (
       <View className="flex-1 items-center justify-center">
         <ActivityIndicator size="large" />
       </View>
     );
+  }
 
-  if (!tx)
+  if (isError || !tx) {
     return (
-      <View className="p-4">
-        <Text className="text-red-500">Transaction not found</Text>
+      <View className="flex-1 p-4">
+        <Text className="text-red-500">
+          {isError
+            ? ((error as any)?.message ?? 'Failed to load transaction')
+            : 'Transaction not found'}
+        </Text>
       </View>
     );
+  }
 
   return (
-    <View className="flex-1">
-      <View className="p-4">
-        <Text className="text-lg font-semibold">{tx.title}</Text>
-        <Text className="mt-1 text-gray-500">
-          Paid by {tx.paidByName} on {tx.date}
-        </Text>
-        <Text className="text-primary mt-3 text-3xl font-bold">₹{tx.amount}</Text>
+    <>
+      <View className="px-4 pt-2">
+        {/* Header summary */}
+        <View className="mb-4 flex-row items-start justify-between">
+          <View className="flex-1 pr-3">
+            <Text
+              style={{ color: theme.colors.primary.DEFAULT }}
+              className="mt-2 text-lg font-medium">
+              {tx.splitMethod
+                ? `${tx.splitMethod.charAt(0).toUpperCase()}${tx.splitMethod.slice(1).toLowerCase()} Split`
+                : 'Split'}
+            </Text>
+            <Text style={{ color: theme.colors.textSecondary }} className="mt-1 text-sm">
+              Paid by {tx.paidByName} on {tx.date}
+            </Text>
+          </View>
 
-        <Text className="mt-5 text-base font-semibold">Participants</Text>
-        {tx.participants.map((p) => (
-          <TransactionCard
-            key={p.userId}
-            title={p.userId === currentUser?.id ? 'You' : (p.name ?? 'Member')}
-            subtitle={p.userId === tx.paidBy ? 'Paid' : 'Owes'}
-            amount={p.amount}
-            compact
-          />
-        ))}
+          <View className="items-end">
+            <Text
+              style={{ color: theme.colors.primary.DEFAULT }}
+              className="text-3xl font-extrabold">
+              ₹{tx.amount}
+            </Text>
+            <Text style={{ color: theme.colors.textSecondary }} className="mt-1 text-sm">
+              Total
+            </Text>
+          </View>
+        </View>
 
-        <Text className="mb-2 mt-6 text-base font-semibold">Comments</Text>
-        <FlatList
-          data={tx.comments}
-          keyExtractor={(c) => c.id}
-          renderItem={({ item }) => (
-            <View className="mb-3 rounded-2xl bg-gray-100 p-3">
-              <Text className="font-semibold text-gray-800">{item.user}</Text>
-              <Text className="mt-1 text-gray-700">{item.message}</Text>
-              <Text className="mt-1 text-xs text-gray-400">{item.createdAt.slice(0, 10)}</Text>
-            </View>
+        {/* Participants */}
+        <View className="mb-2">
+          <Text
+            style={{ color: theme.colors.textPrimary }}
+            className="mb-3 text-base font-semibold">
+            Participants
+          </Text>
+
+          {tx.participants?.length === 0 ? (
+            <Text style={{ color: theme.colors.textSecondary }} className="text-sm">
+              No participants.
+            </Text>
+          ) : (
+            <>
+              {tx.participants.map((p) => (
+                <TransactionCard
+                  key={p.userId}
+                  title={p.userId === currentUser?.id ? 'You' : (p.name ?? 'Member')}
+                  subtitle={p.userId === tx.paidBy ? 'Paid' : 'Owes'}
+                  avatarInitials={(p.name ?? 'M').slice(0, 2).toUpperCase()}
+                  amount={p.amount}
+                  compact
+                />
+              ))}
+            </>
           )}
-          ListEmptyComponent={<Text className="text-gray-400">No comments yet</Text>}
-        />
+        </View>
       </View>
 
-      {/* Add comment input */}
-      <KeyboardAvoidingView behavior="padding">
+      {/* Comments + Input pinned */}
+      <KeyboardAvoidingView behavior="padding" style={{ flex: 1 }}>
+        <View className="flex-1">
+          <FlatList
+            data={tx.comments ?? []}
+            keyExtractor={(c) => c.id}
+            renderItem={({ item }) => (
+              <View className="mb-3 px-4">
+                <View className="rounded-2xl bg-gray-100 p-3">
+                  <View className="flex-row items-center justify-between">
+                    <Text className="text-sm font-semibold text-gray-800">{item.user}</Text>
+                  </View>
+                  <Text className="mt-1 text-base text-gray-700">{item.message}</Text>
+                  <Text className="mt-1 text-xs text-gray-400">{item.createdAt?.slice(0, 10)}</Text>
+                </View>
+              </View>
+            )}
+            contentContainerStyle={{ paddingVertical: 8 }}
+            ListEmptyComponent={() => (
+              <View className="p-4">
+                <Text className="text-sm text-gray-500">No comments yet</Text>
+              </View>
+            )}
+          />
+        </View>
+
         <View className="flex-row items-center border-t border-gray-200 bg-white p-3">
           <TextInput
-            value={text}
-            onChangeText={setText}
+            value={commentText}
+            onChangeText={setCommentText}
             placeholder="Add a comment..."
             placeholderTextColor="#9CA3AF"
             className="flex-1 rounded-full bg-gray-50 px-4 py-2 text-base text-gray-800"
@@ -98,6 +185,6 @@ export default function GroupTransactionDetail() {
           </Pressable>
         </View>
       </KeyboardAvoidingView>
-    </View>
+    </>
   );
 }
