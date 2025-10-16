@@ -1,6 +1,7 @@
 import { MaterialIcons } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import dayjs from 'dayjs';
+import { useAtomValue } from 'jotai';
 import React, { memo, useCallback, useEffect, useMemo, useState } from 'react';
 import { Pressable, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
@@ -8,6 +9,8 @@ import BottomSheet from '@/components/BottomSheet';
 import ParticipantRow from '@/features/bills/components/common/ParticipantRow';
 import { SPLIT_OPTIONS } from '@/features/bills/constant';
 import { toNum } from '@/features/bills/utils';
+import type { GroupMember } from '@/features/groups/types';
+import { userAtom } from '@/stores/atoms/user';
 import { useTheme } from '@/theme/hooks/useTheme';
 import type { SplitMethod } from '@/types';
 
@@ -39,6 +42,7 @@ export default function AddBillSheet({
   onSave,
   onSelectPaidBy,
   onSelectParticipants,
+  members = [],
 }: {
   open: boolean;
   onClose: () => void;
@@ -51,8 +55,9 @@ export default function AddBillSheet({
     splitMethod: SplitMethod;
     perPerson: Record<string, number>;
   }) => void;
-  onSelectPaidBy?: () => Promise<string> | string | void;
-  onSelectParticipants?: () => Promise<string[]> | string[] | void;
+  onSelectPaidBy?: () => Promise<string | undefined>;
+  onSelectParticipants?: () => Promise<string[] | undefined>;
+  members?: GroupMember[];
 }) {
   const { theme } = useTheme();
   const [title, setTitle] = useState('');
@@ -226,6 +231,21 @@ export default function AddBillSheet({
     perPersonFinal,
   ]);
 
+  const currentUser = useAtomValue(userAtom);
+
+  // Helper: find member name or fallback
+  const getMemberLabel = (id?: string) => {
+    if (!id) return 'Select person';
+    if (id === currentUser?.id) return 'You';
+    return members?.find((m) => m.id === id)?.name ?? id;
+  };
+
+  // Helper: participant display
+  const getParticipantLabel = (id: string) => {
+    if (id === currentUser?.id) return 'You';
+    return members?.find((m) => m.id === id)?.name ?? id;
+  };
+
   /** ---------------- Gorhom Bottom Sheet (Modal) ---------------- */
 
   return (
@@ -337,8 +357,8 @@ export default function AddBillSheet({
             style={{
               color: paidBy ? theme.colors.textPrimary : theme.colors.textSecondary,
             }}
-            className={'text-base'}>
-            {paidBy || 'Select person'}
+            className="text-base">
+            {getMemberLabel(paidBy)} {/* 👈 show name not id */}
           </Text>
           <MaterialIcons
             name="expand-more"
@@ -363,7 +383,7 @@ export default function AddBillSheet({
             style={{
               color: participants.length ? theme.colors.textPrimary : theme.colors.textSecondary,
             }}
-            className={'text-base'}>
+            className="text-base">
             {participants.length ? `${participants.length} selected` : 'Select members'}
           </Text>
           <MaterialIcons name="group-add" size={22} style={{ color: theme.colors.textSecondary }} />
@@ -393,20 +413,21 @@ export default function AddBillSheet({
       {participants.length > 0 && (
         <View style={{ backgroundColor: theme.colors.gray50 }} className="mt-2 rounded-2xl p-3">
           {participants.map((id) => (
-            <ParticipantRow
-              key={id}
-              id={id}
-              mode={splitMethod}
-              amount={amount}
-              equalPerPerson={equalPerPerson}
-              exactStr={exactMap[id] ?? ''}
-              percentStr={percentMap[id] ?? ''}
-              shareStr={shareMap[id] ?? ''}
-              totalShares={totalShares}
-              onChangeExact={onChangeExact}
-              onChangePercent={onChangePercent}
-              onChangeShare={onChangeShare}
-            />
+            <View key={id}>
+              <ParticipantRow
+                member={members.find((el) => el.id === id)}
+                mode={splitMethod}
+                amount={amount}
+                equalPerPerson={equalPerPerson}
+                exactStr={exactMap[id] ?? ''}
+                percentStr={percentMap[id] ?? ''}
+                shareStr={shareMap[id] ?? ''}
+                totalShares={totalShares}
+                onChangeExact={onChangeExact}
+                onChangePercent={onChangePercent}
+                onChangeShare={onChangeShare}
+              />
+            </View>
           ))}
         </View>
       )}
