@@ -270,7 +270,7 @@ export default function AddBillSheet({
             <TextInput
               value={title}
               onChangeText={setTitle}
-              placeholder="Dinner at BBQ Nation"
+              placeholder="Dinner at Chowki Dhani"
               placeholderTextColor={theme.colors.placeholder}
               style={{ color: theme.colors.textPrimary }}
               className="h-11 text-base text-gray-900"

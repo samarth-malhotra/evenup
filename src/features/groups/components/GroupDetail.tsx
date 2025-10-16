@@ -1,13 +1,14 @@
-// app/groups/[id]/index.tsx  (or wherever GroupDetailScreen lives)
+// app/groups/[id]/index.tsx
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useLocalSearchParams, useNavigation, useRouter } from 'expo-router';
 import { useAtomValue, useSetAtom } from 'jotai';
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { useCallback, useLayoutEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   FlatList,
   Modal,
   Pressable,
+  RefreshControl,
   Text,
   TouchableOpacity,
   View,
@@ -17,9 +18,9 @@ import AppHeader from '@/components/AppHeader';
 import SummaryCard from '@/components/SummaryCard';
 import TransactionCard from '@/components/TransactionCard';
 import AddBillSheet from '@/features/bills/components/AddBillSheet';
+import { useGroupTransactionsPaginated } from '@/features/groups/hooks/transactions';
 import { useCreateGroupTransaction } from '@/features/groups/hooks/useCreateGroupTransaction';
 import { useGroupDetail } from '@/features/groups/hooks/useGroupDetail';
-import { groupExpense } from '@/features/groups/mocks/groupList';
 import { addToastAtom } from '@/stores/atoms/toast';
 import { userAtom } from '@/stores/atoms/user';
 import { getBoxShadow } from '@/theme/hooks/getBoxShadow';
@@ -27,65 +28,54 @@ import { useColor } from '@/theme/hooks/useColor';
 import { useTheme } from '@/theme/hooks/useTheme';
 import { formatRs } from '@/utils/formatRs';
 
-// ---------------- Types ----------------
-export type Member = {
-  id: string;
-  name: string;
-  avatar?: string;
-};
-
-export type Expense = {
-  id: string;
-  groupId: string;
-  title: string;
-  amount: number;
-  paidBy: string;
-  date: string;
-  category?: string;
-  splits: Record<string, number>;
-};
-
-// ---------------- Screen ----------------
 export default function GroupDetailScreen() {
   const { id: groupId } = useLocalSearchParams<{ id: string }>();
-  const { theme } = useTheme();
-  const getColor = useColor();
   const navigation = useNavigation();
   const router = useRouter();
+  const { theme } = useTheme();
+  const getColor = useColor();
 
   const user = useAtomValue(userAtom);
   const addToast = useSetAtom(addToastAtom);
-
-  const { data: selectedGroup, isFetching, isError, error } = useGroupDetail(user?.id, groupId);
   const createTx = useCreateGroupTransaction();
 
-  const [addOpen, setAddOpen] = useState(false);
+  const {
+    data: selectedGroup,
+    isFetching: groupFetching,
+    isError: groupIsError,
+    error: groupError,
+  } = useGroupDetail(user?.id, groupId);
 
-  // Picker modal state & promise resolver refs
+  // transactions infinite query
+  const {
+    data,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+    isFetching: txFetching,
+    refetch,
+    isError: txIsError,
+    error: txError,
+    status,
+    dataUpdatedAt,
+  } = useGroupTransactionsPaginated(groupId, user?.id, 10);
+
+  // flatten pages
+  const transactions = data ? data.pages.flatMap((p) => p.transactions) : [];
+  const summary = data?.pages?.[0]?.summary ?? { totalSpent: 0, youOwe: 0, friendsOwe: 0 };
+
+  // UI state
+  const [addOpen, setAddOpen] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+
+  // pickers (same as earlier)
   const [showPaidByPicker, setShowPaidByPicker] = useState(false);
   const [showParticipantsPicker, setShowParticipantsPicker] = useState(false);
-  const paidByResolveRef = useRef<((res?: string) => void) | null>(null);
-  const participantsResolveRef = useRef<((res?: string[]) => void) | null>(null);
+  const paidByResolveRef = useRef<((v?: string) => void) | null>(null);
+  const participantsResolveRef = useRef<((v?: string[]) => void) | null>(null);
   const [participantsSelection, setParticipantsSelection] = useState<Record<string, boolean>>({});
 
-  useEffect(() => {
-    if (isError && error) {
-      const msg = (error as any).message ?? 'Failed to load group';
-      router.push('/(tabs)/groups');
-      addToast({ title: 'Error', message: msg, type: 'error' });
-    }
-  }, [isError, error, addToast, router]);
-
-  // ---------------- Handlers ----------------
-  const handleSettleUp = () => {
-    router.push({ pathname: `/groups/${groupId}/settle-up`, params: { groupId } });
-  };
-
-  const handleSetting = () => {
-    router.push({ pathname: `/groups/${groupId}/settings`, params: { groupId } });
-  };
-
-  // ---------------- Header ----------------
+  // header
   useLayoutEffect(() => {
     navigation.setOptions({
       headerShown: true,
@@ -95,13 +85,13 @@ export default function GroupDetailScreen() {
           showBackButton
           rightActions={
             <View className="flex-row gap-4">
-              <Pressable onPress={handleSettleUp} accessibilityLabel="Settle up">
-                <MaterialCommunityIcons name="hand-coin" size={28} color={getColor('textWhite')} />
+              <Pressable onPress={() => router.push(`/groups/${groupId}/settle-up`)}>
+                <MaterialCommunityIcons name="hand-coin" size={26} color={getColor('textWhite')} />
               </Pressable>
-              <Pressable onPress={handleSetting} accessibilityLabel="Settings">
+              <Pressable onPress={() => router.push(`/groups/${groupId}/settings`)}>
                 <MaterialCommunityIcons
                   name="account-cog-outline"
-                  size={28}
+                  size={26}
                   color={getColor('textWhite')}
                 />
               </Pressable>
@@ -110,36 +100,26 @@ export default function GroupDetailScreen() {
         />
       ),
     });
-  }, [navigation, selectedGroup?.name, handleSettleUp, getColor, handleSetting]);
+  }, [selectedGroup?.name, getColor]);
 
-  // ---------------- Pickers implemented as modals that resolve a Promise ---------------
-  // openPaidByPicker returns a Promise<string | undefined> which resolves when user picks
-  const openPaidByPicker = useCallback(async (): Promise<string | undefined> => {
-    if (!selectedGroup?.members) return undefined;
+  // open pickers
+  const openPaidByPicker = async () => {
     setShowPaidByPicker(true);
-    return await new Promise((resolve) => {
-      paidByResolveRef.current = resolve;
-    });
-  }, [selectedGroup?.members]);
-
-  const openParticipantsPicker = useCallback(async (): Promise<string[] | undefined> => {
-    if (!selectedGroup?.members) return undefined;
-    // preselect current user by default
+    return new Promise<string | undefined>((resolve) => (paidByResolveRef.current = resolve));
+  };
+  const openParticipantsPicker = async () => {
+    if (!selectedGroup?.members) return [];
     const initial: Record<string, boolean> = {};
-    selectedGroup.members.forEach((m) => {
-      initial[m.id] = m.id === user?.id;
-    });
+    selectedGroup.members.forEach((m) => (initial[m.id] = m.id === user?.id));
     setParticipantsSelection(initial);
     setShowParticipantsPicker(true);
-    return await new Promise((resolve) => {
-      participantsResolveRef.current = resolve;
-    });
-  }, [selectedGroup?.members, user?.id]);
-
-  // PaidBy modal helpers
-  const handlePaidByChoose = (memberId: string) => {
+    return new Promise<string[] | undefined>(
+      (resolve) => (participantsResolveRef.current = resolve)
+    );
+  };
+  const handlePaidByChoose = (id: string) => {
     setShowPaidByPicker(false);
-    paidByResolveRef.current?.(memberId);
+    paidByResolveRef.current?.(id);
     paidByResolveRef.current = null;
   };
   const handlePaidByCancel = () => {
@@ -147,243 +127,225 @@ export default function GroupDetailScreen() {
     paidByResolveRef.current?.(undefined);
     paidByResolveRef.current = null;
   };
-
-  // Participants modal helpers (multi-select)
   const toggleParticipant = (id: string) =>
     setParticipantsSelection((s) => ({ ...s, [id]: !s[id] }));
-
   const handleParticipantsConfirm = () => {
     setShowParticipantsPicker(false);
-    const chosen = Object.keys(participantsSelection).filter((k) => participantsSelection[k]);
-    participantsResolveRef.current?.(chosen);
+    const selected = Object.keys(participantsSelection).filter((k) => participantsSelection[k]);
+    participantsResolveRef.current?.(selected);
     participantsResolveRef.current = null;
   };
-
   const handleParticipantsCancel = () => {
     setShowParticipantsPicker(false);
     participantsResolveRef.current?.(undefined);
     participantsResolveRef.current = null;
   };
 
-  // ---------------- Add bill: payload shaping, call RPC mutation ----------------
+  // save bill
   const handleSaveBill = useCallback(
     async (payload: {
       title: string;
       amount: number;
       date: Date;
-      paidBy: string; // id as returned by picker
-      participants: string[]; // ids
+      paidBy: string;
+      participants: string[];
       splitMethod: string;
       perPerson: Record<string, number>;
     }) => {
-      console.log(' ################# ', JSON.stringify(payload));
-      const splits = payload.participants.map((pId) => ({
-        userId: pId,
-        amount: Number((payload.perPerson[pId] ?? 0).toFixed(2)),
-        shareType:
-          payload.splitMethod === 'exact'
-            ? 'exact'
-            : payload.splitMethod === 'percent'
-              ? 'percent'
-              : 'exact',
-        shareMeta:
-          payload.splitMethod === 'percent' ? { percent: payload.perPerson[pId] ?? 0 } : {},
+      const splits = payload.participants.map((id) => ({
+        userId: id,
+        amount: Number((payload.perPerson[id] ?? 0).toFixed(2)),
+        shareType: payload.splitMethod === 'percent' ? 'percent' : 'exact',
+        shareMeta: payload.splitMethod === 'percent' ? { percent: payload.perPerson[id] } : {},
       }));
 
-      // Build rpc payload: matches SQL function params
-      const rpcPayload = {
-        title: payload.title,
-        amount: payload.amount,
-        currency: 'INR',
-        paidBy: payload.paidBy,
-        groupId: groupId,
-        createdBy: user?.id ?? null,
-        receiptUrl: null,
-        status: 'active',
-        metadata: {},
-        splits,
-      };
-
       try {
-        await createTx.mutateAsync(rpcPayload as any);
-        // mutation's onSuccess will toast and invalidate queries
+        await createTx.mutateAsync({
+          title: payload.title,
+          amount: payload.amount,
+          currency: 'INR',
+          paidBy: payload.paidBy,
+          groupId,
+          createdBy: user?.id ?? '',
+          metadata: { splitMethod: payload.splitMethod },
+          splits,
+        });
+        // refetch in background
+        refetch();
+        setAddOpen(false);
       } catch (err) {
-        // error toast will be shown by mutation onError
         console.error('create tx err', err);
       }
     },
-    [createTx, groupId, user?.id]
+    [createTx, groupId, user?.id, refetch]
   );
 
-  if (!selectedGroup && isFetching) {
+  // pull-to-refresh
+  const onRefresh = async () => {
+    setRefreshing(true);
+    try {
+      await refetch();
+    } finally {
+      setRefreshing(false);
+    }
+  };
+
+  // show errors as visible UI
+  if (groupIsError) {
     return (
-      <View className="flex-1 items-center justify-center">
-        <ActivityIndicator size="large" />
-        <Text className="p-4 text-gray-400">Loading group details...</Text>
+      <View className="flex-1 items-center justify-center p-4">
+        <Text className="text-red-500">
+          Failed to load group: {(groupError as any)?.message ?? 'Unknown'}
+        </Text>
       </View>
     );
   }
 
-  if (!selectedGroup) {
-    return <Text className="p-4 text-red-500">Group not found</Text>;
+  // show loading when both group and tx are loading first time
+  if ((groupFetching && !selectedGroup) || (txFetching && !data)) {
+    return (
+      <View className="flex-1 items-center justify-center">
+        <ActivityIndicator size="large" />
+        <Text className="mt-2 text-gray-400">Loading group and transactions...</Text>
+      </View>
+    );
   }
 
-  // ---------------- Render ----------------
+  // debug: no group
+  if (!selectedGroup) {
+    return (
+      <View className="flex-1 items-center justify-center p-4">
+        <Text className="text-red-500">Group not found</Text>
+      </View>
+    );
+  }
+
+  // Tx query error
+  if (txIsError) {
+    console.warn('tx query error', txError);
+  }
+
   return (
-    <View className="mt-2 flex-1">
-      {selectedGroup && (selectedGroup?.members?.length ?? 0) > 0 ? (
-        <View className="mt-2 flex-1 ">
-          {/* Transactions / Summary - re-use your existing UI */}
-          {groupExpense.length ? (
-            <>
-              <View className="flex-row justify-evenly gap-3 px-4">
-                <SummaryCard title="Total Spent" value={formatRs(2000)} type="total" />
-                <SummaryCard title="You Owe" value={formatRs(1500)} type="you" />
-                <SummaryCard title="Friends Owe" value={formatRs(500)} type="friend" />
-              </View>
+    <View className="flex-1">
+      {/* summary */}
+      <View className="mt-2 flex-row justify-evenly px-4">
+        <SummaryCard title="Total Spent" value={formatRs(summary.totalSpent)} type="total" />
+        <SummaryCard title="You Owe" value={formatRs(summary.youOwe)} type="you" />
+        <SummaryCard title="Friends Owe" value={formatRs(summary.friendsOwe)} type="friend" />
+      </View>
 
-              {/* Transactions Header */}
-              <View className="mb-2 mt-5 flex-row items-center justify-between px-4">
-                <Text className="text-base font-semibold">Transactions</Text>
-                <View className="flex-row items-center gap-1">
-                  <Ionicons name="arrow-down" size={14} />
-                  <Text style={{ color: theme.colors.textSecondary }} className="text-xs">
-                    Latest first
-                  </Text>
-                </View>
-              </View>
-
-              {/* Transactions List */}
-              <FlatList
-                className="px-4"
-                showsVerticalScrollIndicator={false}
-                data={groupExpense}
-                keyExtractor={(e) => e.id}
-                renderItem={({ item }) => {
-                  return (
-                    <TransactionCard
-                      onPress={() => router.push(`/groups/${groupId}/transactions/${item.id}`)}
-                      title={item.title}
-                      subtitle={`Paid by - ${item.paidBy} @ ${item.createdAt}`}
-                      avatarInitials={item.avatarInitials}
-                      amount={item.amount}
-                      hasAttachment={item.hasAttachment}
-                    />
-                  );
-                }}
-              />
-
-              {/* Floating Action Button */}
-              <TouchableOpacity
-                activeOpacity={0.9}
-                onPress={() => setAddOpen(true)}
-                className="absolute bottom-8 right-5 h-14 w-14 items-center justify-center rounded-full"
-                style={[{ backgroundColor: theme.colors.primary.DEFAULT }, getBoxShadow('md')]}
-                accessibilityLabel="Add expense">
-                <Ionicons name="add" size={28} color={getColor('textWhite')} />
-              </TouchableOpacity>
-            </>
-          ) : (
-            <View className="px-4 text-center">
-              <Text className="text-base font-semibold">No Transcations</Text>
-              <Pressable
-                className="flex-row items-center justify-between py-4"
-                onPress={() => setAddOpen(true)}>
-                <View>
-                  <Text className="text-base">Add New Trasncation</Text>
-                </View>
-              </Pressable>
-            </View>
-          )}
-
-          <AddBillSheet
-            open={addOpen}
-            onClose={() => setAddOpen(false)}
-            onSave={handleSaveBill}
-            onSelectPaidBy={openPaidByPicker}
-            onSelectParticipants={openParticipantsPicker}
-            members={selectedGroup.members}
-          />
-        </View>
-      ) : (
-        <View className="flex h-full justify-center px-4 align-middle">
-          <Text className="text-base font-semibold">You have created new groug</Text>
-          <Pressable
-            className="flex-row items-center justify-between py-4"
-            onPress={() =>
-              router.push({
-                pathname: `/groups/${groupId}/add-members`,
-                params: { groupId },
-              })
-            }>
-            <View>
-              <Text className="text-base">Add Members</Text>
-            </View>
+      {/* header */}
+      <View className="mb-2 mt-5 flex-row items-center justify-between px-4">
+        <Text className="text-base font-semibold">Transactions</Text>
+        <View className="flex-row items-center gap-2">
+          <Text className="text-xs text-gray-500">Latest first</Text>
+          <Pressable onPress={() => refetch()}>
+            <Text className="text-xs text-indigo-600">Refresh</Text>
           </Pressable>
         </View>
-      )}
+      </View>
 
-      {/* ---------------- PaidBy modal ---------------- */}
+      {/* transactions list */}
+      <FlatList
+        data={transactions}
+        keyExtractor={(i) => i.id}
+        renderItem={({ item }) => (
+          <TransactionCard
+            title={item.title}
+            subtitle={`Paid by ${item.paidByName ?? item.paidBy} • ${item.createdAt?.slice(0, 10) ?? ''}`}
+            amount={item.amount}
+            avatarInitials={(item.paidByName ?? '?').slice(0, 2).toUpperCase()}
+            onPress={() => router.push(`/groups/${groupId}/transactions/${item.id}`)}
+          />
+        )}
+        ListEmptyComponent={() =>
+          txFetching ? null : (
+            <View className="items-center p-8">
+              <Text className="text-gray-500">No transactions yet. Add one using the + button</Text>
+            </View>
+          )
+        }
+        contentContainerStyle={{ paddingBottom: 140 }}
+        onEndReached={() => {
+          if (hasNextPage && !isFetchingNextPage) fetchNextPage();
+        }}
+        onEndReachedThreshold={0.4}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+        ListFooterComponent={
+          isFetchingNextPage ? (
+            <View className="p-4">
+              <ActivityIndicator />
+            </View>
+          ) : null
+        }
+      />
+
+      {/* FAB */}
+      <TouchableOpacity
+        activeOpacity={0.9}
+        onPress={() => setAddOpen(true)}
+        className="absolute bottom-8 right-5 h-14 w-14 items-center justify-center rounded-full"
+        style={[{ backgroundColor: theme.colors.primary.DEFAULT }, getBoxShadow('md')]}>
+        <Ionicons name="add" size={28} color={getColor('textWhite')} />
+      </TouchableOpacity>
+
+      {/* Add bill sheet */}
+      <AddBillSheet
+        open={addOpen}
+        onClose={() => setAddOpen(false)}
+        onSave={handleSaveBill}
+        onSelectPaidBy={openPaidByPicker}
+        onSelectParticipants={openParticipantsPicker}
+        members={selectedGroup.members}
+      />
+
+      {/* PaidBy modal */}
       <Modal visible={showPaidByPicker} transparent animationType="fade">
         <View className="flex-1 items-center justify-center bg-black/40 px-6">
-          <View className="max-h-96 w-full rounded-2xl bg-white p-4">
+          <View className="w-full rounded-2xl bg-white p-4">
             <Text className="mb-3 text-lg font-semibold">Select payer</Text>
-
             <FlatList
-              data={selectedGroup?.members ?? []}
-              keyExtractor={(m: any) => m.id}
-              renderItem={({ item }: any) => (
+              data={selectedGroup.members}
+              keyExtractor={(m) => m.id}
+              renderItem={({ item }) => (
                 <Pressable
                   onPress={() => handlePaidByChoose(item.id)}
                   className="border-b border-gray-100 py-3">
-                  <Text className="text-base">
-                    {item.id === user?.id ? 'You' : (item.name ?? 'Unknown')}
-                  </Text>
-                  {item.email ? <Text className="text-xs text-gray-500">{item.email}</Text> : null}
+                  <Text className="text-base">{item.id === user?.id ? 'You' : item.name}</Text>
+                  {item.email && <Text className="text-xs text-gray-500">{item.email}</Text>}
                 </Pressable>
               )}
             />
-
-            <View className="mt-3 flex-row justify-end">
-              <Pressable onPress={handlePaidByCancel} className="mr-2 px-4 py-2">
-                <Text className="text-base text-gray-600">Cancel</Text>
-              </Pressable>
-            </View>
+            <Pressable onPress={handlePaidByCancel} className="mt-2 self-end px-4 py-2">
+              <Text className="text-base text-gray-600">Cancel</Text>
+            </Pressable>
           </View>
         </View>
       </Modal>
 
-      {/* ---------------- Participants modal ---------------- */}
+      {/* Participants modal */}
       <Modal visible={showParticipantsPicker} transparent animationType="fade">
         <View className="flex-1 items-center justify-center bg-black/40 px-6">
-          <View className="max-h-96 w-full rounded-2xl bg-white p-4">
-            <Text className="mb-3 text-lg font-semibold">Select members</Text>
-
+          <View className="w-full rounded-2xl bg-white p-4">
+            <Text className="mb-3 text-lg font-semibold">Select participants</Text>
             <FlatList
-              data={selectedGroup?.members ?? []}
-              keyExtractor={(m: any) => m.id}
-              renderItem={({ item }: any) => {
+              data={selectedGroup.members}
+              keyExtractor={(m) => m.id}
+              renderItem={({ item }) => {
                 const checked = !!participantsSelection[item.id];
                 return (
                   <Pressable
                     onPress={() => toggleParticipant(item.id)}
                     className="flex-row items-center justify-between border-b border-gray-100 py-3">
                     <View>
-                      <Text className="text-base">
-                        {item.id === user?.id ? 'You' : (item.name ?? 'Unknown')}
-                      </Text>
-                      {item.email ? (
-                        <Text className="text-xs text-gray-500">{item.email}</Text>
-                      ) : null}
+                      <Text className="text-base">{item.id === user?.id ? 'You' : item.name}</Text>
+                      {item.email && <Text className="text-xs text-gray-500">{item.email}</Text>}
                     </View>
-                    <View className="mr-2">
-                      <Text>{checked ? '✓' : ''}</Text>
-                    </View>
+                    <Text>{checked ? '✓' : ''}</Text>
                   </Pressable>
                 );
               }}
             />
-
             <View className="mt-3 flex-row justify-end">
               <Pressable onPress={handleParticipantsCancel} className="mr-2 px-4 py-2">
                 <Text className="text-base text-gray-600">Cancel</Text>
