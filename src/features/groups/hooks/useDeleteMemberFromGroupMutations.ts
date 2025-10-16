@@ -3,8 +3,38 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Alert } from 'react-native';
 
 import type { GroupDetails } from '@/features/groups/types';
-import { RPCFunctions } from '@/services/supabase/RPCFunctions';
-import { supabase } from '@/services/supabase/supabase';
+import { rpc } from '@/services/supabase/constant';
+import { fetchRPC } from '@/services/supabase/fetchRPC';
+
+type DeleteMemberPayload = {
+  groupId: string;
+  memberId: string;
+  removedBy: string;
+};
+
+type DeleteMemberResponse = {
+  id: string;
+  role: string;
+  status: string;
+  left_at: string;
+  user_id: string;
+  group_id: string;
+  joined_at: string;
+  invited_by: string;
+  removed_by: string;
+};
+
+export async function deleteMember({
+  groupId,
+  memberId,
+  removedBy,
+}: DeleteMemberPayload): Promise<DeleteMemberResponse> {
+  return await fetchRPC<DeleteMemberResponse>(rpc.deleteGroupMember, {
+    p_group_id: groupId,
+    p_user_id: memberId,
+    p_removed_by: removedBy,
+  });
+}
 
 /**
  * Query-only optimistic updates for group member mutations:
@@ -17,34 +47,20 @@ export default function useDeleteMemberMutation() {
 
   /* ------------------ DELETE MEMBER ------------------ */
   // types used in this snippet (import them from your types file)
-  type DeleteVars = {
-    groupId: string;
-    memberId: string;
-    removedBy: string;
-  };
+
   type DeleteContext = {
     previousGroup?: GroupDetails | null;
     groupId: string;
     memberId: string;
   };
 
-  const deleteMemberMutation = useMutation<unknown, Error, DeleteVars, DeleteContext>({
-    mutationFn: async ({ groupId, memberId, removedBy }: DeleteVars) => {
-      const { data, error } = await supabase.rpc(RPCFunctions.deleteGroupMember, {
-        p_group_id: groupId,
-        p_user_id: memberId,
-        p_removed_by: removedBy,
-      });
-      if (error) {
-        throw new Error(
-          error.message ?? `Failed to ${memberId === removedBy ? 'leave group' : 'delete member'}`
-        );
-      }
-      return data;
+  const deleteMemberMutation = useMutation<unknown, Error, DeleteMemberPayload, DeleteContext>({
+    mutationFn: async ({ groupId, memberId, removedBy }: DeleteMemberPayload) => {
+      return await deleteMember({ groupId, memberId, removedBy });
     },
 
     // onMutate MUST return the context we'll use later
-    onMutate: async ({ groupId, memberId }: DeleteVars) => {
+    onMutate: async ({ groupId, memberId }: DeleteMemberPayload) => {
       // cancel any outgoing refetches
       await queryClient.cancelQueries({ queryKey: ['group', groupId] });
       await queryClient.cancelQueries({ queryKey: ['groups'] });
@@ -71,7 +87,7 @@ export default function useDeleteMemberMutation() {
     // Prefer context over variables (variables may be null in some codepaths)
     onError: (
       err: Error,
-      _variables: DeleteVars | undefined,
+      _variables: DeleteMemberPayload | undefined,
       context: DeleteContext | undefined
     ) => {
       const ctx = context;

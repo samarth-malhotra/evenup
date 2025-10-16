@@ -1,10 +1,11 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-// import { Group } from 'expo-contacts';
 import { router } from 'expo-router';
 import { Alert } from 'react-native';
 
 import type { Group } from '@/features/groups/types';
 import { useAccessToken } from '@/hooks/useAccessToken';
+import { edge } from '@/services/supabase/constant';
+import { edgeFunction } from '@/services/supabase/edgeFunctions';
 
 // Helper to make a temporary group object for optimistic update
 function makeTempGroup(inputName: string, userId: string): Group {
@@ -25,27 +26,14 @@ function makeTempGroup(inputName: string, userId: string): Group {
     // reverted_by: null,
   };
 }
-const CREATE_GROUP_ENDPOINT = 'https://wrnepxzmmuzcsmjmadli.supabase.co/functions/v1/create-group';
 
-async function callCreateGroupApi(name: string, accessToken: string) {
-  const res = await fetch(CREATE_GROUP_ENDPOINT, {
+export async function createGroup(name: string, accessToken: string): Promise<Group> {
+  const data = await edgeFunction<Group>(edge.createGroup, {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      // If you need Authorization, add it here. e.g.
-      Authorization: `Bearer ${accessToken}`,
-    },
-    body: JSON.stringify({ name }),
+    body: { name },
+    accessToken,
   });
-
-  if (!res.ok) {
-    const text = await res.text();
-    throw new Error(`Create group failed: ${res.status} ${res.statusText} ${text}`);
-  }
-
-  // expecting JSON body as in your example
-  const json = await res.json();
-  return json as Group;
+  return data as Group;
 }
 
 export default function useCreateGroupMutation() {
@@ -57,7 +45,7 @@ export default function useCreateGroupMutation() {
       if (!accessToken) {
         throw new Error(`Access token is missing`);
       }
-      return callCreateGroupApi(name, accessToken);
+      return createGroup(name, accessToken);
     },
 
     // optimistic update

@@ -11,6 +11,7 @@ import {
   TouchableOpacity,
 } from 'react-native';
 
+import { edge } from '@/services/supabase/constant';
 import { supabase } from '@/services/supabase/supabase';
 import { normalizeEmail, normalizePhone } from '@/utils/normalise';
 
@@ -25,8 +26,6 @@ type SignupPayload = {
   currency?: string;
   theme?: string;
 };
-
-const SIGNUP_FUNCTION_URL = 'https://wrnepxzmmuzcsmjmadli.supabase.co/functions/v1/signup';
 
 export default function SignupScreen() {
   const router = useRouter();
@@ -86,7 +85,7 @@ export default function SignupScreen() {
       };
 
       // call the function
-      const resp = await fetch(SIGNUP_FUNCTION_URL, {
+      const resp = await fetch(edge.signup, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
