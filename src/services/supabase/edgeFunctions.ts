@@ -54,7 +54,7 @@ export async function edgeFunction<T>(
 
   // HTTP-level error: try to surface structured message from json if present
   if (!res.ok) {
-    const errMsg = (json && (json.error || json.message)) ?? `HTTP ${res.status} ${res.statusText}`;
+    const errMsg = (json && (json.message || json.error)) ?? `HTTP ${res.status} ${res.statusText}`;
     throw new SupaError(errMsg, 'http_error');
   }
 

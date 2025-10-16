@@ -11,8 +11,7 @@ import {
   TouchableOpacity,
 } from 'react-native';
 
-import { edge } from '@/services/supabase/constant';
-import { supabase } from '@/services/supabase/supabase';
+import useSignupHandler from '@/features/auth/hooks/useSignup';
 import { normalizeEmail, normalizePhone } from '@/utils/normalise';
 
 type SignupPayload = {
@@ -29,6 +28,7 @@ type SignupPayload = {
 
 export default function SignupScreen() {
   const router = useRouter();
+  const { handleSignup } = useSignupHandler();
 
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -73,52 +73,15 @@ export default function SignupScreen() {
   const onSubmit = async () => {
     if (submitting) return;
     if (!validate()) return;
-
     setSubmitting(true);
-
-    try {
-      const payload: SignupPayload = {
-        email: normalizeEmail(email)!,
-        password,
-        full_name: normalize(name),
-        phone: normalizePhone(`91${phone}`),
-      };
-
-      // call the function
-      const resp = await fetch(edge.signup, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      });
-
-      const json = await resp.json();
-
-      if (resp.status === 201 && json?.ok) {
-        const session = json.session;
-        if (session?.access_token && session?.refresh_token) {
-          // Using supabase-js v2 client (browser / react native)
-          await supabase.auth.setSession({
-            access_token: session.access_token,
-            refresh_token: session.refresh_token,
-          });
-          // Now user is signed in locally. Redirect to app root
-          router.replace('/(tabs)');
-        } else {
-          // fallback: user created but no session provided
-          Alert.alert('Account created', 'Please login with your credentials.');
-        }
-      } else if (resp.status === 409) {
-        // handle conflicts
-        Alert.alert('Already registered', json?.message ?? 'Email or phone already in use');
-      } else {
-        Alert.alert('Signup failed', json?.error ?? 'Unexpected error');
-      }
-    } catch (err: any) {
-      console.error('Signup request error:', err);
-      Alert.alert('Network error', err?.message ?? String(err));
-    } finally {
-      setSubmitting(false);
-    }
+    const payload: SignupPayload = {
+      email: normalizeEmail(email)!,
+      password,
+      full_name: normalize(name),
+      phone: normalizePhone(`91${phone}`),
+    };
+    await handleSignup(payload);
+    setSubmitting(false);
   };
 
   return (
