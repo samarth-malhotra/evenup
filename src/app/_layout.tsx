@@ -2,7 +2,7 @@
 import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { Provider as JotaiProvider, useAtom, useAtomValue } from 'jotai';
+import { Provider as JotaiProvider, useAtom, useSetAtom } from 'jotai';
 import { useEffect, useMemo } from 'react';
 import { ActivityIndicator, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
@@ -11,9 +11,10 @@ import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-cont
 import { QueryProvider } from '@/components/QueryProvider';
 import { ThemeProvider } from '@/components/ThemeProvider';
 import ToastProvider from '@/components/ToastProvider';
+import type { APP_MODE } from '@/constant';
 import { initAuth } from '@/features/auth/auth';
-import { fetchUserProfile } from '@/services/hooks/userProfile';
-import { authLoadingAtom } from '@/stores/atoms/auth';
+import { useUserProfile } from '@/features/profile/hooks/useUserProfile';
+import { addToastAtom } from '@/stores/atoms/toast';
 import { userAtom } from '@/stores/atoms/user';
 import { jotaiStore } from '@/stores/store';
 import { useTheme } from '@/theme/hooks/useTheme';
@@ -44,30 +45,30 @@ export default function RootLayout() {
 }
 
 function InnerApp() {
-  const isLoading = useAtomValue(authLoadingAtom);
+  const { setMode } = useTheme();
   const [user, setUser] = useAtom(userAtom);
-  // const { setMode } = useTheme();
+  const addToast = useSetAtom(addToastAtom);
 
   const userId: string = useMemo(() => user?.id ?? '', [user]);
+  const { data: userProfile, isFetching, isLoading, isError, error } = useUserProfile(userId);
 
-  // const { data: profile, isLoading: isUserLoading, error } = useUserProfileById(user?.id ?? '');
   useEffect(() => {
-    async function profile(userId: string) {
-      const result = await fetchUserProfile(userId);
-
-      // console.log('user inn: ', user?.name, user?.nickname, result?.nickname);
-      if (result) {
-        setUser((prev) => ({ ...prev, nickname: result?.nickname }));
-      }
-
-      // setMode(result?.theme as APP_MODE);
+    if (isLoading) return;
+    if (userProfile) {
+      setUser(userProfile);
+      setMode(userProfile?.theme as APP_MODE);
     }
-    if (userId) {
-      profile(userId);
-    }
-  }, [setUser, userId]);
+    // console.log('in main layout page setting theme: ', userProfile?.theme);
+  }, [isLoading, setMode, setUser, userProfile]);
 
-  if (isLoading) {
+  useEffect(() => {
+    if (isError && error) {
+      const msg = error.message ?? 'Failed to load user profile';
+      addToast({ title: 'Error', message: msg, type: 'error' });
+    }
+  }, [isError, error, addToast]);
+
+  if (isFetching) {
     return (
       <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
         <ActivityIndicator size="large" />

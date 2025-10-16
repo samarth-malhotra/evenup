@@ -3,9 +3,47 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Alert } from 'react-native';
 
 import { USER_STATUS } from '@/constant';
-import { addMemberInGroup } from '@/features/contacts/api/addMemberInGroup';
 import type { GroupDetails, GroupMember } from '@/features/groups/types';
 import { useAccessToken } from '@/hooks/useAccessToken';
+import { edge } from '@/services/supabase/constant';
+import { edgeFunction } from '@/services/supabase/edgeFunctions';
+import { SupaError } from '@/services/supabase/supaError';
+
+export type CreateInvitePayload = {
+  phone?: string | null;
+  email?: string | null;
+  contact_name?: string | null;
+  invite_channel?: string; // e.g. "whatsapp"
+  type?: 'new' | 'existing';
+};
+
+export type CreateInviteResult = {
+  inviteLink: string;
+  friend_profile_id: string;
+  invite_token: string;
+  invite_sent_at: string;
+  invite_expires_at: string;
+};
+
+export async function createGroupInvite(
+  groupId: string,
+  payload: CreateInvitePayload,
+  accessToken: string
+): Promise<CreateInviteResult> {
+  if (!groupId) throw new SupaError('Missing groupId', 'invalid_args');
+
+  const path = `${edge.groupInvite}/groups/${encodeURIComponent(groupId)}/invite`;
+
+  // callEdgeFunction enforces the RPCResponse wrapper and returns response.data
+  const data = await edgeFunction<CreateInviteResult>(path, {
+    method: 'POST',
+    body: payload,
+    accessToken,
+  });
+
+  // callEdgeFunction returns CreateInviteResult or throws — safe to assert
+  return data as CreateInviteResult;
+}
 
 /**
  * Query-only optimistic updates for group member mutations:
@@ -21,7 +59,7 @@ export default function useAddMemberMutation() {
   const inviteMutation = useMutation({
     mutationFn: async ({ groupId, payload }: { groupId: string; payload: any }) => {
       if (!accessToken) throw new Error('Access token is missing.');
-      return await addMemberInGroup(groupId, payload, accessToken);
+      return await createGroupInvite(groupId, payload, accessToken);
     },
 
     onMutate: async ({ groupId, payload }) => {
