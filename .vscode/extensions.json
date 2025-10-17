@@ -1,7 +1,3 @@
 {
-  "recommendations": [
-    "dbaeumer.vscode-eslint", // ESLint integration
-    "esbenp.prettier-vscode", // Prettier formatting
-    "christian-kohler.path-intellisense" // path autocomplete for aliases
-  ]
+  "recommendations": ["denoland.vscode-deno"]
 }

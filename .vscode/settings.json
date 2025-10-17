@@ -1,50 +1,64 @@
 {
-  "editor.formatOnSave": true,
-  "editor.defaultFormatter": "esbenp.prettier-vscode",
-  // Use workspace TypeScript (node_modules) so TS server sees your project's tsconfig
-  "typescript.tsdk": "node_modules/typescript/lib",
-
-  // Prefer non-relative imports (this makes quick fixes use aliases when possible)
-  "typescript.preferences.importModuleSpecifier": "non-relative",
-  "typescript.preferences.importModuleSpecifierEnding": "auto",
-  "typescript.preferences.quoteStyle": "single",
-
-  // Same for JS files if you sometimes edit JS
-  "javascript.preferences.importModuleSpecifier": "non-relative",
-  "javascript.preferences.importModuleSpecifierEnding": "auto",
-  "javascript.preferences.quoteStyle": "single",
-
-  // Run ESLint fixes and organize imports on save for this workspace only
+  "[json]": {
+    "editor.defaultFormatter": "vscode.json-language-features"
+  },
+  "[typescript]": {
+    "editor.defaultFormatter": "denoland.vscode-deno"
+  },
+  "deno.enablePaths": ["supabase/functions"],
+  "deno.lint": true,
+  "deno.unstable": [
+    "bare-node-builtins",
+    "byonm",
+    "sloppy-imports",
+    "unsafe-proto",
+    "webgpu",
+    "broadcast-channel",
+    "worker-options",
+    "cron",
+    "kv",
+    "ffi",
+    "fs",
+    "http",
+    "net"
+  ],
   "editor.codeActionsOnSave": {
     "source.fixAll": "explicit",
     "source.fixAll.eslint": "explicit",
     "source.organizeImports": "explicit"
   },
-
-  // Use ESLint from the workspace (not global)
-  "eslint.workingDirectories": [{ "mode": "auto" }],
-
-  // Path Intellisense maps (for the Path Intellisense extension)
-  // Maps alias prefixes to actual folders in your project workspace
+  "editor.defaultFormatter": "esbenp.prettier-vscode",
+  "editor.formatOnSave": true,
+  "editor.quickSuggestions": {
+    "comments": false,
+    "other": true,
+    "strings": false
+  },
+  "eslint.workingDirectories": [
+    {
+      "mode": "auto"
+    }
+  ],
+  "javascript.preferences.importModuleSpecifier": "non-relative",
+  "javascript.preferences.importModuleSpecifierEnding": "auto",
+  "javascript.preferences.quoteStyle": "single",
+  "javascript.suggest.autoImports": true,
   "path-intellisense.mappings": {
     "@api": "${workspaceFolder}/src/api",
     "@assets": "${workspaceFolder}/src/assets",
-    "@hooks": "${workspaceFolder}/src/hooks",
-    "@features": "${workspaceFolder}/src/features",
-    "@theme": "${workspaceFolder}/src/theme",
-    "@mocks": "${workspaceFolder}/src/mocks",
     "@components": "${workspaceFolder}/src/components",
+    "@features": "${workspaceFolder}/src/features",
+    "@hooks": "${workspaceFolder}/src/hooks",
+    "@mocks": "${workspaceFolder}/src/mocks",
+    "@services": "${workspaceFolder}/src/services",
     "@stores": "${workspaceFolder}/src/stores",
-    "@services": "${workspaceFolder}/src/services"
+    "@theme": "${workspaceFolder}/src/theme"
   },
-
-  // Optional: show quick suggestions for imports and enable auto import suggestions
-  "editor.quickSuggestions": { "other": true, "comments": false, "strings": false },
-  "typescript.suggest.completeFunctionCalls": true,
-  "typescript.suggest.autoImports": true,
-  "javascript.suggest.autoImports": true,
   "prettier.requireConfig": false,
-  "[json]": {
-    "editor.defaultFormatter": "vscode.json-language-features"
-  }
+  "typescript.preferences.importModuleSpecifier": "non-relative",
+  "typescript.preferences.importModuleSpecifierEnding": "auto",
+  "typescript.preferences.quoteStyle": "single",
+  "typescript.suggest.autoImports": true,
+  "typescript.suggest.completeFunctionCalls": true,
+  "typescript.tsdk": "node_modules/typescript/lib"
 }
