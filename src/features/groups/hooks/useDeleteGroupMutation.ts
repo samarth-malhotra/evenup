@@ -1,10 +1,13 @@
 // src/hooks/useDeleteGroupMutation.ts
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
 
 import type { Group } from '@/features/groups/types';
+import { useSafeMutation } from '@/hooks/useCreateMutation';
+import { QUERY_KEYS } from '@/services/helper/queryKeys';
 import { rpc } from '@/services/supabase/constant';
 import { fetchRPC } from '@/services/supabase/fetchRPC';
+import type { SupaError } from '@/services/supabase/supaError';
 
 /**
  * Calls Supabase RPC to soft delete a group
@@ -26,38 +29,46 @@ export function useDeleteGroup(userId: string) {
   const qc = useQueryClient();
   const router = useRouter();
 
-  return useMutation({
-    // 👇 group object is passed here, so we have id + name + avatar for cache removal etc.
-    mutationFn: async ({ groupId }: { groupId: string }) => {
-      return deleteGroup(groupId, userId);
+  return useSafeMutation<
+    unknown, // TData (deleteGroup result; change if you have a concrete type)
+    SupaError, // TError
+    { groupId: string }, // TVariables
+    { previous?: Group[] } // TContext
+  >(
+    // mutationFn
+    async ({ groupId }: { groupId: string }) => {
+      return await deleteGroup(groupId, userId);
     },
 
-    onMutate: async ({ groupId }) => {
-      await qc.cancelQueries({ queryKey: ['groups', userId] });
+    // options
+    {
+      onMutate: async ({ groupId }) => {
+        await qc.cancelQueries({ queryKey: QUERY_KEYS.groups.list });
 
-      const previous = qc.getQueryData<Group[]>(['groups', userId]);
+        const previous = qc.getQueryData<Group[]>(QUERY_KEYS.groups.list);
 
-      if (previous) {
-        qc.setQueryData<Group[]>(['groups', userId], (prev) =>
-          prev ? prev.filter((g) => g.id !== groupId) : []
-        );
-      }
+        if (previous) {
+          qc.setQueryData<Group[]>(QUERY_KEYS.groups.list, (prev) =>
+            prev ? prev.filter((g) => g.id !== groupId) : []
+          );
+        }
 
-      qc.removeQueries({ queryKey: ['group', groupId], exact: true });
+        qc.removeQueries({ queryKey: QUERY_KEYS.groups.details(groupId), exact: true });
 
-      // optimistic navigation
-      router.replace('/groups');
+        // optimistic navigation
+        router.replace('/groups');
 
-      return { previous };
-    },
+        return { previous };
+      },
 
-    onError: (err, _vars, ctx) => {
-      if (ctx?.previous) qc.setQueryData(['groups', userId], ctx.previous);
-      console.error('Delete failed:', err);
-    },
+      onError: (err, _vars, ctx) => {
+        if (ctx?.previous) qc.setQueryData(QUERY_KEYS.groups.list, ctx.previous);
+        console.error('Delete failed:', err);
+      },
 
-    onSettled: () => {
-      qc.invalidateQueries({ queryKey: ['groups', userId] });
-    },
-  });
+      onSettled: () => {
+        qc.invalidateQueries({ queryKey: QUERY_KEYS.groups.list });
+      },
+    }
+  );
 }

@@ -1,25 +1,57 @@
-// src/lib/queryKeys.ts
+// src/constants/queryKeys.ts
 export const QUERY_KEYS = {
-  userProfile: (id: string | null | undefined) => ['userProfile', id] as const,
-  friends: ['friends', 'userId'] as const, // list of friends (summary items)
-
-  profile: {
-    me: ['profile', 'me'] as const, // logged-in user's profile (full)
-    details: (userId: string) => ['profile', 'details', userId] as const, // friend's / any user's full profile
-    search: (q: string) => ['profile', 'search', q] as const, // optional: search results for users
+  // Auth / user --> Not in use
+  auth: {
+    session: ['auth', 'session'] as const,
+    accessToken: ['auth', 'accessToken'] as const,
   },
 
+  // User / profile related
+  user: {
+    profile: (id: string | null | undefined) => ['user', 'profile', id] as const,
+  },
+
+  // Groups
   groups: {
     list: ['groups', 'list'] as const,
     details: (id: string) => ['groups', 'details', id] as const,
+    // members: (groupId: string) => ['groups', 'members', groupId] as const,
+    // invites: (groupId: string) => ['groups', 'invites', groupId] as const,
   },
+
+  // friends
+  friends: {
+    list: ['friends', 'list'] as const,
+    details: (id: string) => ['friends', 'details', id] as const,
+  },
+
+  // Expenses & balances
+  expenses: {
+    list: (groupId: string) => ['expenses', 'list', groupId] as const,
+    details: (expenseId: string) => ['expenses', 'details', expenseId] as const,
+    myBalances: (userId: string) => ['expenses', 'balances', userId] as const,
+  },
+
+  // Transactions / settlements
+  transactions: {
+    list: (userId: string) => ['transactions', 'list', userId] as const,
+    details: (txId: string) => ['transactions', 'details', txId] as const,
+  },
+
+  // Notifications
+  notifications: {
+    list: (userId: string) => ['notifications', 'list', userId] as const,
+    unreadCount: (userId: string) => ['notifications', 'unreadCount', userId] as const,
+  },
+
+  // App settings / misc
+  settings: {
+    app: ['settings', 'app'] as const,
+    featureFlags: ['settings', 'featureFlags'] as const,
+  },
+
+  // Helpers: small convenience to get a top-level group prefix for invalidation/search
+  prefix: (namespace: string) => ['prefix', namespace] as const,
 } as const;
 
-// small helper types (optional, handy)
-export type QueryKeys = typeof QUERY_KEYS;
-export type GroupListKey = typeof QUERY_KEYS.groups.list;
-export type GroupDetailsKey = ReturnType<typeof QUERY_KEYS.groups.details>;
-export type ProfileMeKey = typeof QUERY_KEYS.profile.me;
-export type ProfileDetailsKey = ReturnType<typeof QUERY_KEYS.profile.details>;
-// export type ProfileFriendsKey = typeof QUERY_KEYS.profile.friends;
-export type ProfileSearchKey = ReturnType<typeof QUERY_KEYS.profile.search>;
+export type QueryKey = readonly unknown[];

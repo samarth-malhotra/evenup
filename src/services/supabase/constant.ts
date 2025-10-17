@@ -11,8 +11,7 @@ export const sb = {
 
 export const edge = {
   signup: `${functionVersion}/signup`,
-  groupInvite: `${functionVersion}/groups-invite`,
-  createGroup: `${functionVersion}/create-group`,
+  addMember: `${functionVersion}/add-member`,
 } as const;
 
 export const rpc = {
@@ -23,4 +22,5 @@ export const rpc = {
   getUserProfileById: 'get_user_profile_by_id',
   updateUserProfile: 'update_user_profile',
   getFriendList: 'get_friends',
+  createGroup: 'create_group',
 } as const;

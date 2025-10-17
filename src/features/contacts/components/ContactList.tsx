@@ -25,7 +25,7 @@ import { formatPhoneInternational, normalizeEmail, normalizePhone } from '@/util
 const normalize = (s?: string) => (s || '').toLowerCase().trim();
 const capitalize = (s?: string | null) => (s ? s.charAt(0).toUpperCase() + s.slice(1) : '');
 
-const useStatusMap = (selectedGroup: GroupDetails | null) =>
+const useStatusMap = (selectedGroup: GroupDetails | null | undefined) =>
   useMemo(() => {
     // If selectedGroup is null or undefined, return an empty Map
     if (!selectedGroup) {
@@ -51,8 +51,6 @@ const ContactList: React.FC = () => {
   const { id: groupId } = useLocalSearchParams<{ id: string }>();
 
   const { data: selectedGroup } = useGroupDetail(user?.id, groupId);
-
-  console.log('in contact: selectedGroup: ', selectedGroup?.id, groupId);
 
   const [query, setQuery] = useState('');
   const [inviteModalVisible, setInviteModalVisible] = useState(false);
@@ -335,7 +333,8 @@ const ContactList: React.FC = () => {
       const normalizedEmail = opt.kind === 'email' ? normalizeEmail(opt.raw) : null;
       const normalizedPhone =
         opt.kind === 'phone' || opt.kind === 'own' ? normalizePhone(opt.raw) : null;
-      const invite_channel = opt.kind === 'email' ? 'email' : opt.kind === 'phone' ? 'sms' : 'app';
+      const invite_channel =
+        opt.kind === 'email' ? 'email' : opt.kind === 'phone' ? 'whatsapp' : 'app';
 
       const payload = {
         contact_name: inviteContactBeingInvited.name ?? 'Unknown',

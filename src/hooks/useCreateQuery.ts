@@ -19,7 +19,7 @@ const DEFAULT_CONFIG = {
  * - Caller-provided options cannot include `queryKey` (we own it)
  * - Wraps queryFn in try/catch and normalizes errors
  */
-export function useCreateQuery<TQueryFnData, TError = SupaError, TData = TQueryFnData>(
+export function useSafeQuery<TQueryFnData, TError = SupaError, TData = TQueryFnData>(
   queryKey: QueryKey,
   fetcher: () => Promise<TQueryFnData>,
   // prevent callers from accidentally passing queryKey inside options
