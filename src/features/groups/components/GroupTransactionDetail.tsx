@@ -43,6 +43,7 @@ export default function GroupTransactionDetail() {
 
   // NOTE: data is TransactionDetails | undefined
   const { data: tx, isFetching, isError, error } = useTransactionDetails(txId);
+  const { id: groupId } = useLocalSearchParams<{ id: string }>();
 
   const addComment = useAddTransactionComment();
   const updateTx = useUpdateTransaction();
@@ -59,7 +60,7 @@ export default function GroupTransactionDetail() {
   const [editingCommentId, setEditingCommentId] = useState<string | null>(null);
   const [editingCommentText, setEditingCommentText] = useState('');
 
-  const { data: group } = useGroupDetail(currentUser?.id, tx?.groupId ?? undefined);
+  const { data: group } = useGroupDetail(currentUser?.id, groupId ?? undefined);
 
   useLayoutEffect(() => {
     navigation.setOptions({
