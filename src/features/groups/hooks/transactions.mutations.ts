@@ -40,7 +40,7 @@ export function useCreateGroupTransaction(pageSize = 10) {
       // use RPC name that exists in your mapping
       await fetchRPC(rpc.create_group_transaction_with_splits, { payload }),
     onMutate: async (payload: CreateTxPayload) => {
-      const tempId = `temp-${uuidv4()}`;
+      const tempId = `tmp-${Date.now()}-${Math.random()}`;
       const createdAt = new Date().toISOString();
 
       const optimisticTx = {
