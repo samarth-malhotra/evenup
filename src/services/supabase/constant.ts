@@ -27,4 +27,8 @@ export const rpc = {
   get_group_transactions_paginated: 'get_group_transactions_paginated',
   get_transaction_details: 'get_transaction_details',
   create_transaction_comment: 'create_transaction_comment',
+  update_transaction: 'update_group_transaction',
+  delete_transaction: 'delete_group_transaction',
+  update_transaction_comment: 'update_transaction_comment',
+  delete_transaction_comment: 'delete_transaction_comment',
 } as const;

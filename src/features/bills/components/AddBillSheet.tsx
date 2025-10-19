@@ -1,76 +1,105 @@
+// src/features/bills/components/AddBillSheet.tsx
 import { MaterialIcons } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import dayjs from 'dayjs';
 import { useAtomValue } from 'jotai';
-import React, { memo, useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Pressable, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
 import BottomSheet from '@/components/BottomSheet';
 import ParticipantRow from '@/features/bills/components/common/ParticipantRow';
 import { SPLIT_OPTIONS } from '@/features/bills/constant';
 import { toNum } from '@/features/bills/utils';
+import {
+  useCreateGroupTransaction,
+  useUpdateTransaction,
+} from '@/features/groups/hooks/transactions.mutations';
 import type { GroupMember } from '@/features/groups/types';
 import { userAtom } from '@/stores/atoms/user';
 import { useTheme } from '@/theme/hooks/useTheme';
 import type { SplitMethod } from '@/types';
 
-const Pill = memo(function Pill({
-  active,
-  onPress,
-  children,
-}: {
-  active?: boolean;
-  onPress: () => void;
-  children: React.ReactNode;
-}) {
-  return (
-    <Pressable
-      onPress={onPress}
-      className={`rounded-full px-3 py-2 ${active ? 'bg-indigo-600' : 'bg-gray-100'}`}>
-      <Text className={`text-sm ${active ? 'font-semibold text-white' : 'text-gray-800'}`}>
-        {children}
-      </Text>
-    </Pressable>
-  );
-});
+type Participant = { userId: string; amount: number };
 
-/** One stable row for all modes (prevents remounts when mode changes) */
+type InitialTx = {
+  id: string;
+  title: string;
+  amount: number;
+  date?: string;
+  paidBy?: string;
+  participants?: Participant[];
+  splitMethod?: SplitMethod;
+  metadata?: any;
+};
 
 export default function AddBillSheet({
   open,
   onClose,
-  onSave,
+  onSaved,
   onSelectPaidBy,
   onSelectParticipants,
   members = [],
+  mode = 'create',
+  initial,
+  groupId,
 }: {
   open: boolean;
   onClose: () => void;
-  onSave?: (p: {
-    title: string;
-    amount: number;
-    date: Date;
-    paidBy: string;
-    participants: string[];
-    splitMethod: SplitMethod;
-    perPerson: Record<string, number>;
-  }) => void;
+  onSaved?: () => void;
   onSelectPaidBy?: () => Promise<string | undefined>;
   onSelectParticipants?: () => Promise<string[] | undefined>;
   members?: GroupMember[];
+  mode?: 'create' | 'edit';
+  initial?: InitialTx | null;
+  groupId?: string | null;
 }) {
   const { theme } = useTheme();
-  const [title, setTitle] = useState('');
-  const [amountStr, setAmountStr] = useState('');
-  const [date, setDate] = useState(new Date());
+  const currentUser = useAtomValue(userAtom);
+  const createTx = useCreateGroupTransaction();
+  const updateTx = useUpdateTransaction();
+
+  // form state
+  const [title, setTitle] = useState(initial?.title ?? '');
+  const [amountStr, setAmountStr] = useState(initial?.amount ? String(initial.amount) : '');
+  const [date, setDate] = useState(initial?.date ? new Date(initial.date) : new Date());
   const [showDatePicker, setShowDatePicker] = useState(false);
-  const [paidBy, setPaidBy] = useState('');
-  const [participants, setParticipants] = useState<string[]>([]);
-  const [splitMethod, setSplitMethod] = useState<SplitMethod>('equal');
+  const [paidBy, setPaidBy] = useState(initial?.paidBy ?? currentUser?.id ?? '');
+  const [participants, setParticipants] = useState<string[]>(
+    initial?.participants?.map((p) => p.userId) ?? []
+  );
+  const [splitMethod, setSplitMethod] = useState<SplitMethod>(initial?.splitMethod ?? 'equal');
 
   const [exactMap, setExactMap] = useState<Record<string, string>>({});
   const [percentMap, setPercentMap] = useState<Record<string, string>>({});
   const [shareMap, setShareMap] = useState<Record<string, string>>({});
+
+  // initialize from initial tx when it changes (edit mode)
+  useEffect(() => {
+    if (!initial) return;
+    setTitle(initial.title ?? '');
+    setAmountStr(initial.amount ? String(initial.amount) : '');
+    setDate(initial.date ? new Date(initial.date) : new Date());
+    setPaidBy(initial.paidBy ?? currentUser?.id ?? '');
+    setParticipants(initial.participants?.map((p) => p.userId) ?? []);
+    setSplitMethod(initial.splitMethod ?? 'equal');
+
+    // fill per-person maps
+    const e: Record<string, string> = {};
+    const p: Record<string, string> = {};
+    const s: Record<string, string> = {};
+    if (initial.participants?.length) {
+      initial.participants.forEach((part) => {
+        e[part.userId] = String(part.amount ?? '0');
+        p[part.userId] = initial.amount
+          ? String(((part.amount / initial.amount) * 100).toFixed(2))
+          : '0';
+        s[part.userId] = '1';
+      });
+    }
+    setExactMap(e);
+    setPercentMap(p);
+    setShareMap(s);
+  }, [initial, currentUser?.id]);
 
   const amount = useMemo(() => {
     const n = Number(amountStr);
@@ -82,15 +111,14 @@ export default function AddBillSheet({
     [amount, participants.length]
   );
 
-  // prefill only when keys missing (prevents “jumping” when switching modes)
+  // ensure maps have entries for participants
   useEffect(() => {
     if (!participants.length) return;
     if (splitMethod === 'exact') {
-      const eq = participants.length ? amount / participants.length : 0;
       setExactMap((prev) => {
         const next = { ...prev };
-        participants.forEach((p) => {
-          if (next[p] == null) next[p] = eq ? eq.toFixed(2) : '0';
+        participants.forEach((pId) => {
+          if (next[pId] == null) next[pId] = equalPerPerson ? equalPerPerson.toFixed(2) : '0';
         });
         Object.keys(next).forEach((k) => !participants.includes(k) && delete next[k]);
         return next;
@@ -99,8 +127,8 @@ export default function AddBillSheet({
       const eqp = participants.length ? 100 / participants.length : 0;
       setPercentMap((prev) => {
         const next = { ...prev };
-        participants.forEach((p) => {
-          if (next[p] == null) next[p] = eqp ? eqp.toFixed(2) : '0';
+        participants.forEach((pId) => {
+          if (next[pId] == null) next[pId] = eqp ? eqp.toFixed(2) : '0';
         });
         Object.keys(next).forEach((k) => !participants.includes(k) && delete next[k]);
         return next;
@@ -108,29 +136,20 @@ export default function AddBillSheet({
     } else if (splitMethod === 'shares') {
       setShareMap((prev) => {
         const next = { ...prev };
-        participants.forEach((p) => {
-          if (next[p] == null) next[p] = '1';
+        participants.forEach((pId) => {
+          if (next[pId] == null) next[pId] = '1';
         });
         Object.keys(next).forEach((k) => !participants.includes(k) && delete next[k]);
         return next;
       });
     }
-  }, [participants, amount, splitMethod]);
+  }, [participants, splitMethod, amount, equalPerPerson]);
 
-  const exactSum = useMemo(
-    () => participants.reduce((s, p) => s + toNum(exactMap[p] || '0'), 0),
-    [participants, exactMap]
-  );
-  const percentSum = useMemo(
-    () => participants.reduce((s, p) => s + toNum(percentMap[p] || '0'), 0),
-    [participants, percentMap]
-  );
-  const totalShares = useMemo(
-    () => participants.reduce((s, p) => s + toNum(shareMap[p] || '0'), 0),
-    [participants, shareMap]
-  );
+  const exactSum = participants.reduce((s, p) => s + toNum(exactMap[p] || '0'), 0);
+  const percentSum = participants.reduce((s, p) => s + toNum(percentMap[p] || '0'), 0);
+  const totalShares = participants.reduce((s, p) => s + toNum(shareMap[p] || '0'), 0);
 
-  const warnings: string[] = useMemo(() => {
+  const warnings = useMemo(() => {
     const w: string[] = [];
     if (splitMethod === 'percent') {
       if (percentSum > 100 + 1e-6) w.push('Percentages exceed 100%.');
@@ -150,42 +169,43 @@ export default function AddBillSheet({
     return w;
   }, [splitMethod, percentSum, exactSum, amount, participants, shareMap, totalShares]);
 
-  const onChangeExact = useCallback((id: string, v: string) => {
-    setExactMap((m) => ({ ...m, [id]: v }));
-  }, []);
-  const onChangePercent = useCallback((id: string, v: string) => {
-    setPercentMap((m) => ({ ...m, [id]: v }));
-  }, []);
-  const onChangeShare = useCallback((id: string, v: string) => {
-    setShareMap((m) => ({ ...m, [id]: v }));
-  }, []);
+  const onChangeExact = useCallback(
+    (id: string, v: string) => setExactMap((m) => ({ ...m, [id]: v })),
+    []
+  );
+  const onChangePercent = useCallback(
+    (id: string, v: string) => setPercentMap((m) => ({ ...m, [id]: v })),
+    []
+  );
+  const onChangeShare = useCallback(
+    (id: string, v: string) => setShareMap((m) => ({ ...m, [id]: v })),
+    []
+  );
 
   const handlePaidByPress = useCallback(async () => {
-    if (!onSelectPaidBy) return console.log('Open your "Paid by" picker');
+    if (!onSelectPaidBy) return;
     const res = await onSelectPaidBy();
     if (typeof res === 'string') setPaidBy(res);
   }, [onSelectPaidBy]);
 
   const handleParticipantsPress = useCallback(async () => {
-    if (!onSelectParticipants) return console.log('Open your multi-select');
+    if (!onSelectParticipants) return;
     const res = await onSelectParticipants();
     if (Array.isArray(res)) setParticipants(res);
   }, [onSelectParticipants]);
 
   const perPersonFinal = useMemo(() => {
     const out: Record<string, number> = {};
-    if (splitMethod === 'equal') {
-      participants.forEach((p) => (out[p] = equalPerPerson || 0));
-    } else if (splitMethod === 'exact') {
+    if (splitMethod === 'equal') participants.forEach((p) => (out[p] = equalPerPerson || 0));
+    else if (splitMethod === 'exact')
       participants.forEach((p) => (out[p] = toNum(exactMap[p] || '0')));
-    } else if (splitMethod === 'percent') {
+    else if (splitMethod === 'percent')
       participants.forEach((p) => (out[p] = amount * (toNum(percentMap[p] || '0') / 100)));
-    } else {
+    else
       participants.forEach((p) => {
         const sh = toNum(shareMap[p] || '0');
         out[p] = totalShares > 0 ? (amount * sh) / totalShares : 0;
       });
-    }
     return out;
   }, [
     participants,
@@ -198,7 +218,7 @@ export default function AddBillSheet({
     totalShares,
   ]);
 
-  const handleSave = useCallback(() => {
+  const handleSave = async () => {
     if (!title.trim() || !amount || !paidBy || participants.length === 0) {
       console.warn('Please fill Title, Amount, Paid by and Participants.');
       return;
@@ -207,53 +227,52 @@ export default function AddBillSheet({
       (splitMethod === 'percent' && percentSum > 100 + 1e-6) ||
       (splitMethod === 'exact' && exactSum > amount + 1e-6);
     if (hardError) return;
-    onSave?.({
-      title: title.trim(),
-      amount,
-      date,
-      paidBy,
-      participants,
-      splitMethod,
-      perPerson: perPersonFinal,
-    });
-    onClose();
-  }, [
-    title,
-    amount,
-    date,
-    paidBy,
-    participants,
-    splitMethod,
-    onSave,
-    onClose,
-    percentSum,
-    exactSum,
-    perPersonFinal,
-  ]);
 
-  const currentUser = useAtomValue(userAtom);
+    const splits = participants.map((id) => ({
+      userId: id,
+      amount: Number((perPersonFinal[id] ?? 0).toFixed(2)),
+      shareType: splitMethod === 'percent' ? 'percent' : 'exact',
+      shareMeta: splitMethod === 'percent' ? { percent: percentMap[id] } : {},
+    }));
 
-  // Helper: find member name or fallback
+    try {
+      if (mode === 'create') {
+        await createTx.mutateAsync({
+          title: title.trim(),
+          amount,
+          currency: 'INR',
+          paidBy,
+          groupId: groupId ?? null,
+          createdBy: currentUser?.id ?? '',
+          metadata: { splitMethod },
+          splits,
+        });
+      } else if (mode === 'edit' && initial?.id) {
+        await updateTx.mutateAsync({
+          txId: initial.id,
+          payload: { title: title.trim(), amount, metadata: { splitMethod } },
+        });
+      }
+      onSaved?.();
+      onClose();
+    } catch (err) {
+      // hooks show toasts on error
+      console.error(err);
+    }
+  };
+
   const getMemberLabel = (id?: string) => {
     if (!id) return 'Select person';
     if (id === currentUser?.id) return 'You';
     return members?.find((m) => m.id === id)?.name ?? id;
   };
 
-  // Helper: participant display
-  const getParticipantLabel = (id: string) => {
-    if (id === currentUser?.id) return 'You';
-    return members?.find((m) => m.id === id)?.name ?? id;
-  };
-
-  /** ---------------- Gorhom Bottom Sheet (Modal) ---------------- */
-
   return (
     <BottomSheet open={open} onClose={onClose}>
       <Text
         style={{ color: theme.colors.textPrimary }}
         className="mb-2 text-center text-lg font-semibold">
-        Add Bills
+        {mode === 'create' ? 'Add Bills' : 'Edit Bill'}
       </Text>
 
       {/* Title */}
@@ -270,11 +289,10 @@ export default function AddBillSheet({
             <TextInput
               value={title}
               onChangeText={setTitle}
-              placeholder="Dinner at Chowki Dhani"
+              placeholder="Dinner"
               placeholderTextColor={theme.colors.placeholder}
               style={{ color: theme.colors.textPrimary }}
-              className="h-11 text-base text-gray-900"
-              returnKeyType="next"
+              className="h-11 text-base"
             />
           </View>
         </View>
@@ -334,9 +352,9 @@ export default function AddBillSheet({
             value={date}
             mode="date"
             display="calendar"
-            onChange={(e, selected) => {
+            onChange={(e, s) => {
               setShowDatePicker(false);
-              if (selected) setDate(selected);
+              if (s) setDate(s);
             }}
           />
         </View>
@@ -354,11 +372,9 @@ export default function AddBillSheet({
           style={{ borderColor: theme.colors.border, backgroundColor: theme.colors.background }}
           className="h-11 flex-1 flex-row items-center justify-between rounded-xl border px-4">
           <Text
-            style={{
-              color: paidBy ? theme.colors.textPrimary : theme.colors.textSecondary,
-            }}
+            style={{ color: paidBy ? theme.colors.textPrimary : theme.colors.textSecondary }}
             className="text-base">
-            {getMemberLabel(paidBy)} {/* 👈 show name not id */}
+            {getMemberLabel(paidBy)}
           </Text>
           <MaterialIcons
             name="expand-more"
@@ -399,12 +415,15 @@ export default function AddBillSheet({
         </Text>
         <View className="flex-1 flex-row flex-wrap gap-2">
           {SPLIT_OPTIONS.map((opt) => (
-            <Pill
+            <Pressable
               key={opt.key}
-              active={splitMethod === opt.key}
-              onPress={() => setSplitMethod(opt.key)}>
-              {opt.label}
-            </Pill>
+              onPress={() => setSplitMethod(opt.key as SplitMethod)}
+              className={`rounded-full px-3 py-2 ${splitMethod === opt.key ? 'bg-indigo-600' : 'bg-gray-100'}`}>
+              <Text
+                className={`text-sm ${splitMethod === opt.key ? 'font-semibold text-white' : 'text-gray-800'}`}>
+                {opt.label}
+              </Text>
+            </Pressable>
           ))}
         </View>
       </View>
@@ -452,7 +471,7 @@ export default function AddBillSheet({
           <Text
             style={{ color: theme.colors.textWhite }}
             className="text-center text-lg font-semibold">
-            Save Bill
+            {mode === 'create' ? 'Save Bill' : 'Save Changes'}
           </Text>
         </TouchableOpacity>
       </View>

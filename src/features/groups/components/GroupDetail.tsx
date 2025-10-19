@@ -2,11 +2,10 @@
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useLocalSearchParams, useNavigation, useRouter } from 'expo-router';
 import { useAtomValue, useSetAtom } from 'jotai';
-import { useCallback, useLayoutEffect, useRef, useState } from 'react';
+import { useLayoutEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   FlatList,
-  Modal,
   Pressable,
   RefreshControl,
   Text,
@@ -19,7 +18,6 @@ import SummaryCard from '@/components/SummaryCard';
 import TransactionCard from '@/components/TransactionCard';
 import AddBillSheet from '@/features/bills/components/AddBillSheet';
 import { useGroupTransactionsPaginated } from '@/features/groups/hooks/transactions';
-import { useCreateGroupTransaction } from '@/features/groups/hooks/useCreateGroupTransaction';
 import { useGroupDetail } from '@/features/groups/hooks/useGroupDetail';
 import { addToastAtom } from '@/stores/atoms/toast';
 import { userAtom } from '@/stores/atoms/user';
@@ -37,7 +35,6 @@ export default function GroupDetailScreen() {
 
   const user = useAtomValue(userAtom);
   const addToast = useSetAtom(addToastAtom);
-  const createTx = useCreateGroupTransaction();
 
   const {
     data: selectedGroup,
@@ -56,23 +53,20 @@ export default function GroupDetailScreen() {
     refetch,
     isError: txIsError,
     error: txError,
-    status,
-    dataUpdatedAt,
   } = useGroupTransactionsPaginated(groupId, user?.id, 10);
 
-  // flatten pages
   const transactions = data ? data.pages.flatMap((p) => p.transactions) : [];
   const summary = data?.pages?.[0]?.summary ?? { totalSpent: 0, youOwe: 0, friendsOwe: 0 };
 
-  // UI state
+  // UI
   const [addOpen, setAddOpen] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
 
-  // pickers (same as earlier)
-  const [showPaidByPicker, setShowPaidByPicker] = useState(false);
-  const [showParticipantsPicker, setShowParticipantsPicker] = useState(false);
+  // pickers - reuse existing pattern by exposing functions that return a Promise via refs
   const paidByResolveRef = useRef<((v?: string) => void) | null>(null);
   const participantsResolveRef = useRef<((v?: string[]) => void) | null>(null);
+  const [showPaidByPicker, setShowPaidByPicker] = useState(false);
+  const [showParticipantsPicker, setShowParticipantsPicker] = useState(false);
   const [participantsSelection, setParticipantsSelection] = useState<Record<string, boolean>>({});
 
   // header
@@ -100,9 +94,9 @@ export default function GroupDetailScreen() {
         />
       ),
     });
-  }, [selectedGroup?.name, getColor]);
+  }, [selectedGroup?.name, getColor, navigation, router, groupId]);
 
-  // open pickers
+  // pickers impl
   const openPaidByPicker = async () => {
     setShowPaidByPicker(true);
     return new Promise<string | undefined>((resolve) => (paidByResolveRef.current = resolve));
@@ -110,7 +104,7 @@ export default function GroupDetailScreen() {
   const openParticipantsPicker = async () => {
     if (!selectedGroup?.members) return [];
     const initial: Record<string, boolean> = {};
-    selectedGroup.members.forEach((m) => (initial[m.id] = m.id === user?.id));
+    selectedGroup.members.forEach((m: any) => (initial[m.id] = m.id === user?.id));
     setParticipantsSelection(initial);
     setShowParticipantsPicker(true);
     return new Promise<string[] | undefined>(
@@ -141,44 +135,11 @@ export default function GroupDetailScreen() {
     participantsResolveRef.current = null;
   };
 
-  // save bill
-  const handleSaveBill = useCallback(
-    async (payload: {
-      title: string;
-      amount: number;
-      date: Date;
-      paidBy: string;
-      participants: string[];
-      splitMethod: string;
-      perPerson: Record<string, number>;
-    }) => {
-      const splits = payload.participants.map((id) => ({
-        userId: id,
-        amount: Number((payload.perPerson[id] ?? 0).toFixed(2)),
-        shareType: payload.splitMethod === 'percent' ? 'percent' : 'exact',
-        shareMeta: payload.splitMethod === 'percent' ? { percent: payload.perPerson[id] } : {},
-      }));
-
-      try {
-        await createTx.mutateAsync({
-          title: payload.title,
-          amount: payload.amount,
-          currency: 'INR',
-          paidBy: payload.paidBy,
-          groupId,
-          createdBy: user?.id ?? '',
-          metadata: { splitMethod: payload.splitMethod },
-          splits,
-        });
-        // refetch in background
-        refetch();
-        setAddOpen(false);
-      } catch (err) {
-        console.error('create tx err', err);
-      }
-    },
-    [createTx, groupId, user?.id, refetch]
-  );
+  // save bill callback — passed to AddBillSheet; refetch after creation
+  const handleSaved = () => {
+    refetch();
+    addToast({ title: 'Saved', message: 'Transaction saved', type: 'success' });
+  };
 
   // pull-to-refresh
   const onRefresh = async () => {
@@ -190,7 +151,6 @@ export default function GroupDetailScreen() {
     }
   };
 
-  // show errors as visible UI
   if (groupIsError) {
     return (
       <View className="flex-1 items-center justify-center p-4">
@@ -201,7 +161,6 @@ export default function GroupDetailScreen() {
     );
   }
 
-  // show loading when both group and tx are loading first time
   if ((groupFetching && !selectedGroup) || (txFetching && !data)) {
     return (
       <View className="flex-1 items-center justify-center">
@@ -211,7 +170,6 @@ export default function GroupDetailScreen() {
     );
   }
 
-  // debug: no group
   if (!selectedGroup) {
     return (
       <View className="flex-1 items-center justify-center p-4">
@@ -220,21 +178,14 @@ export default function GroupDetailScreen() {
     );
   }
 
-  // Tx query error
-  if (txIsError) {
-    console.warn('tx query error', txError);
-  }
-
   return (
     <View className="flex-1">
-      {/* summary */}
       <View className="mt-2 flex-row justify-evenly px-4">
         <SummaryCard title="Total Spent" value={formatRs(summary.totalSpent)} type="total" />
         <SummaryCard title="You Owe" value={formatRs(summary.youOwe)} type="you" />
         <SummaryCard title="Friends Owe" value={formatRs(summary.friendsOwe)} type="friend" />
       </View>
 
-      {/* header */}
       <View className="mb-2 mt-5 flex-row items-center justify-between px-4">
         <Text className="text-base font-semibold">Transactions</Text>
         <View className="flex-row items-center gap-2">
@@ -245,10 +196,9 @@ export default function GroupDetailScreen() {
         </View>
       </View>
 
-      {/* transactions list */}
       <FlatList
         data={transactions}
-        keyExtractor={(i) => i.id}
+        keyExtractor={(i: any) => i.id}
         renderItem={({ item }) => (
           <TransactionCard
             title={item.title}
@@ -289,24 +239,25 @@ export default function GroupDetailScreen() {
         <Ionicons name="add" size={28} color={getColor('textWhite')} />
       </TouchableOpacity>
 
-      {/* Add bill sheet */}
       <AddBillSheet
         open={addOpen}
         onClose={() => setAddOpen(false)}
-        onSave={handleSaveBill}
+        onSaved={handleSaved}
         onSelectPaidBy={openPaidByPicker}
         onSelectParticipants={openParticipantsPicker}
         members={selectedGroup.members}
+        mode="create"
+        groupId={groupId}
       />
 
       {/* PaidBy modal */}
-      <Modal visible={showPaidByPicker} transparent animationType="fade">
-        <View className="flex-1 items-center justify-center bg-black/40 px-6">
+      {showPaidByPicker && (
+        <View className="absolute inset-0 items-center justify-center bg-black/40 px-6">
           <View className="w-full rounded-2xl bg-white p-4">
             <Text className="mb-3 text-lg font-semibold">Select payer</Text>
             <FlatList
               data={selectedGroup.members}
-              keyExtractor={(m) => m.id}
+              keyExtractor={(m: any) => m.id}
               renderItem={({ item }) => (
                 <Pressable
                   onPress={() => handlePaidByChoose(item.id)}
@@ -321,16 +272,16 @@ export default function GroupDetailScreen() {
             </Pressable>
           </View>
         </View>
-      </Modal>
+      )}
 
       {/* Participants modal */}
-      <Modal visible={showParticipantsPicker} transparent animationType="fade">
-        <View className="flex-1 items-center justify-center bg-black/40 px-6">
+      {showParticipantsPicker && (
+        <View className="absolute inset-0 items-center justify-center bg-black/40 px-6">
           <View className="w-full rounded-2xl bg-white p-4">
             <Text className="mb-3 text-lg font-semibold">Select participants</Text>
             <FlatList
               data={selectedGroup.members}
-              keyExtractor={(m) => m.id}
+              keyExtractor={(m: any) => m.id}
               renderItem={({ item }) => {
                 const checked = !!participantsSelection[item.id];
                 return (
@@ -358,7 +309,7 @@ export default function GroupDetailScreen() {
             </View>
           </View>
         </View>
-      </Modal>
+      )}
     </View>
   );
 }
