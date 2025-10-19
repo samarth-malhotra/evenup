@@ -26,7 +26,6 @@ import {
 import {
   useDeleteTransaction,
   useDeleteTransactionComment,
-  useUpdateTransaction,
   useUpdateTransactionComment,
 } from '@/features/groups/hooks/transactions.mutations';
 import { useGroupDetail } from '@/features/groups/hooks/useGroupDetail';
@@ -46,7 +45,6 @@ export default function GroupTransactionDetail() {
   const { id: groupId } = useLocalSearchParams<{ id: string }>();
 
   const addComment = useAddTransactionComment();
-  const updateTx = useUpdateTransaction();
   const deleteTx = useDeleteTransaction();
   const updateComment = useUpdateTransactionComment();
   const deleteComment = useDeleteTransactionComment();
@@ -74,7 +72,7 @@ export default function GroupTransactionDetail() {
               <Pressable
                 onPress={() => {
                   if (!tx) return;
-                  // prepare initial shaped for AddBillSheet edit
+                  // prepare initial payload for AddBillSheet edit
                   setEditInitial({
                     id: tx.id,
                     title: tx.title,
@@ -123,29 +121,6 @@ export default function GroupTransactionDetail() {
       setCommentText('');
     } catch (err: any) {
       addToast({ title: 'Error', message: err?.message ?? 'Failed to add comment', type: 'error' });
-    }
-  };
-
-  const handleSaveTxEdit = async () => {
-    if (!txId || !editInitial) return;
-    const amount = Number(editInitial.amount);
-    if (!editInitial.title?.trim() || !amount || Number.isNaN(amount)) {
-      addToast({
-        title: 'Validation',
-        message: 'Please provide title and valid amount',
-        type: 'error',
-      });
-      return;
-    }
-    try {
-      await updateTx.mutateAsync({
-        txId,
-        payload: { title: editInitial.title.trim(), amount, metadata: editInitial.metadata ?? {} },
-      });
-      addToast({ title: 'Updated', message: 'Transaction updated', type: 'success' });
-      setEditSheetOpen(false);
-    } catch (err: any) {
-      addToast({ title: 'Error', message: err?.message ?? 'Update failed', type: 'error' });
     }
   };
 
@@ -374,11 +349,15 @@ export default function GroupTransactionDetail() {
       <AddBillSheet
         open={editSheetOpen}
         onClose={() => setEditSheetOpen(false)}
-        onSaved={() => {}}
+        onSaved={() => {
+          addToast({ title: 'Updated', message: 'Transaction updated', type: 'success' });
+          setEditSheetOpen(false);
+        }}
         members={group?.members}
         mode="edit"
         initial={editInitial}
         groupId={tx?.groupId ?? null}
+        // Note: no onSelectPaidBy/onSelectParticipants here -> AddBillSheet will use its internal modals in edit mode
       />
 
       {/* Delete confirm modal (simple) */}

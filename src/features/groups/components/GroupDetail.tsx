@@ -6,6 +6,7 @@ import { useLayoutEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   FlatList,
+  Modal,
   Pressable,
   RefreshControl,
   Text,
@@ -251,8 +252,12 @@ export default function GroupDetailScreen() {
       />
 
       {/* PaidBy modal */}
-      {showPaidByPicker && (
-        <View className="absolute inset-0 items-center justify-center bg-black/40 px-6">
+      <Modal
+        visible={showPaidByPicker}
+        transparent
+        animationType="fade"
+        onRequestClose={handlePaidByCancel}>
+        <View className="flex-1 items-center justify-center bg-black/40 px-6">
           <View className="w-full rounded-2xl bg-white p-4">
             <Text className="mb-3 text-lg font-semibold">Select payer</Text>
             <FlatList
@@ -272,11 +277,15 @@ export default function GroupDetailScreen() {
             </Pressable>
           </View>
         </View>
-      )}
+      </Modal>
 
       {/* Participants modal */}
-      {showParticipantsPicker && (
-        <View className="absolute inset-0 items-center justify-center bg-black/40 px-6">
+      <Modal
+        visible={showParticipantsPicker}
+        transparent
+        animationType="fade"
+        onRequestClose={handleParticipantsCancel}>
+        <View className="flex-1 items-center justify-center bg-black/40 px-6">
           <View className="w-full rounded-2xl bg-white p-4">
             <Text className="mb-3 text-lg font-semibold">Select participants</Text>
             <FlatList
@@ -309,7 +318,7 @@ export default function GroupDetailScreen() {
             </View>
           </View>
         </View>
-      )}
+      </Modal>
     </View>
   );
 }

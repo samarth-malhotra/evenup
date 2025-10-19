@@ -116,84 +116,6 @@ export function useCreateGroupTransaction(pageSize = 10) {
   });
 }
 
-// ----------------- UPDATE TRANSACTION -----------------
-export function useUpdateTransaction() {
-  const qc = useQueryClient();
-  const addToast = useSetAtom(addToastAtom);
-
-  return useMutation<any, any, { txId: string; payload: any }>({
-    mutationFn: async ({ txId, payload }) =>
-      await fetchRPC(rpc.update_transaction, { p_tx_id: txId, payload }),
-    onMutate: async ({ txId, payload }) => {
-      const txKey = QUERY_KEYS.transaction.details(txId);
-      const previousTx = qc.getQueryData<any>(txKey);
-
-      if ((previousTx as any)?.data) {
-        qc.setQueryData(txKey, (old: any) => ({
-          ...old,
-          data: {
-            ...old.data,
-            title: payload.title ?? old.data.title,
-            amount: payload.amount ?? old.data.amount,
-            metadata: { ...(old.data.metadata ?? {}), ...(payload.metadata ?? {}) },
-          },
-        }));
-      }
-
-      const groupKeyCandidates = findGroupTransactionKeys(qc);
-      const previousGroupCaches: Record<string, any> = {};
-      for (const k of groupKeyCandidates) {
-        const prev = qc.getQueryData<any>(k);
-        previousGroupCaches[JSON.stringify(k)] = prev;
-        if (!prev) continue;
-        qc.setQueryData(k, (old: any) => {
-          if (!old?.pages) return old;
-          return {
-            ...old,
-            pages: old.pages.map((p: any) => ({
-              ...p,
-              transactions: (p.transactions || []).map((t: any) =>
-                t.id === txId
-                  ? { ...t, title: payload.title ?? t.title, amount: payload.amount ?? t.amount }
-                  : t
-              ),
-            })),
-          };
-        });
-      }
-
-      return { previousTx, previousGroupCaches };
-    },
-    onError: (err: any, vars: any, context: any) => {
-      const txKey = QUERY_KEYS.transaction.details(vars.txId);
-      if (context?.previousTx) qc.setQueryData(txKey, context.previousTx);
-      for (const [k, v] of Object.entries(context?.previousGroupCaches ?? {})) {
-        try {
-          qc.setQueryData(JSON.parse(k), v);
-        } catch (e) {
-          void e;
-        }
-      }
-      addToast({
-        title: 'Update failed',
-        message: (err as any)?.message ?? 'Could not update transaction',
-        type: 'error',
-      });
-    },
-    onSuccess: (_data, vars) => {
-      qc.invalidateQueries({ queryKey: QUERY_KEYS.transaction.details(vars.txId) });
-      // revalidate all group lists
-      qc.getQueryCache()
-        .findAll()
-        .forEach((q: any) => {
-          const k = q.queryKey as any[];
-          if (k?.[0] === 'group' && k?.[3] === 'infinite') qc.invalidateQueries({ queryKey: k });
-        });
-      addToast({ title: 'Transaction updated', message: 'Saved', type: 'success' });
-    },
-  });
-}
-
 // ----------------- DELETE TRANSACTION -----------------
 export function useDeleteTransaction() {
   const qc = useQueryClient();
@@ -403,6 +325,105 @@ export function useDeleteTransactionComment() {
           if (k?.[0] === 'transaction') qc.invalidateQueries({ queryKey: k });
         });
       addToast({ title: 'Comment deleted', message: 'Removed', type: 'success' });
+    },
+  });
+}
+
+export function useUpdateTransactionWithSplits() {
+  const qc = useQueryClient();
+  const addToast = useSetAtom(addToastAtom);
+
+  return useMutation<any, any, { txId: string; payload: any }>({
+    mutationFn: async ({ txId, payload }) =>
+      await fetchRPC(rpc.update_group_transaction_with_splits, {
+        p_tx_id: txId,
+        p_payload: payload,
+      }),
+
+    onMutate: async ({ txId, payload }) => {
+      // Snapshot detail
+      const txKey = QUERY_KEYS.transaction.details(txId);
+      const previousTx = qc.getQueryData<any>(txKey);
+
+      // Optimistically update detail
+      if ((previousTx as any)?.data) {
+        qc.setQueryData(txKey, (old: any) => ({
+          ...old,
+          data: {
+            ...old.data,
+            title: payload.title ?? old.data.title,
+            amount: payload.amount ?? old.data.amount,
+            paidBy: payload.paidBy ?? old.data.paidBy,
+            metadata: { ...(old.data.metadata ?? {}), ...(payload.metadata ?? {}) },
+            // If splits provided, update participants view (if your detail endpoint maps this)
+            participants: Array.isArray(payload.splits)
+              ? payload.splits.map((s: any) => ({
+                  userId: s.userId,
+                  amount: s.amount,
+                }))
+              : old.data.participants,
+          },
+        }));
+      }
+
+      // Optimistically update any group lists
+      const groupKeyCandidates = findGroupTransactionKeys(qc);
+      const previousGroupCaches: Record<string, any> = {};
+      for (const k of groupKeyCandidates) {
+        const prev = qc.getQueryData<any>(k);
+        previousGroupCaches[JSON.stringify(k)] = prev;
+        if (!prev) continue;
+        qc.setQueryData(k, (old: any) => {
+          if (!old?.pages) return old;
+          return {
+            ...old,
+            pages: old.pages.map((p: any) => ({
+              ...p,
+              transactions: (p.transactions || []).map((t: any) =>
+                t.id === txId
+                  ? {
+                      ...t,
+                      title: payload.title ?? t.title,
+                      amount: payload.amount ?? t.amount,
+                      paidBy: payload.paidBy ?? t.paidBy,
+                    }
+                  : t
+              ),
+            })),
+          };
+        });
+      }
+
+      return { previousTx, previousGroupCaches };
+    },
+
+    onError: (err: any, vars: any, context: any) => {
+      const txKey = QUERY_KEYS.transaction.details(vars.txId);
+      if (context?.previousTx) qc.setQueryData(txKey, context.previousTx);
+      for (const [k, v] of Object.entries(context?.previousGroupCaches ?? {})) {
+        try {
+          qc.setQueryData(JSON.parse(k), v);
+        } catch (e) {
+          void e;
+        }
+      }
+      addToast({
+        title: 'Update failed',
+        message: err?.message ?? 'Could not update transaction',
+        type: 'error',
+      });
+    },
+
+    onSuccess: (_data, vars) => {
+      // Revalidate detail + lists
+      qc.invalidateQueries({ queryKey: QUERY_KEYS.transaction.details(vars.txId) });
+      qc.getQueryCache()
+        .findAll()
+        .forEach((q: any) => {
+          const k = q.queryKey as any[];
+          if (k?.[0] === 'group' && k?.[3] === 'infinite') qc.invalidateQueries({ queryKey: k });
+        });
+      addToast({ title: 'Transaction updated', message: 'Saved', type: 'success' });
     },
   });
 }
