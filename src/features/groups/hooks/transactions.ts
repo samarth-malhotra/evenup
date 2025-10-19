@@ -1,3 +1,4 @@
+// src/features/groups/hooks/transactions.ts
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useSetAtom } from 'jotai';
 
@@ -6,7 +7,7 @@ import { fetchRPC } from '@/services/supabase/fetchRPC';
 import { addToastAtom } from '@/stores/atoms/toast';
 
 // ---------- Types ----------
-type TxItem = {
+export type TxItem = {
   id: string;
   title: string;
   amount: number;
@@ -16,8 +17,8 @@ type TxItem = {
   createdAt?: string;
   hasAttachment?: boolean;
 };
-type Summary = { totalSpent: number; youOwe: number; friendsOwe: number };
-type PaginatedResponse = { transactions: TxItem[]; summary: Summary };
+export type Summary = { totalSpent: number; youOwe: number; friendsOwe: number };
+export type PaginatedResponse = { transactions: TxItem[]; summary: Summary };
 
 export function useGroupTransactionsPaginated(groupId?: string, userId?: string, pageSize = 10) {
   return useInfiniteQuery<PaginatedResponse, Error>({
@@ -49,8 +50,11 @@ export type TransactionDetails = {
   paidBy: string;
   paidByName?: string;
   paidByAvatar?: string;
-  date: string;
+  date?: string;
+  created_at?: string;
+  groupId?: string | null;
   splitMethod?: string;
+  metadata?: any;
   participants: {
     userId: string;
     amount: number;
@@ -58,14 +62,16 @@ export type TransactionDetails = {
   }[];
   comments: {
     id: string;
-    user: string;
-    message: string;
+    userId?: string;
+    user?: string;
+    message?: string;
+    body?: string;
     createdAt: string;
   }[];
 };
 
 export function useTransactionDetails(txId?: string) {
-  return useQuery<TransactionDetails>({
+  return useQuery<TransactionDetails | undefined, Error>({
     queryKey: ['transaction', txId, 'details'],
     queryFn: async () =>
       await fetchRPC<TransactionDetails>(rpc.get_transaction_details, { p_tx_id: txId }),

@@ -12,6 +12,11 @@ export const QUERY_KEYS = {
   groups: {
     list: ['groups', 'list'] as const,
     details: (id: string) => ['groups', 'details', id] as const,
+    transactionsInfinite: (groupId?: string) =>
+      ['group', groupId, 'transactions', 'infinite'] as const,
+  },
+  transaction: {
+    details: (txId?: string) => ['transaction', txId, 'details'] as const,
   },
 } as const;
 

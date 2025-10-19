@@ -1,12 +1,14 @@
-// WalletSummary.tsx
+// app/summary/TransactionSummary.tsx
 import { Ionicons } from '@expo/vector-icons';
 import * as FileSystem from 'expo-file-system';
 import { useNavigation } from 'expo-router';
 import * as Sharing from 'expo-sharing';
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { useAtomValue } from 'jotai';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import {
   FlatList,
   Platform,
+  RefreshControl,
   ScrollView,
   StyleSheet,
   Text,
@@ -19,359 +21,146 @@ import DateTimePickerModal from 'react-native-modal-datetime-picker';
 import AppHeader from '@/components/AppHeader';
 import SummaryCard from '@/components/SummaryCard';
 import TransactionCard from '@/components/TransactionCard';
+import {
+  useTransactionFeed,
+  useTransactionHeader,
+} from '@/features/summary/hooks/useTransactionSummary';
+import { userAtom } from '@/stores/atoms/user';
 import { formatRs } from '@/utils/formatRs';
 
-/* -------------------------------------------------------------------------- */
-/* Types & constants                                                          */
-/* -------------------------------------------------------------------------- */
+/* ------------------------------ date helpers ------------------------------ */
 
-const CATEGORY_ICONS = {
-  groceries: 'cart-outline',
-  kitchen: 'restaurant-outline',
-  bills: 'document-text-outline',
-  travel: 'airplane-outline',
-  entertainment: 'musical-notes-outline',
-} as const;
-
-type CategoryKey = keyof typeof CATEGORY_ICONS;
-
-type Txn = {
-  id: string;
-  name: string;
-  date: string; // ISO
-  amount: number; // + = you received, - = you owe
-  group: string;
-  category: CategoryKey;
-};
-
-const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'] as const;
-
-const formatWhen = (iso: string) => {
-  const d = new Date(iso);
-  const day = d.getDate();
-  const mon = MONTHS[d.getMonth()];
-  const hh = String(d.getHours()).padStart(2, '0');
-  const mm = String(d.getMinutes()).padStart(2, '0');
-  return `${day} ${mon} · ${hh}:${mm}`;
-};
+function startOfDay(d: Date) {
+  const x = new Date(d);
+  x.setHours(0, 0, 0, 0);
+  return x;
+}
+function endOfDay(d: Date) {
+  const x = new Date(d);
+  x.setHours(23, 59, 59, 999);
+  return x;
+}
+function sixMonthsDefault(): { start: Date; end: Date } {
+  const end = endOfDay(new Date());
+  const s = new Date(end);
+  s.setMonth(s.getMonth() - 5); // include current month => total 6 months
+  s.setDate(1);
+  return { start: startOfDay(s), end };
+}
+function monthStart(y: number, m /*1-12*/ : number) {
+  return startOfDay(new Date(y, m - 1, 1));
+}
+function monthEnd(y: number, m /*1-12*/ : number) {
+  return endOfDay(new Date(y, m, 0));
+}
+function keyFromDate(d: Date) {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+}
+function dateFromKey(key: string) {
+  const [y, mm] = key.split('-').map(Number);
+  return new Date(y, (mm ?? 1) - 1, 1);
+}
+function buildMonthKeys(start: Date, end: Date) {
+  const out: string[] = [];
+  const cur = new Date(start);
+  cur.setDate(1);
+  let guard = 0;
+  while (cur <= end && guard++ < 24) {
+    out.push(keyFromDate(cur));
+    cur.setMonth(cur.getMonth() + 1);
+  }
+  return out;
+}
 
 const fmtShort = (d?: Date | null) =>
   d
     ? d.toLocaleDateString(undefined, {
-        month: 'short',
+        month: 'numeric',
         day: 'numeric',
         year: 'numeric',
       })
     : '';
 
-/* -------------------------------------------------------------------------- */
-/* Data (all with groups, Jan–Jun)                                            */
-/* -------------------------------------------------------------------------- */
+/* ------------------------------ y-axis helpers ---------------------------- */
 
-const MOCK_TXNS: Txn[] = [
-  // January
-  {
-    id: '1',
-    name: 'Anisha Singh',
-    date: '2025-01-03T10:15:00Z',
-    amount: -450,
-    group: 'Bangalore Team',
-    category: 'groceries',
-  },
-  {
-    id: '2',
-    name: 'Alok Mehra',
-    date: '2025-01-08T14:20:00Z',
-    amount: 1200,
-    group: 'Delhi Friends',
-    category: 'bills',
-  },
-  {
-    id: '3',
-    name: 'Neha Kapoor',
-    date: '2025-01-12T09:30:00Z',
-    amount: 2000,
-    group: 'Chennai Club',
-    category: 'travel',
-  },
-  {
-    id: '4',
-    name: 'Rohit Verma',
-    date: '2025-01-18T18:45:00Z',
-    amount: -900,
-    group: 'Mumbai Team',
-    category: 'kitchen',
-  },
-  {
-    id: '5',
-    name: 'Priya Nair',
-    date: '2025-01-22T11:00:00Z',
-    amount: 850,
-    group: 'Hyderabad Group',
-    category: 'entertainment',
-  },
-  {
-    id: '6',
-    name: 'Kunal Shah',
-    date: '2025-01-28T20:25:00Z',
-    amount: -3000,
-    group: 'Delhi Friends',
-    category: 'bills',
-  },
-  // February
-  {
-    id: '7',
-    name: 'Meera Iyer',
-    date: '2025-02-04T15:10:00Z',
-    amount: 1500,
-    group: 'Chennai Club',
-    category: 'groceries',
-  },
-  {
-    id: '8',
-    name: 'Amit Kulkarni',
-    date: '2025-02-08T08:40:00Z',
-    amount: -600,
-    group: 'Mumbai Team',
-    category: 'travel',
-  },
-  {
-    id: '9',
-    name: 'Isha Rao',
-    date: '2025-02-12T12:00:00Z',
-    amount: 2500,
-    group: 'Bangalore Team',
-    category: 'kitchen',
-  },
-  {
-    id: '10',
-    name: 'Vikas Gupta',
-    date: '2025-02-15T19:30:00Z',
-    amount: -750,
-    group: 'Hyderabad Group',
-    category: 'entertainment',
-  },
-  {
-    id: '11',
-    name: 'Anisha Singh',
-    date: '2025-02-20T10:00:00Z',
-    amount: 1800,
-    group: 'Delhi Friends',
-    category: 'groceries',
-  },
-  {
-    id: '12',
-    name: 'Alok Mehra',
-    date: '2025-02-27T16:15:00Z',
-    amount: -500,
-    group: 'Mumbai Team',
-    category: 'bills',
-  },
-  // March
-  {
-    id: '13',
-    name: 'Neha Kapoor',
-    date: '2025-03-05T09:45:00Z',
-    amount: 3200,
-    group: 'Chennai Club',
-    category: 'travel',
-  },
-  {
-    id: '14',
-    name: 'Rohit Verma',
-    date: '2025-03-08T11:30:00Z',
-    amount: -1800,
-    group: 'Hyderabad Group',
-    category: 'kitchen',
-  },
-  {
-    id: '15',
-    name: 'Priya Nair',
-    date: '2025-03-12T14:00:00Z',
-    amount: 950,
-    group: 'Delhi Friends',
-    category: 'entertainment',
-  },
-  {
-    id: '16',
-    name: 'Kunal Shah',
-    date: '2025-03-18T20:00:00Z',
-    amount: -2200,
-    group: 'Bangalore Team',
-    category: 'bills',
-  },
-  {
-    id: '17',
-    name: 'Meera Iyer',
-    date: '2025-03-22T18:20:00Z',
-    amount: 1200,
-    group: 'Mumbai Team',
-    category: 'groceries',
-  },
-  {
-    id: '18',
-    name: 'Amit Kulkarni',
-    date: '2025-03-27T09:10:00Z',
-    amount: -950,
-    group: 'Hyderabad Group',
-    category: 'travel',
-  },
-  // April
-  {
-    id: '19',
-    name: 'Isha Rao',
-    date: '2025-04-02T13:45:00Z',
-    amount: 1750,
-    group: 'Chennai Club',
-    category: 'kitchen',
-  },
-  {
-    id: '20',
-    name: 'Vikas Gupta',
-    date: '2025-04-06T19:00:00Z',
-    amount: -650,
-    group: 'Delhi Friends',
-    category: 'entertainment',
-  },
-  {
-    id: '21',
-    name: 'Anisha Singh',
-    date: '2025-04-09T10:45:00Z',
-    amount: 1450,
-    group: 'Bangalore Team',
-    category: 'groceries',
-  },
-  {
-    id: '22',
-    name: 'Alok Mehra',
-    date: '2025-04-14T09:30:00Z',
-    amount: -1200,
-    group: 'Hyderabad Group',
-    category: 'bills',
-  },
-  {
-    id: '23',
-    name: 'Neha Kapoor',
-    date: '2025-04-19T14:30:00Z',
-    amount: 2800,
-    group: 'Mumbai Team',
-    category: 'travel',
-  },
-  {
-    id: '24',
-    name: 'Rohit Verma',
-    date: '2025-04-24T11:45:00Z',
-    amount: -1100,
-    group: 'Chennai Club',
-    category: 'kitchen',
-  },
-  // May
-  {
-    id: '25',
-    name: 'Priya Nair',
-    date: '2025-05-02T17:20:00Z',
-    amount: 1350,
-    group: 'Delhi Friends',
-    category: 'entertainment',
-  },
-  {
-    id: '26',
-    name: 'Kunal Shah',
-    date: '2025-05-08T21:15:00Z',
-    amount: -2500,
-    group: 'Bangalore Team',
-    category: 'bills',
-  },
-  {
-    id: '27',
-    name: 'Meera Iyer',
-    date: '2025-05-12T15:30:00Z',
-    amount: 900,
-    group: 'Hyderabad Group',
-    category: 'groceries',
-  },
-  {
-    id: '28',
-    name: 'Amit Kulkarni',
-    date: '2025-05-16T10:20:00Z',
-    amount: -1400,
-    group: 'Mumbai Team',
-    category: 'travel',
-  },
-  {
-    id: '29',
-    name: 'Isha Rao',
-    date: '2025-05-22T13:50:00Z',
-    amount: 2100,
-    group: 'Chennai Club',
-    category: 'kitchen',
-  },
-  {
-    id: '30',
-    name: 'Vikas Gupta',
-    date: '2025-05-28T20:00:00Z',
-    amount: -500,
-    group: 'Delhi Friends',
-    category: 'entertainment',
-  },
-  // June
-  {
-    id: '31',
-    name: 'Anisha Singh',
-    date: '2025-06-03T09:30:00Z',
-    amount: 1600,
-    group: 'Bangalore Team',
-    category: 'groceries',
-  },
-  {
-    id: '32',
-    name: 'Alok Mehra',
-    date: '2025-06-08T11:15:00Z',
-    amount: -700,
-    group: 'Hyderabad Group',
-    category: 'bills',
-  },
-  {
-    id: '33',
-    name: 'Neha Kapoor',
-    date: '2025-06-14T18:45:00Z',
-    amount: 2400,
-    group: 'Chennai Club',
-    category: 'travel',
-  },
-  {
-    id: '34',
-    name: 'Rohit Verma',
-    date: '2025-06-18T20:10:00Z',
-    amount: -1350,
-    group: 'Mumbai Team',
-    category: 'kitchen',
-  },
-  {
-    id: '35',
-    name: 'Priya Nair',
-    date: '2025-06-22T12:30:00Z',
-    amount: 1000,
-    group: 'Delhi Friends',
-    category: 'entertainment',
-  },
-  {
-    id: '36',
-    name: 'Kunal Shah',
-    date: '2025-06-28T16:20:00Z',
-    amount: -2750,
-    group: 'Bangalore Team',
-    category: 'bills',
-  },
-];
+function niceMax(n: number) {
+  if (n <= 0) return 100;
+  const x = n * 1.2;
+  const mag = Math.pow(10, Math.floor(Math.log10(x)));
+  const norm = x / mag;
+  const niceNorm = norm <= 1 ? 1 : norm <= 2 ? 2 : norm <= 5 ? 5 : 10;
+  return niceNorm * mag;
+}
+function formatTick(v: number) {
+  if (v >= 1000) {
+    const k = v / 1000;
+    return `${(k < 10 ? k.toFixed(1) : Math.round(k)).toString()}k`;
+  }
+  return `${Math.round(v)}`;
+}
+function buildYAxis(values: number[], sections = 4) {
+  const max = Math.max(0, ...values);
+  const yMax = niceMax(max);
+  const ticks = Array.from({ length: sections + 1 }, (_, i) => formatTick((i * yMax) / sections));
+  return { yMax, ticks };
+}
 
-/* -------------------------------------------------------------------------- */
-/* Component                                                                   */
-/* -------------------------------------------------------------------------- */
+/* --------------------------------- screen --------------------------------- */
 
-export default function WalletSummary() {
-  const listRef = useRef<FlatList<Txn>>(null);
+const BAR_WIDTH = 24;
+
+export default function TransactionSummary() {
   const navigation = useNavigation();
+  const currentUser = useAtomValue(userAtom);
+  const listRef = useRef<FlatList<any>>(null);
+  const throttleRef = useRef<number>(0);
+
+  const def = useMemo(() => sixMonthsDefault(), []);
+  const [startDate, setStartDate] = useState<Date | null>(def.start);
+  const [endDate, setEndDate] = useState<Date | null>(def.end);
+  const [picker, setPicker] = useState<{ mode: 'start' | 'end' | null }>({ mode: null });
+
+  // When a bar is tapped we only highlight & filter list (chart window stays)
+  const [selectedBarIndex, setSelectedBarIndex] = useState<number | null>(null);
+  const [monthFilterKey, setMonthFilterKey] = useState<string | null>(null);
+
+  const resetDateWindow = useCallback(() => {
+    const d = sixMonthsDefault();
+    setStartDate(d.start);
+    setEndDate(d.end);
+  }, []);
+  const resetMonthFilter = useCallback(() => {
+    setSelectedBarIndex(null);
+    setMonthFilterKey(null);
+  }, []);
+
+  // feed dates = month range if filtered, else full window
+  const feedStart = useMemo(() => {
+    if (monthFilterKey) {
+      const dt = dateFromKey(monthFilterKey);
+      return monthStart(dt.getFullYear(), dt.getMonth() + 1);
+    }
+    return startDate;
+  }, [monthFilterKey, startDate]);
+  const feedEnd = useMemo(() => {
+    if (monthFilterKey) {
+      const dt = dateFromKey(monthFilterKey);
+      return monthEnd(dt.getFullYear(), dt.getMonth() + 1);
+    }
+    return endDate;
+  }, [monthFilterKey, endDate]);
+
+  const startISO = startDate?.toISOString() ?? null;
+  const endISO = endDate?.toISOString() ?? null;
+
+  const headerQuery = useTransactionHeader(currentUser?.id, startISO, endISO);
+  const feedQuery = useTransactionFeed({
+    userId: currentUser?.id,
+    startISO: feedStart?.toISOString() ?? null,
+    endISO: feedEnd?.toISOString() ?? null,
+    pageSize: 12,
+  });
+
   useLayoutEffect(() => {
     navigation.setOptions({
       headerShown: true,
@@ -379,113 +168,129 @@ export default function WalletSummary() {
     });
   }, [navigation]);
 
-  // chart / filters
-  const [selectedBar, setSelectedBar] = useState<number | null>(null);
-  const [monthFilter, setMonthFilter] = useState<number | null>(null);
-
-  // date range
-  const [startDate, setStartDate] = useState<Date | null>(null);
-  const [endDate, setEndDate] = useState<Date | null>(null);
-  const [picker, setPicker] = useState<{ mode: 'start' | 'end' | null }>({ mode: null });
-
-  // should the download shrink to icon-only?
-  const showReset = !!startDate || !!endDate || monthFilter !== null;
-
-  // filtered txns (date + month)
-  const txns = useMemo(() => {
-    return [...MOCK_TXNS]
-      .filter((t) => {
-        const d = new Date(t.date);
-        if (startDate && d < startDate) return false;
-        if (endDate && d > endDate) return false;
-        if (monthFilter !== null && d.getMonth() !== monthFilter) return false;
-        return true;
-      })
-      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-  }, [startDate, endDate, monthFilter]);
-
-  // scroll to top when filters change
   useEffect(() => {
     listRef.current?.scrollToOffset({ offset: 0, animated: true });
-  }, [monthFilter, startDate, endDate]);
+  }, [startISO, endISO, monthFilterKey]);
 
-  // totals
-  const totals = useMemo(() => {
-    let owe = 0,
-      get = 0,
-      spent = 0;
-    for (const t of txns) {
-      spent += Math.abs(t.amount);
-      if (t.amount < 0) owe += Math.abs(t.amount);
-      else get += t.amount;
-    }
-    return { owe, get, spent };
-  }, [txns]);
+  const totals = headerQuery.data?.totals ?? { totalSpent: 0, youOwe: 0, friendsOwe: 0 };
+  const chart = headerQuery.data?.chart ?? [];
+  const monthTotalsMap = useMemo(() => {
+    const m = new Map<string, number>();
+    chart.forEach((c) => m.set(c.month, Number(c.total) || 0));
+    return m;
+  }, [chart]);
 
-  // monthly totals for chart
-  const monthlyTotals = useMemo(() => {
-    const arr = new Array(6).fill(0);
-    for (const t of txns) {
-      const m = new Date(t.date).getMonth();
-      if (m <= 5) arr[m] += Math.abs(t.amount);
-    }
-    return arr;
-  }, [txns]);
+  const monthKeys = useMemo(() => {
+    if (!startDate || !endDate) return [];
+    return buildMonthKeys(startDate, endDate);
+  }, [startDate, endDate]);
 
-  const max = Math.max(...monthlyTotals, 0);
-  const yMax = Math.max(1000, Math.ceil((max * 1.2) / 1000) * 1000);
-  const yTicks = useMemo(() => {
-    const sections = 4;
-    const step = Math.round(yMax / sections);
-    return Array.from({ length: sections + 1 }, (_, i) => `${Math.round((i * step) / 1000)}k`);
-  }, [yMax]);
-
-  const barData = useMemo(
-    () =>
-      MONTHS.map((label, i) => ({
-        value: monthlyTotals[i],
+  const barData = useMemo(() => {
+    return monthKeys.map((key, idx) => {
+      const label = dateFromKey(key).toLocaleString(undefined, { month: 'short' });
+      const value = monthTotalsMap.get(key) ?? 0;
+      const hasData = value > 0;
+      const focused = idx === (selectedBarIndex ?? -1);
+      return {
+        value: hasData ? value : 0,
         label,
-        barWidth: 28,
-        frontColor: i === 4 ? '#6C5CE7' : 'rgba(108,92,231,0.28)',
-      })),
-    [monthlyTotals]
+        barWidth: BAR_WIDTH,
+        frontColor: hasData ? (focused ? '#6C5CE7' : 'rgba(108,92,231,0.28)') : 'transparent',
+        _key: key,
+        _idx: idx,
+      } as any;
+    });
+  }, [monthKeys, monthTotalsMap, selectedBarIndex]);
+
+  const { yMax, ticks } = useMemo(
+    () =>
+      buildYAxis(
+        barData.map((b) => b.value),
+        4
+      ),
+    [barData]
   );
 
-  // csv download of *currently filtered* txns
-  const downloadReport = async () => {
+  const transactions = feedQuery.data?.pages.flatMap((p) => p.transactions) ?? [];
+  const refreshing = headerQuery.isRefetching || feedQuery.isRefetching;
+
+  // throttled infinite scroll
+  const onEndReached = useCallback(() => {
+    const now = Date.now();
+    if (now - throttleRef.current < 700) return;
+    throttleRef.current = now;
+    if (feedQuery.hasNextPage && !feedQuery.isFetchingNextPage) feedQuery.fetchNextPage();
+  }, [feedQuery]);
+
+  const onRefresh = useCallback(async () => {
+    await Promise.all([headerQuery.refetch(), feedQuery.refetch()]);
+  }, [headerQuery, feedQuery]);
+
+  // tap bar: highlight + filter list (chart still shows full window)
+  const onPressBar = useCallback(
+    (_: any, index: number) => {
+      const item = barData[index] as any;
+      if (!item) return;
+      setSelectedBarIndex((prev) => (prev === index ? null : index));
+      setMonthFilterKey((prev) => (prev === item._key ? null : item._key));
+    },
+    [barData]
+  );
+
+  // Same flag logic as before to hide the "Download" label when any reset is visible
+  const isDateWindowDefault =
+    startDate?.getTime() === def.start.getTime() && endDate?.getTime() === def.end.getTime();
+  const showReset = !isDateWindowDefault || monthFilterKey !== null;
+
+  // ✅ WORKING CSV DOWNLOAD (auto-fetches remaining pages before exporting)
+  const downloadingRef = useRef(false);
+  const downloadReport = useCallback(async () => {
+    if (downloadingRef.current) return;
+    downloadingRef.current = true;
     try {
-      const header = 'Name,Group,Category,Date,Amount,Type\n';
-      const rows = txns
+      // Ensure all pages are loaded
+
+      while (feedQuery.hasNextPage && !feedQuery.isFetchingNextPage) {
+        const res = await feedQuery.fetchNextPage();
+        if (!res?.data?.pages) break;
+      }
+      const pages = feedQuery.data?.pages ?? [];
+      const items = pages.flatMap((p) => p.transactions ?? []);
+
+      const header = 'Title,Group,Date,Amount\n';
+      const rows = items
         .map((t) => {
-          const type = t.amount < 0 ? 'You Owe' : 'You Received';
-          return `${t.name},"${t.group}",${t.category},${new Date(t.date).toLocaleString()},${formatRs(
-            t.amount
-          )},${type}`;
+          const title = String(t.title ?? '').replace(/"/g, '""');
+          const group = String(t.groupName ?? '').replace(/"/g, '""');
+          const when = new Date(t.date).toLocaleString();
+          return `"${title}","${group}","${when}",${t.amount}`;
         })
         .join('\n');
       const csv = header + rows;
-      const fileUri = FileSystem.documentDirectory + 'transactions_report.csv';
+
+      const fileUri = `${FileSystem.documentDirectory}transactions_${Date.now()}.csv`;
       await FileSystem.writeAsStringAsync(fileUri, csv, {
         encoding: FileSystem.EncodingType.UTF8,
       });
       await Sharing.shareAsync(fileUri);
     } catch (e) {
-      console.error(e);
+      console.error('CSV export failed', e);
+    } finally {
+      downloadingRef.current = false;
     }
-  };
+  }, [feedQuery]);
 
-  /* ------------------------------- Header UI ------------------------------ */
+  /* ----------------------------------- UI ---------------------------------- */
 
   const Header = (
     <View style={styles.headerWrap}>
-      {/* summary cards */}
-      <View style={styles.cardsRow}>
-        <SummaryCard title="Total Spent" value={formatRs(totals.spent)} type="total" />
-        <SummaryCard title="You Owe" value={formatRs(totals.owe)} type="you" />
-        <SummaryCard title="Friends Owe" value={formatRs(totals.get)} type="friend" />
+      <View className="flex-row gap-3" style={styles.cardsRow}>
+        <SummaryCard title="Total Spent" value={formatRs(totals.totalSpent)} type="total" />
+        <SummaryCard title="You Owe" value={formatRs(totals.youOwe)} type="you" />
+        <SummaryCard title="Friends Owe" value={formatRs(totals.friendsOwe)} type="friend" />
       </View>
 
-      {/* date controls + resets + download */}
+      {/* Controls row — EXACT same structure & styles as your reference */}
       <View style={styles.controlsRow}>
         <ScrollView
           horizontal
@@ -510,24 +315,20 @@ export default function WalletSummary() {
             </Text>
           </TouchableOpacity>
 
-          {(startDate || endDate) && (
+          {/* Reset date window */}
+          {!isDateWindowDefault && (
             <TouchableOpacity
-              onPress={() => {
-                setStartDate(null);
-                setEndDate(null);
-              }}
+              onPress={resetDateWindow}
               style={[styles.pillBtn, { backgroundColor: '#EEF2FF' }]}>
               <Ionicons name="refresh-outline" size={16} color="#6C5CE7" />
               <Text style={[styles.pillText, { color: '#6C5CE7' }]}>Reset</Text>
             </TouchableOpacity>
           )}
 
-          {monthFilter !== null && (
+          {/* Reset month filter */}
+          {monthFilterKey !== null && (
             <TouchableOpacity
-              onPress={() => {
-                setMonthFilter(null);
-                setSelectedBar(null);
-              }}
+              onPress={resetMonthFilter}
               style={[styles.pillBtn, { backgroundColor: '#EEF2FF' }]}>
               <Ionicons name="refresh-outline" size={16} color="#6C5CE7" />
               <Text style={[styles.pillText, { color: '#6C5CE7' }]}>Reset</Text>
@@ -547,114 +348,81 @@ export default function WalletSummary() {
         isVisible={!!picker.mode}
         mode="date"
         onConfirm={(d) => {
-          if (picker.mode === 'start') setStartDate(d);
-          else if (picker.mode === 'end') setEndDate(d);
+          if (picker.mode === 'start') setStartDate(startOfDay(d));
+          else if (picker.mode === 'end') setEndDate(endOfDay(d));
+          setSelectedBarIndex(null);
+          setMonthFilterKey(null);
           setPicker({ mode: null });
         }}
         onCancel={() => setPicker({ mode: null })}
       />
 
-      {/* chart card */}
-      <View style={[styles.chartCard, styles.shadow]}>
+      {/* Chart */}
+      <View style={styles.chartCard}>
         <BarChart
           data={barData}
           height={200}
           maxValue={yMax}
           noOfSections={4}
           spacing={26}
-          initialSpacing={32}
-          endSpacing={52}
+          initialSpacing={26}
+          endSpacing={26}
           labelWidth={36}
           barBorderRadius={10}
           yAxisThickness={1}
           yAxisColor="#E5E7EB"
-          yAxisTextStyle={{ color: '#9AA0A6', fontSize: 10 }}
-          yAxisLabelTexts={yTicks}
-          rulesColor="#E9E9EF"
+          yAxisLabelTexts={ticks}
           rulesType="dashed"
           dashWidth={6}
           dashGap={6}
           xAxisThickness={0}
           xAxisLabelTextStyle={{ color: '#6B7280', fontSize: 12, marginTop: 6 }}
-          onPress={(_: any, index: any) => {
-            setSelectedBar((p) => (p === index ? null : index));
-            setMonthFilter(index);
-          }}
-          focusedBarIndex={selectedBar ?? -1}
-          renderTooltip={(item: any) => (
-            <View style={styles.tooltip}>
-              <Text style={styles.tooltipText}>{formatRs(item?.value ?? 0)}</Text>
-            </View>
-          )}
+          onPress={onPressBar}
+          focusedBarIndex={selectedBarIndex ?? -1}
           isAnimated
         />
       </View>
-
-      <Text style={styles.sectionTitle}>
-        {monthFilter !== null ? `Transactions for ${MONTHS[monthFilter]}` : 'Transactions'}
-      </Text>
     </View>
   );
-
-  /* ------------------------------- Render -------------------------------- */
 
   return (
     <FlatList
       ref={listRef}
-      className="px-4"
-      style={{ flex: 1 }}
-      contentContainerStyle={{ paddingBottom: 16 }}
-      data={txns}
+      data={transactions}
       keyExtractor={(it) => it.id}
       ListHeaderComponent={Header}
-      // ItemSeparatorComponent={() => <View style={styles.separator} />}
-      renderItem={({ item }) => {
-        const isNegative = item.amount < 0;
-        return (
-          <TransactionCard
-            compact
-            noShadow
-            title={item.name}
-            subtitle={`${item.group} ${formatWhen(item.date)}`}
-            avatarInitials="KS"
-            amount={formatRs(item.amount)}
-            status={isNegative ? 'you-owe' : 'friend-owe'}
-            onPress={() => console.log('open expense')}
-            icon={
-              <Ionicons name={CATEGORY_ICONS[item.category]} size={18} className="text-gray-800" />
-            }
-          />
-        );
-      }}
-      ListEmptyComponent={
-        <Text style={{ color: '#6B7280', paddingHorizontal: 16, paddingVertical: 12 }}>
-          No transactions
-        </Text>
+      renderItem={({ item }) => (
+        <TransactionCard
+          compact
+          noShadow
+          title={item.title}
+          subtitle={`${item.groupName} ${new Date(item.date).toLocaleDateString()}`}
+          avatarInitials={item.title.slice(0, 2)}
+          amount={formatRs(item.amount)}
+          status={item.amount < 0 ? 'you-owe' : 'friend-owe'}
+        />
+      )}
+      onEndReached={onEndReached}
+      onEndReachedThreshold={0.5}
+      refreshControl={
+        <RefreshControl
+          refreshing={!!(headerQuery.isRefetching || feedQuery.isRefetching)}
+          onRefresh={onRefresh}
+        />
       }
-      nestedScrollEnabled
-      initialNumToRender={12}
-      windowSize={7}
+      contentContainerStyle={{ paddingBottom: 12 }}
       removeClippedSubviews={Platform.OS === 'android'}
+      windowSize={7}
+      initialNumToRender={12}
       showsVerticalScrollIndicator={false}
     />
   );
 }
 
-/* -------------------------------------------------------------------------- */
-/* Styles                                                                      */
-/* -------------------------------------------------------------------------- */
+/* ---------------------------------- styles --------------------------------- */
 
 const styles = StyleSheet.create({
-  headerWrap: {
-    // paddingHorizontal: 16,
-    paddingTop: 12,
-  },
-  pageTitle: {
-    fontSize: 22,
-    fontWeight: '800',
-    color: '#111827',
-    marginBottom: 10,
-  },
+  headerWrap: { paddingTop: 12 },
 
   /* summary cards row */
   cardsRow: {
@@ -662,16 +430,8 @@ const styles = StyleSheet.create({
     gap: 12,
     marginBottom: 14,
   },
-  card: {
-    flex: 1,
-    backgroundColor: '#FFFFFF',
-    borderRadius: 16,
-    padding: 14,
-  },
-  cardTitle: { color: '#6B7280', fontSize: 12, marginBottom: 6 },
-  cardValue: { fontSize: 18, fontWeight: '800' },
 
-  /* date + download */
+  /* date + download (same as your reference) */
   controlsRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -707,7 +467,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 8,
     marginLeft: 8,
-    minWidth: 40, // stay tappable when text is hidden
+    minWidth: 40,
   },
 
   /* chart card */
@@ -716,61 +476,5 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     padding: 12,
     marginBottom: 14,
-  },
-  tooltip: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 8,
-    backgroundColor: '#6C5CE7',
-  },
-  tooltipText: { color: 'white', fontWeight: '700' },
-
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: '800',
-    color: '#111827',
-    // paddingHorizontal: 16,
-    marginTop: 6,
-    marginBottom: 6,
-  },
-
-  /* transactions list */
-  txnRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    backgroundColor: '#FFFFFF',
-  },
-  separator: { height: 0, backgroundColor: '#F6F4FF' },
-  iconCircle: {
-    width: 34,
-    height: 34,
-    borderRadius: 17,
-    backgroundColor: '#F1F0FF',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 12,
-  },
-  name: { fontSize: 16, fontWeight: '700', color: '#111827' },
-  group: { fontSize: 13, color: '#6B7280' },
-  date: { fontSize: 12, color: '#9CA3AF', marginTop: 2 },
-  amount: { fontSize: 13, fontWeight: '800', textAlign: 'right', maxWidth: 160 },
-  pos: { color: '#10B981' },
-  neg: { color: '#EF4444' },
-
-  /* subtle shadow like iOS cards */
-  shadow: {
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.08,
-        shadowRadius: 6,
-      },
-      android: {
-        elevation: 2,
-      },
-    }),
   },
 });
