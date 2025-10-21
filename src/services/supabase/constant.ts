@@ -1,13 +1,12 @@
-const baseUrl = 'https://wrnepxzmmuzcsmjmadli.supabase.co'; // move this to ENV
-const anonkey =
-  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndybmVweHptbXV6Y3Ntam1hZGxpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTg0NjE0NTYsImV4cCI6MjA3NDAzNzQ1Nn0.NcrD3dr1bxmHzH81ThzGbXxlAnS5qBIAod618CvSSvs'; // move this to ENV
-
-const functionVersion = `${baseUrl}/functions/v1`;
+const baseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL;
+const anonkey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY;
 
 export const sb = {
   baseUrl,
   anonkey,
 } as const;
+
+const functionVersion = `${sb.baseUrl}/functions/v1`;
 
 export const edge = {
   signup: `${functionVersion}/signup`,

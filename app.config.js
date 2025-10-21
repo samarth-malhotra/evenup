@@ -92,7 +92,7 @@ export default ({ config }) => {
       bundler: 'metro',
       output: 'single',
     },
-    plugins: config.plugins || ['expo-router'],
+    plugins: config.plugins || ['expo-router', 'expo-font', 'expo-secure-store'],
     // Important: expo.extra exposes values to runtime via expo-constants
     extra: {
       // non-secret config
