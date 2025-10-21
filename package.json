@@ -106,7 +106,7 @@
   "private": true,
   "lint-staged": {
     "*.{js,jsx,ts,tsx}": [
-      "eslint --fix",
+      "eslint --fix --ignore-pattern supabase/",
       "prettier --write"
     ],
     "*.{json,css,md}": "prettier --write"
