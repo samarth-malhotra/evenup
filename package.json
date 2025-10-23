@@ -102,5 +102,12 @@
     "ts-node": "^10.9.2",
     "typescript": "~5.9.2"
   },
-  "private": true
+  "private": true,
+  "lint-staged": {
+    "*.{js,jsx,ts,tsx}": [
+      "eslint --fix --ignore-pattern supabase/",
+      "prettier --write"
+    ],
+    "*.{json,css,md}": "prettier --write"
+  }
 }
