@@ -31,4 +31,5 @@ export const rpc = {
   delete_transaction_comment: 'delete_transaction_comment',
   update_group_transaction_with_splits: 'update_group_transaction_with_splits',
   get_transaction_summary: 'get_transaction_summary',
+  toggleGroupSimplified: 'toggle_group_simplified',
 } as const;
