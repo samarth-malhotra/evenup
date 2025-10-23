@@ -64,13 +64,14 @@ export default ({ config }) => {
     },
     android: {
       ...(config.android || {}),
-      package: process.env.ANDROID_PACKAGE || 'com.evenup.app',
-      versionCode: androidVersionCode,
+      package: process.env.ANDROID_PACKAGE || 'com.ershubgupta.evenup',
+      // versionCode: androidVersionCode,
       adaptiveIcon: config.android?.adaptiveIcon || {
         foregroundImage: './src/assets/adaptive-icon.png',
         backgroundColor: '#ffffff',
       },
       edgeToEdgeEnabled: true,
+      predictiveBackGestureEnabled: false,
       permissions: ['READ_CONTACTS'],
       intentFilters: [
         {
@@ -92,9 +93,17 @@ export default ({ config }) => {
       bundler: 'metro',
       output: 'single',
     },
-    plugins: config.plugins || ['expo-router'],
+    plugins: config.plugins || [
+      'expo-router',
+      'expo-font',
+      'expo-secure-store',
+      'expo-web-browser',
+    ],
     // Important: expo.extra exposes values to runtime via expo-constants
     extra: {
+      eas: {
+        projectId: 'ac575046-1f7b-4572-83e9-834e5a38cff2',
+      },
       // non-secret config
       apiUrl: process.env.API_URL || 'https://api.evenup.com',
       featureNewSummary: (process.env.FEATURE_NEW_SUMMARY || 'false') === 'true',
