@@ -2,7 +2,7 @@
 // Reads theme/tokens-export.json and maps tokens (light) to Tailwind colors statically.
 
 const path = require('path');
-const tokensPath = path.join(__dirname, 'theme', 'build', 'tokens-export.json');
+const tokensPath = path.join(__dirname, 'src', 'theme', 'build', 'tokens-export.json');
 
 let tokens = {};
 try {

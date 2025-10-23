@@ -31,6 +31,7 @@ export default [
       'metro.config.*',
       'jest.config.*',
       'postcss.config.*',
+      "src/theme/script/*", 
     ],
   },
 

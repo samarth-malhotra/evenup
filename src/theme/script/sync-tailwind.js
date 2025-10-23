@@ -1,58 +1,36 @@
-// scripts/sync-tailwind.js
-// Writes:
-//  - theme/tokens-export.json       (full sanitized tokens)
-//  - theme/tailwind-colors.json     (nested { colors: { light: {...}, dark: {...} } })
-// This script preserves nested color objects (e.g. primary.DEFAULT) so Tailwind can import them directly.
+// src/theme/script/sync-tailwind.js
+// CommonJS version that uses ts-node/register so we can require .ts tokens.
+// Run with: node src/theme/script/sync-tailwind.js
+
+// Register ts-node so require() can load .ts files.
+// If you already have ts-node installed this will be a no-op; otherwise install with:
+//   npm i -D ts-node typescript
+try {
+  require('ts-node/register/transpile-only');
+} catch (e1) {
+  try {
+    require('ts-node/register');
+  } catch (e2) {
+    console.error('ts-node is not installed. Install dev deps: npm i -D ts-node typescript');
+    process.exit(1);
+  }
+}
 
 const fs = require('fs');
 const path = require('path');
 
 function safeRequire(p) {
   try {
-    return require(p);
+    const resolved = path.resolve(p);
+    // print for debugging
+    const mod = require(resolved);
+    return mod;
   } catch (err) {
+    // print full error so we know why require failed
+    console.error('Require failed for:', p);
+    console.error(err && err.stack ? err.stack : err);
     return null;
   }
-}
-
-function tryLoadTokens() {
-  const tsPath = path.join(__dirname, '../..', 'theme', 'tokens.ts');
-  const jsPath = path.join(__dirname, '../..', 'theme', 'tokens.js');
-  const indexTsPath = path.join(__dirname, '../..', 'theme', 'tokens', 'index.ts');
-  const indexJsPath = path.join(__dirname, '../..', 'theme', 'tokens', 'index.js');
-
-  // 1) If tokens.ts exists, try to require it using ts-node (if available)
-  if (fs.existsSync(tsPath) || fs.existsSync(indexTsPath)) {
-    try {
-      try {
-        require('ts-node/register/transpile-only');
-      } catch (err) {
-        try {
-          require('ts-node/register');
-        } catch (err2) {
-          throw new Error('ts-node-not-installed');
-        }
-      }
-
-      const tokensModule = safeRequire(tsPath) || safeRequire(indexTsPath);
-      if (!tokensModule) throw new Error('could-not-require-tokens-ts');
-      return tokensModule.tokens || tokensModule.default || tokensModule;
-    } catch (err) {
-      if (err.message === 'ts-node-not-installed') {
-        return { __error: 'ts-node-not-installed' };
-      }
-      throw err;
-    }
-  }
-
-  // 2) fallback to tokens.js if exists
-  if (fs.existsSync(jsPath) || fs.existsSync(indexJsPath)) {
-    const tokensModule = safeRequire(jsPath) || safeRequire(indexJsPath);
-    if (!tokensModule) throw new Error('could-not-require-tokens-js');
-    return tokensModule.tokens || tokensModule.default || tokensModule;
-  }
-
-  return null;
 }
 
 // sanitize general tokens for tokens-export.json: keep primitives, arrays, plain objects
@@ -82,73 +60,98 @@ function sanitizeColorsRecursive(obj) {
     if (t === 'string' || t === 'number' || t === 'boolean') {
       out[k] = v;
     } else if (Array.isArray(v)) {
-      // not expected for colors, but keep primitive arrays
       const arr = v
         .map((x) => (typeof x === 'string' || typeof x === 'number' ? x : undefined))
         .filter((x) => typeof x !== 'undefined');
       if (arr.length) out[k] = arr;
     } else if (t === 'object') {
-      // nested object (e.g. primary: { DEFAULT: "#7C3AED", light: "#..." })
       const nested = sanitizeColorsRecursive(v);
       if (Object.keys(nested).length) out[k] = nested;
     }
-    // otherwise skip
   });
   return out;
 }
 
+function findTokenPaths(baseDir) {
+  // Try plural and singular variants because that's a common mismatch
+  const candidates = [path.join(baseDir, 'tokens.ts'), path.join(baseDir, 'tokens.js')];
+  return candidates;
+}
+
+function loadTokensFromTheme(themeDir) {
+  const paths = findTokenPaths(themeDir);
+
+  for (const p of paths) {
+    if (fs.existsSync(p)) {
+      console.log('Found token file:', p);
+      const mod = safeRequire(p);
+      if (!mod) {
+        console.warn('Found file but require failed:', p);
+        continue;
+      }
+      // exported shape could be default or named tokens
+      return mod.tokens || mod.default || mod;
+    }
+  }
+
+  return null;
+}
+
+function writeJson(dest, obj) {
+  fs.mkdirSync(path.dirname(dest), { recursive: true });
+  fs.writeFileSync(dest, JSON.stringify(obj, null, 2), 'utf8');
+  console.log('Wrote file:', dest);
+}
+
 (function main() {
-  let tokensObj;
   try {
-    tokensObj = tryLoadTokens();
+    // base relative to this script file: adjust if your script is located elsewhere
+    const scriptDir = __dirname; // CommonJS __dirname available
+    // assume theme folder sits at ../../theme from this script (adjust if needed)
+    const themeDir = path.join(scriptDir, '..', '..', 'theme');
+    console.log('scriptDir:', scriptDir);
+
+    const tokensObj = loadTokensFromTheme(themeDir);
+    if (!tokensObj) {
+      console.error(
+        'Could not find token.ts or token.js in /theme. Please ensure one of these exists in:',
+        themeDir
+      );
+      process.exit(1);
+    }
+
+    // tokens may be exported as { tokens: {...} } or default or direct object
+    const tokens = tokensObj.tokens || tokensObj.default || tokensObj;
+
+    // write full sanitized tokens-export.json
+    const sanitized = sanitize(tokens);
+    const exportDest = path.join(scriptDir, '..', 'build', 'tokens-export.json');
+    writeJson(exportDest, sanitized);
+
+    // build nested colors object (preserve nested structure like primary.DEFAULT)
+    const colors = tokens && tokens.colors ? tokens.colors : null;
+    const colorsOut = { colors: { light: {}, dark: {} } };
+
+    if (colors && typeof colors === 'object') {
+      const light =
+        colors.light && typeof colors.light === 'object'
+          ? sanitizeColorsRecursive(colors.light)
+          : {};
+      const dark =
+        colors.dark && typeof colors.dark === 'object' ? sanitizeColorsRecursive(colors.dark) : {};
+      colorsOut.colors.light = light;
+      colorsOut.colors.dark = dark;
+    } else {
+      console.warn('No tokens.colors found in tokens file. tailwind-colors.json will be empty.');
+    }
+
+    const colorsDest = path.join(scriptDir, '..', 'build', 'tailwind-colors.json');
+    writeJson(colorsDest, colorsOut);
+
+    console.log('Sync complete. Restart Metro/Expo to pick up tailwind config changes.');
+    process.exit(0);
   } catch (err) {
-    console.error('Error requiring tokens:', err && err.message ? err.message : err);
+    console.error('Error in sync script:', err && err.stack ? err.stack : err);
     process.exit(1);
   }
-
-  if (!tokensObj) {
-    console.error(
-      'Could not find tokens.ts or tokens.js in /theme. Please ensure one of these exists.\n' +
-        'If you are using tokens.ts you should install ts-node as a dev dependency:\n\n  npm i -D ts-node\n\nor\n\n  pnpm add -D ts-node\n'
-    );
-    process.exit(1);
-  }
-
-  if (tokensObj.__error === 'ts-node-not-installed') {
-    console.error(
-      'Found tokens.ts but ts-node is not installed. Install it to allow the script to load TypeScript files:\n\n  npm i -D ts-node\n\nor\n\n  pnpm add -D ts-node\n'
-    );
-    process.exit(1);
-  }
-
-  // tokens may be exported as { tokens: {...} } or default or direct object
-  const tokens = tokensObj.tokens || tokensObj.default || tokensObj;
-
-  // write full sanitized tokens-export.json
-  const sanitized = sanitize(tokens);
-  const exportDest = path.join(__dirname, '..', 'build', 'tokens-export.json');
-  fs.mkdirSync(path.dirname(exportDest), { recursive: true });
-  fs.writeFileSync(exportDest, JSON.stringify(sanitized, null, 2), 'utf8');
-  console.log('Wrote full tokens:', exportDest);
-
-  // build nested colors object (preserve nested structure like primary.DEFAULT)
-  const colors = tokens && tokens.colors ? tokens.colors : null;
-  const colorsOut = { colors: { light: {}, dark: {} } };
-
-  if (colors && typeof colors === 'object') {
-    const light =
-      colors.light && typeof colors.light === 'object' ? sanitizeColorsRecursive(colors.light) : {};
-    const dark =
-      colors.dark && typeof colors.dark === 'object' ? sanitizeColorsRecursive(colors.dark) : {};
-    colorsOut.colors.light = light;
-    colorsOut.colors.dark = dark;
-  } else {
-    console.warn('No tokens.colors found in tokens file. tailwind-colors.json will be empty.');
-  }
-
-  const colorsDest = path.join(__dirname, '..', 'build', 'tailwind-colors.json');
-  fs.writeFileSync(colorsDest, JSON.stringify(colorsOut, null, 2), 'utf8');
-  console.log('Wrote color mapping:', colorsDest);
-
-  console.log('Sync complete. Restart Metro/Expo to pick up tailwind config changes.');
 })();
