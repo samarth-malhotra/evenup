@@ -21,7 +21,6 @@ export default function AppHeader({ title, showBackButton = true, rightActions }
   return (
     <WaveHeader>
       <View
-        // ✅ apply a small upward shift only on iOS
         style={{
           flexDirection: 'row',
           alignItems: 'baseline',
