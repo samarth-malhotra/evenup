@@ -1,7 +1,7 @@
 import { MaterialIcons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import React from 'react';
-import { Text, TouchableOpacity, View } from 'react-native';
+import { Platform, Text, TouchableOpacity, View } from 'react-native';
 
 import WaveHeader from '@/components/WaveHeader';
 import { useColor } from '@/theme/hooks/useColor';
@@ -17,16 +17,24 @@ export default function AppHeader({ title, showBackButton = true, rightActions }
   const navigation = useNavigation();
   const { theme } = useTheme();
   const getColor = useColor();
+
   return (
     <WaveHeader>
-      <View className="flex-row items-baseline justify-between">
+      <View
+        // ✅ apply a small upward shift only on iOS
+        style={{
+          flexDirection: 'row',
+          alignItems: 'baseline',
+          justifyContent: 'space-between',
+          marginTop: Platform.OS === 'ios' ? -40 : 0, // tweak this value (-8 to -16) based on your look
+        }}>
         {/* Left */}
         {showBackButton ? (
           <TouchableOpacity onPress={() => navigation.goBack()} className="pr-4">
             <MaterialIcons name="arrow-back" size={24} color={getColor('textWhite')} />
           </TouchableOpacity>
         ) : (
-          <View className="w-11"></View>
+          <View className="w-11" />
         )}
 
         {/* Title */}
