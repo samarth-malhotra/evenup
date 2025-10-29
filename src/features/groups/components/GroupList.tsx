@@ -6,7 +6,7 @@ import { useLayoutEffect, useState } from 'react';
 import { ActivityIndicator, FlatList, Pressable, Text, TextInput, View } from 'react-native';
 
 import AppHeader from '@/components/AppHeader';
-import { BalanceBadge } from '@/features/groups/components/BalanceBadge';
+import BalanceBadge from '@/features/groups/components/BalanceBadge';
 import NewGroupSheet from '@/features/groups/components/BottomSheet/CreateGroupSheet';
 import { useGroupsList } from '@/features/groups/hooks/useGroupsList';
 import { formatCurrency } from '@/features/groups/utils';
