@@ -1,5 +1,12 @@
 import type { USER_STATUS } from '@/constant';
 
+export type BalanceSummary = {
+  net_amount: number; // net = transactions_net - settlements_net
+  abs_amount: number; // absolute of net_amount
+  currency: string; // 'INR'
+  status: 'friends_owe' | 'you_owe' | 'settled';
+};
+
 export type Group = {
   id: string;
   name: string;
@@ -8,6 +15,7 @@ export type Group = {
   created_by: string;
   simplified: boolean;
   updated_at: string;
+  balance_summary?: BalanceSummary | null;
 };
 
 export type GroupDetails = {
