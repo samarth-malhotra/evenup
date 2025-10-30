@@ -44,3 +44,5 @@ yarn-error.*
 
 # Color Tokens
 src/theme/build/
+
+evenup-f75e0-firebase-adminsdk-fbsvc-f1f070544b.json

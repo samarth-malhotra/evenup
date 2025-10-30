@@ -13,6 +13,7 @@ import { ThemeProvider } from '@/components/ThemeProvider';
 import ToastProvider from '@/components/ToastProvider';
 import type { APP_MODE } from '@/constant';
 import { initAuth } from '@/features/auth/auth';
+import { usePushNotifications } from '@/features/notifications/hooks/usePushNotifications';
 import { useUserProfile } from '@/features/profile/hooks/useUserProfile';
 import { addToastAtom } from '@/stores/atoms/toast';
 import { userAtom } from '@/stores/atoms/user';
@@ -51,6 +52,8 @@ function InnerApp() {
 
   const userId: string = useMemo(() => user?.id ?? '', [user]);
   const { data: userProfile, isFetching, isLoading, isError, error } = useUserProfile(userId);
+  // this will make entry in the db of users device info
+  usePushNotifications(user?.id ?? null);
 
   useEffect(() => {
     if (isLoading) return;

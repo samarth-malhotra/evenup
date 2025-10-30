@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "759554398057",
+    "project_id": "evenup-f75e0",
+    "storage_bucket": "evenup-f75e0.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:759554398057:android:4c77e7860bcf7917160ff8",
+        "android_client_info": {
+          "package_name": "in.evenup.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBOzXrU6Q1bpXSX_tRJ-B-4eL_D7bzLeJg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

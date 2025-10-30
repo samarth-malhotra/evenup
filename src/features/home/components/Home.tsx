@@ -9,8 +9,7 @@ import AppHeader from '@/components/AppHeader';
 import { Avatar } from '@/components/Avatar';
 import SummaryCard from '@/components/SummaryCard';
 import ThemedSafeArea from '@/components/ThemedSafeArea';
-import AddBillSheet from '@/features/bills/components/AddBillSheet';
-import CreateGroupSheet from '@/features/groups/components/BottomSheet/CreateGroupSheet';
+import CreateGroupBottomSheet from '@/features/groups/components/BottomSheet/CreateGroupSheet';
 import { useGroupsList } from '@/features/groups/hooks/useGroupsList';
 import { userAtom } from '@/stores/atoms/user';
 import { getBoxShadow } from '@/theme/hooks/getBoxShadow';
@@ -188,7 +187,7 @@ export default function HomeScreen() {
             </View>
           ))}
           <TouchableOpacity onPress={() => router.push('/activity')} className="py-3">
-            <Text style={{ color: theme.colors.link }} className="text-center font-semibold ">
+            <Text style={{ color: theme.colors.link }} className="text-center font-semibold">
               View All
             </Text>
           </TouchableOpacity>
@@ -196,16 +195,16 @@ export default function HomeScreen() {
       </ScrollView>
       {/* // )} */}
       {/* Add New Bill */}
-      <AddBillSheet
+      {/* <AddBillSheet
         open={addOpen}
         onClose={() => setAddOpen(false)}
         onSave={(payload) => console.log('SAVE BILL', payload)}
         onSelectPaidBy={openPaidByPicker}
         onSelectParticipants={openParticipantsPicker}
-      />
+      /> */}
 
       {/* Create Group Bottom Sheet */}
-      <CreateGroupSheet
+      <CreateGroupBottomSheet
         open={openCreateGroupSheet}
         onClose={() => setOpenCreateGroupSheet(false)}
       />

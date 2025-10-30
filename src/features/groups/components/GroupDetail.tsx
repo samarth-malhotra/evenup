@@ -249,6 +249,7 @@ export default function GroupDetailScreen() {
         members={selectedGroup.members}
         mode="create"
         groupId={groupId}
+        groupName={selectedGroup.name}
       />
 
       {/* PaidBy modal */}

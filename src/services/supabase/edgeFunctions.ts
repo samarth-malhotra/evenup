@@ -82,7 +82,7 @@ export async function edgeFunction<T>(
 
   if (response.data === undefined) {
     if (allowNoData) return undefined;
-    throw new SupaError('Missing data in RPC response', 'missing_data');
+    throw new SupaError(`Missing data in EDGE function ${baseUrl}`, 'missing_data');
   }
 
   return response.data;

@@ -12,14 +12,21 @@ export const asyncStoragePersister = createAsyncStoragePersister({
 });
 
 // small wrapper component to use at app root
+// QueryProvider.tsx
 export function QueryProvider({ children }: { children: React.ReactNode }) {
   return (
     <PersistQueryClientProvider
       client={queryClient}
       persistOptions={{
         persister: asyncStoragePersister,
-        // throttle to avoid saving too often (ms)
-        // optional: dehydrate options, max age etc.
+        // avoid persisting in-flight / pending queries
+        dehydrateOptions: {
+          shouldDehydrateQuery: (query) => {
+            // Persist only queries that are not fetching and that have data (status 'success' or 'error' if you want)
+            // adjust to your preferences: here we only persist successful queries
+            return !query.state.isInvalidated && query.state.status === 'success';
+          },
+        },
       }}>
       {children}
     </PersistQueryClientProvider>

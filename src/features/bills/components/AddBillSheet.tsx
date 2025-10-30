@@ -42,6 +42,7 @@ export default function AddBillSheet({
   mode = 'create',
   initial,
   groupId,
+  groupName,
 }: {
   open: boolean;
   onClose: () => void;
@@ -51,7 +52,8 @@ export default function AddBillSheet({
   members?: GroupMember[];
   mode?: 'create' | 'edit';
   initial?: InitialTx | null;
-  groupId?: string | null;
+  groupId: string;
+  groupName: string;
 }) {
   const { theme } = useTheme();
   const currentUser = useAtomValue(userAtom);
@@ -276,10 +278,11 @@ export default function AddBillSheet({
           amount,
           currency: 'INR',
           paidBy,
-          groupId: groupId ?? null,
+          groupId: groupId,
           createdBy: currentUser?.id ?? '',
           metadata: { splitMethod },
           splits,
+          groupName: groupName,
         });
       }
       if (mode === 'edit' && initial?.id) {

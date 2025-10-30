@@ -3,6 +3,8 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useSetAtom } from 'jotai';
 import { v4 as uuidv4 } from 'uuid';
 
+import { NotificationType, sendNotifications } from '@/features/notifications/sendNotifications';
+import { useAccessToken } from '@/hooks/useAccessToken';
 import { QUERY_KEYS } from '@/services/helper/queryKeys';
 import { rpc } from '@/services/supabase/constant';
 import { fetchRPC } from '@/services/supabase/fetchRPC';
@@ -15,7 +17,8 @@ type CreateTxPayload = {
   amount: number;
   currency?: string;
   paidBy: string;
-  groupId?: string | null;
+  groupId: string;
+  groupName: string;
   createdBy: string;
   metadata?: any;
   splits?: TxSplit[];
@@ -34,6 +37,7 @@ function findGroupTransactionKeys(qc: ReturnType<typeof useQueryClient>) {
 export function useCreateGroupTransaction(pageSize = 10) {
   const qc = useQueryClient();
   const addToast = useSetAtom(addToastAtom);
+  const { accessToken } = useAccessToken();
 
   return useMutation<any, any, CreateTxPayload>({
     mutationFn: async (payload: CreateTxPayload) =>
@@ -94,6 +98,21 @@ export function useCreateGroupTransaction(pageSize = 10) {
       const normalizedGroupId = (vars as CreateTxPayload).groupId ?? undefined;
       const key = context?.key ?? QUERY_KEYS.groups.transactionsInfinite(normalizedGroupId);
 
+      if (accessToken) {
+        sendNotifications({
+          groupId: vars.groupId,
+          subtype: NotificationType.ExpenseCreated,
+          accessToken,
+          actorId: vars.createdBy,
+          group_name: vars.groupName,
+          data: {
+            transactionId: data?.transactionId,
+            description: vars.title,
+          },
+        });
+      } else {
+        console.error('Access token is missing, Unable to send group notifications');
+      }
       qc.setQueryData(key, (old: any) => {
         if (!old?.pages) return old;
         return {

@@ -7,7 +7,7 @@ import { ActivityIndicator, FlatList, Pressable, Text, TextInput, View } from 'r
 
 import AppHeader from '@/components/AppHeader';
 import TransactionCard from '@/components/TransactionCard';
-import NewGroupSheet from '@/features/groups/components/BottomSheet/CreateGroupSheet';
+import CreateGroupBottomSheet from '@/features/groups/components/BottomSheet/CreateGroupSheet';
 import { useGroupsList } from '@/features/groups/hooks/useGroupsList';
 import { userAtom } from '@/stores/atoms/user';
 import { useColor } from '@/theme/hooks/useColor';
@@ -97,7 +97,10 @@ export default function GroupList() {
         )}
       />
       {/* Create New Group Bottom Sheet */}
-      <NewGroupSheet open={openNewGroupSheet} onClose={() => setOpenNewGroupSheet(false)} />
+      <CreateGroupBottomSheet
+        open={openNewGroupSheet}
+        onClose={() => setOpenNewGroupSheet(false)}
+      />
     </View>
   );
 }

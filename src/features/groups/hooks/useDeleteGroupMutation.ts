@@ -3,6 +3,8 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
 
 import type { Group } from '@/features/groups/types';
+import { NotificationType, sendNotifications } from '@/features/notifications/sendNotifications';
+import { useAccessToken } from '@/hooks/useAccessToken';
 import { rpc } from '@/services/supabase/constant';
 import { fetchRPC } from '@/services/supabase/fetchRPC';
 
@@ -25,10 +27,11 @@ async function deleteGroup(groupId: string, userId: string) {
 export function useDeleteGroup(userId: string) {
   const qc = useQueryClient();
   const router = useRouter();
+  const { accessToken } = useAccessToken();
 
   return useMutation({
     // 👇 group object is passed here, so we have id + name + avatar for cache removal etc.
-    mutationFn: async ({ groupId }: { groupId: string }) => {
+    mutationFn: async ({ groupId, group_name }: { groupId: string; group_name: string }) => {
       return deleteGroup(groupId, userId);
     },
 
@@ -49,6 +52,19 @@ export function useDeleteGroup(userId: string) {
       router.replace('/groups');
 
       return { previous };
+    },
+    onSuccess: (data: any, _variables: any, context: any) => {
+      if (accessToken) {
+        sendNotifications({
+          groupId: context?.groupId ?? _variables?.groupId,
+          subtype: NotificationType.GroupDeleted,
+          accessToken,
+          actorId: userId,
+          group_name: _variables.group_name,
+        });
+      } else {
+        console.error('Access token is missing, Unable to send group notifications');
+      }
     },
 
     onError: (err, _vars, ctx) => {
