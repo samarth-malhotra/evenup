@@ -3,14 +3,21 @@ import { edge } from '@/services/supabase/constant';
 import { edgeFunction } from '@/services/supabase/edgeFunctions';
 
 export enum NotificationType {
+  GroupDeleted = 'group_deleted',
   GroupMemberAdded = 'group_member_added',
   GroupMemberDeleted = 'group_member_deleted',
-  GroupDeleted = 'group_deleted',
+  GroupMemberLeft = 'group_member_left',
+
   ExpenseCreated = 'expense_created',
   ExpenseDeleted = 'expense_deleted',
   ExpenseUpdated = 'expense_updated',
+  BalanceSettled = 'balance_settled',
+  PaymentRecorded = 'payment_recorded',
+
   SystemAnnouncement = 'system_announcement',
   SystemInfo = 'system_info',
+  PaymentReminder = 'payment_reminder',
+  WeeklySummary = 'weekly_summary',
 }
 
 export interface NotificationPayloadData {

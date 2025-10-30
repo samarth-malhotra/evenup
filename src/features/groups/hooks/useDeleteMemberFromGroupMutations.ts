@@ -123,7 +123,10 @@ export default function useDeleteMemberMutation() {
       if (accessToken) {
         sendNotifications({
           groupId: context?.groupId ?? _variables?.groupId,
-          subtype: NotificationType.GroupMemberDeleted,
+          subtype:
+            _variables.removedBy === _variables.memberId
+              ? NotificationType.GroupMemberLeft
+              : NotificationType.GroupMemberDeleted,
           accessToken,
           group_name: _variables.groupName,
           actorId: _variables.removedBy,

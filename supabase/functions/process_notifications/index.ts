@@ -378,6 +378,20 @@ async function processBatch(batch) {
           console.error('Fatal fetching user_profiles:', e);
         }
       }
+      // If the member refers to the same person as the notification recipient (user_id),
+      // produce a copy of memberProfile for templating with nickname => "You".
+      // This avoids mutating the fetched DB object and only affects template rendering.
+      let memberForTemplate = null;
+      if (memberProfile) {
+        memberForTemplate = {
+          ...memberProfile,
+        };
+        if (notif.user_id && String(memberForTemplate.id) === String(notif.user_id)) {
+          // Use "You" in templates instead of the member's name when the member is the recipient
+          // Templates that use {{member.nickname}} will now render "You".
+          memberForTemplate.nickname = 'You';
+        }
+      }
       // Fetch group name if group id present
       let groupObj = null;
       if (possibleGroupId) {
@@ -414,7 +428,8 @@ async function processBatch(batch) {
         ...dataObj,
         actor: actorProfile || null,
         user: userProfile || null,
-        member: memberProfile || null,
+        // use memberForTemplate (the possibly-modified copy) for templating
+        member: memberForTemplate || null,
         group: groupObj || null,
         subtype: notif.subtype,
         // expense-specific friendly fields
