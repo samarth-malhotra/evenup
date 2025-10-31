@@ -226,7 +226,7 @@ const TransactionCard: React.FC<TransactionCardProps> = ({
                 <Text
                   style={{ color: theme.colors.textPrimary }}
                   className="text-lg font-extrabold">
-                  ₹{amount}
+                  {amount}
                 </Text>
               ) : null}
 

@@ -36,4 +36,5 @@ export const rpc = {
   getNotificationsByUser: 'get_notifications_by_user',
   markNotificationRead: 'mark_notification_read',
   markAllNotificationRead: 'mark_all_notifications_read',
+  toggleGroupSimplified: 'toggle_group_simplified',
 } as const;

@@ -23,6 +23,7 @@ import UpdateMemberSheet from '@/features/groups/components/BottomSheet/UpdateMe
 import { useDeleteGroup } from '@/features/groups/hooks/useDeleteGroupMutation';
 import useDeleteMemberMutation from '@/features/groups/hooks/useDeleteMemberFromGroupMutations';
 import { useGroupDetail } from '@/features/groups/hooks/useGroupDetail';
+import { useToggleGroupSimplified } from '@/features/groups/hooks/useToggleGroupSimplified';
 import type { GroupMember } from '@/features/groups/types';
 import { userAtom } from '@/stores/atoms/user';
 import { useTheme } from '@/theme/hooks/useTheme';
@@ -108,7 +109,7 @@ export default function GroupSettings() {
 
   // UI state
   const [isMembersSheetOpen, setMembersSheetOpen] = useState(false);
-  const [simplifiedDebts, setSimplifiedDebts] = useState(true);
+  const [simplifiedDebts, setSimplifiedDebts] = useState<boolean>(group?.simplified ?? false);
 
   // Edit name modal state
   const [isEditNameModalOpen, setEditNameModalOpen] = useState(false);
@@ -120,6 +121,18 @@ export default function GroupSettings() {
     visible: boolean;
     type?: 'leave' | 'delete';
   }>({ visible: false });
+
+  // hooks: toggle simplified mutation
+  const toggleMutation = useToggleGroupSimplified();
+
+  // sync server value -> local state when group loads/changes
+  useEffect(() => {
+    if (typeof group?.simplified === 'boolean') {
+      setSimplifiedDebts(Boolean(group.simplified));
+    }
+    // keep groupName in sync
+    if (group?.name) setGroupName(group.name);
+  }, [group?.simplified, group?.name]);
 
   // helpers
 
@@ -164,7 +177,29 @@ export default function GroupSettings() {
     setEditNameModalOpen(false);
     // TODO: persist rename
   };
-  // console.log('group setting: ', groupMember);
+
+  // toggle handler: update UI locally then call mutation
+  const onToggleSimplified = (value: boolean) => {
+    // optimistic local update (mutation hook also does optimistic update)
+    setSimplifiedDebts(value);
+
+    if (!groupId) {
+      Alert.alert('Error', 'Missing group id');
+      return;
+    }
+
+    toggleMutation.mutate(
+      { groupId: groupId, simplified: value },
+      {
+        onError: (err) => {
+          // rollback local state (the hook's onError/invalidate may also restore)
+          setSimplifiedDebts(Boolean(group?.simplified ?? false));
+          Alert.alert('Failed', err.message ?? 'Could not update simplified setting');
+        },
+      }
+    );
+  };
+
   // Header: static content rendered as FlatList header to avoid nested scroll issues
   const Header = (
     <View className="px-4 pb-2 pt-4">
@@ -225,7 +260,7 @@ export default function GroupSettings() {
         {/* clearer checkbox square */}
         <Switch
           value={simplifiedDebts}
-          onValueChange={setSimplifiedDebts}
+          onValueChange={onToggleSimplified}
           thumbColor={simplifiedDebts ? '#fff' : undefined}
           trackColor={{ false: '#E5E7EB', true: '#6C5CE7' }}
         />
