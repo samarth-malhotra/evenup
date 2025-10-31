@@ -7,7 +7,7 @@ import { ActivityIndicator, FlatList, Pressable, Text, TextInput, View } from 'r
 
 import AppHeader from '@/components/AppHeader';
 import BalanceBadge from '@/features/groups/components/BalanceBadge';
-import NewGroupSheet from '@/features/groups/components/BottomSheet/CreateGroupSheet';
+import CreateGroupBottomSheet from '@/features/groups/components/BottomSheet/CreateGroupSheet';
 import { useGroupsList } from '@/features/groups/hooks/useGroupsList';
 import { formatCurrency } from '@/features/groups/utils';
 import { userAtom } from '@/stores/atoms/user';
@@ -132,7 +132,10 @@ export default function GroupList() {
         }}
       />
       {/* Create New Group Bottom Sheet */}
-      <NewGroupSheet open={openNewGroupSheet} onClose={() => setOpenNewGroupSheet(false)} />
+      <CreateGroupBottomSheet
+        open={openNewGroupSheet}
+        onClose={() => setOpenNewGroupSheet(false)}
+      />
     </View>
   );
 }

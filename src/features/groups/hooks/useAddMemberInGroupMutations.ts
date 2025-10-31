@@ -4,6 +4,7 @@ import { Alert } from 'react-native';
 
 import { USER_STATUS } from '@/constant';
 import type { GroupDetails, GroupMember } from '@/features/groups/types';
+import { NotificationType, sendNotifications } from '@/features/notifications/sendNotifications';
 import { useAccessToken } from '@/hooks/useAccessToken';
 import { edge } from '@/services/supabase/constant';
 import { edgeFunction } from '@/services/supabase/edgeFunctions';
@@ -20,6 +21,7 @@ export type CreateInvitePayload = {
 export type CreateInviteResult = {
   inviteLink: string;
   friend_profile_id: string;
+  friend_name: string;
   invite_token: string;
   invite_sent_at: string;
   invite_expires_at: string;
@@ -32,7 +34,7 @@ export async function createGroupInvite(
 ): Promise<CreateInviteResult> {
   if (!groupId) throw new SupaError('Missing groupId', 'invalid_args');
 
-  const path = `${edge.groupInvite}/groups/${encodeURIComponent(groupId)}/invite`;
+  const path = `${edge.addMember}/groups/${encodeURIComponent(groupId)}/invite`;
 
   // callEdgeFunction enforces the RPCResponse wrapper and returns response.data
   const data = await edgeFunction<CreateInviteResult>(path, {
@@ -44,6 +46,12 @@ export async function createGroupInvite(
   // callEdgeFunction returns CreateInviteResult or throws — safe to assert
   return data as CreateInviteResult;
 }
+
+type CreateInviteMutationPayload = {
+  userId: string;
+  groupName: string;
+  groupId: string;
+} & CreateInvitePayload;
 
 /**
  * Query-only optimistic updates for group member mutations:
@@ -57,21 +65,22 @@ export default function useAddMemberMutation() {
 
   /* ------------------ INVITE / ADD MEMBER ------------------ */
   const inviteMutation = useMutation({
-    mutationFn: async ({ groupId, payload }: { groupId: string; payload: any }) => {
+    mutationFn: async (payload: CreateInviteMutationPayload) => {
+      const { groupId, groupName, userId, ...rest } = payload;
       if (!accessToken) throw new Error('Access token is missing.');
-      return await createGroupInvite(groupId, payload, accessToken);
+      return await createGroupInvite(groupId, rest, accessToken);
     },
 
-    onMutate: async ({ groupId, payload }) => {
-      await queryClient.cancelQueries({ queryKey: ['group', groupId] });
+    onMutate: async (payload) => {
+      await queryClient.cancelQueries({ queryKey: ['group', payload.groupId] });
       await queryClient.cancelQueries({ queryKey: ['groups'] });
       await queryClient.cancelQueries({ queryKey: ['friends'] });
 
-      const previousGroup = queryClient.getQueryData<GroupDetails>(['group', groupId]);
+      const previousGroup = queryClient.getQueryData<GroupDetails>(['group', payload.groupId]);
 
       const optimisticMember: GroupMember = {
         id: `tmp-${Date.now()}-${Math.random()}`,
-        name: payload.contact_name ?? payload.name ?? 'Unknown',
+        name: payload.contact_name ?? 'Unknown',
         phone_hash: '',
         email_hash: '',
         status_in_group: USER_STATUS.ACTIVE,
@@ -85,14 +94,14 @@ export default function useAddMemberMutation() {
       } as unknown as GroupMember;
 
       if (previousGroup) {
-        queryClient.setQueryData<GroupDetails>(['group', groupId], (old) => {
+        queryClient.setQueryData<GroupDetails>(['group', payload.groupId], (old) => {
           if (!old) return old;
           return { ...old, members: [...(old.members ?? []), optimisticMember] };
         });
       }
 
       // Return everything we need later via context (do NOT rely on `variables` there)
-      return { previousGroup, optimisticMember, groupId, payload };
+      return { previousGroup, optimisticMember, payload };
     },
 
     onError: (err: any, _variables: any, context: any) => {
@@ -129,6 +138,21 @@ export default function useAddMemberMutation() {
             }
           : null);
 
+      if (accessToken) {
+        sendNotifications({
+          groupId: gid,
+          subtype: NotificationType.GroupMemberAdded,
+          accessToken,
+          group_name: _variables.group_name,
+          actorId: _variables.userId,
+          data: {
+            memberId: data?.friend_profile_id,
+          },
+        });
+      } else {
+        console.error('Access token is missing, Unable to send group notifications');
+      }
+
       if (returnedMember && gid) {
         // Replace optimistic member by matching either tmp id or name (best-effort)
         queryClient.setQueryData<GroupDetails>(['group', gid], (old) => {
@@ -156,7 +180,7 @@ export default function useAddMemberMutation() {
   return {
     // invite (add) member
     inviteMutation,
-    inviteMember: (opts: { groupId: string; payload: any }) => inviteMutation.mutateAsync(opts),
+    inviteMember: (payload: CreateInviteMutationPayload) => inviteMutation.mutateAsync(payload),
     // convenience flags
     isInviting: inviteMutation.isPending,
   };

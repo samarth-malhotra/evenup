@@ -32,8 +32,9 @@ export default ({ config }) => {
 
   return {
     ...config,
+    owner: process.env.EXPO_APP_OWNER || 'evenup-native-app',
     name: process.env.EXPO_APP_NAME || 'Evenup',
-    slug: process.env.EXPO_SLUG || config.slug || 'demo',
+    slug: process.env.EXPO_SLUG || config.slug || 'evenup',
     scheme: 'evenup',
     version,
     orientation: config.orientation || 'portrait',
@@ -48,7 +49,9 @@ export default ({ config }) => {
     ios: {
       ...(config.ios || {}),
       supportsTablet: true,
-      bundleIdentifier: process.env.IOS_BUNDLE_IDENTIFIER || 'com.evenup.app',
+      bundleIdentifier: process.env.IOS_BUNDLE_IDENTIFIER || 'in.evenup.app.ios',
+      // bundleIdentifier: 'com.ershubgupta.evenup.ios',
+      googleServicesFile: './GoogleService-Info.plist',
       buildNumber: iosBuildNumber,
       infoPlist: {
         CFBundleURLTypes: [
@@ -64,7 +67,8 @@ export default ({ config }) => {
     },
     android: {
       ...(config.android || {}),
-      package: process.env.ANDROID_PACKAGE || 'com.ershubgupta.evenup',
+      package: process.env.ANDROID_PACKAGE || 'in.evenup.app',
+      googleServicesFile: './google-services.json',
       // versionCode: androidVersionCode,
       adaptiveIcon: config.android?.adaptiveIcon || {
         foregroundImage: './src/assets/adaptive-icon.png',
@@ -98,14 +102,15 @@ export default ({ config }) => {
       'expo-font',
       'expo-secure-store',
       'expo-web-browser',
+      'expo-notifications',
     ],
     // Important: expo.extra exposes values to runtime via expo-constants
     extra: {
       eas: {
-        projectId: 'ac575046-1f7b-4572-83e9-834e5a38cff2',
+        projectId: 'ac4951a7-df36-4edf-af65-e482eb47003e',
       },
       // non-secret config
-      apiUrl: process.env.API_URL || 'https://api.evenup.com',
+      // apiUrl: process.env.API_URL || 'https://api.evenup.com',
       featureNewSummary: (process.env.FEATURE_NEW_SUMMARY || 'false') === 'true',
       env: APP_ENV,
 

@@ -3,6 +3,8 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Alert } from 'react-native';
 
 import type { GroupDetails } from '@/features/groups/types';
+import { NotificationType, sendNotifications } from '@/features/notifications/sendNotifications';
+import { useAccessToken } from '@/hooks/useAccessToken';
 import { rpc } from '@/services/supabase/constant';
 import { fetchRPC } from '@/services/supabase/fetchRPC';
 
@@ -36,6 +38,10 @@ export async function deleteMember({
   });
 }
 
+type DeleteMemberMutationPayload = {
+  groupName: string;
+} & DeleteMemberPayload;
+
 /**
  * Query-only optimistic updates for group member mutations:
  * - deleteMember: removes a member from ['group', groupId].rolls back on error.
@@ -44,6 +50,7 @@ export async function deleteMember({
  */
 export default function useDeleteMemberMutation() {
   const queryClient = useQueryClient();
+  const { accessToken } = useAccessToken();
 
   /* ------------------ DELETE MEMBER ------------------ */
   // types used in this snippet (import them from your types file)
@@ -54,13 +61,18 @@ export default function useDeleteMemberMutation() {
     memberId: string;
   };
 
-  const deleteMemberMutation = useMutation<unknown, Error, DeleteMemberPayload, DeleteContext>({
-    mutationFn: async ({ groupId, memberId, removedBy }: DeleteMemberPayload) => {
+  const deleteMemberMutation = useMutation<
+    unknown,
+    Error,
+    DeleteMemberMutationPayload,
+    DeleteContext
+  >({
+    mutationFn: async ({ groupId, memberId, removedBy }: DeleteMemberMutationPayload) => {
       return await deleteMember({ groupId, memberId, removedBy });
     },
 
     // onMutate MUST return the context we'll use later
-    onMutate: async ({ groupId, memberId }: DeleteMemberPayload) => {
+    onMutate: async ({ groupId, memberId }: DeleteMemberMutationPayload) => {
       // cancel any outgoing refetches
       await queryClient.cancelQueries({ queryKey: ['group', groupId] });
       await queryClient.cancelQueries({ queryKey: ['groups'] });
@@ -87,7 +99,7 @@ export default function useDeleteMemberMutation() {
     // Prefer context over variables (variables may be null in some codepaths)
     onError: (
       err: Error,
-      _variables: DeleteMemberPayload | undefined,
+      _variables: DeleteMemberMutationPayload | undefined,
       context: DeleteContext | undefined
     ) => {
       const ctx = context;
@@ -108,6 +120,23 @@ export default function useDeleteMemberMutation() {
     },
 
     onSuccess: (_data, _variables, context) => {
+      if (accessToken) {
+        sendNotifications({
+          groupId: context?.groupId ?? _variables?.groupId,
+          subtype:
+            _variables.removedBy === _variables.memberId
+              ? NotificationType.GroupMemberLeft
+              : NotificationType.GroupMemberDeleted,
+          accessToken,
+          group_name: _variables.groupName,
+          actorId: _variables.removedBy,
+          data: {
+            memberId: _variables.memberId,
+          },
+        });
+      } else {
+        console.error('Access token is missing, Unable to send group notifications');
+      }
       // we already applied optimistic update; optionally do further local commits
       // e.g., we could emit analytics or update friends cache
       if (context?.groupId) {
@@ -129,8 +158,7 @@ export default function useDeleteMemberMutation() {
   return {
     // delete member
     deleteMemberMutation,
-    deleteMember: (opts: { groupId: string; memberId: string; removedBy: string }) =>
-      deleteMemberMutation.mutateAsync(opts),
+    deleteMember: (opts: DeleteMemberMutationPayload) => deleteMemberMutation.mutateAsync(opts),
 
     // convenience flags
     isDeleting: deleteMemberMutation.isPending,

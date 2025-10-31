@@ -186,6 +186,7 @@ const ContactList: React.FC = () => {
       groupId: selectedGroup.id,
       memberId: contact.id,
       removedBy: user.id,
+      groupName: selectedGroup.name,
     });
   };
 
@@ -198,6 +199,9 @@ const ContactList: React.FC = () => {
     const phone =
       contact.phones && contact.phones[0] ? normalizePhone(contact.phones[0].number) : null;
     const payload = {
+      groupId: selectedGroup.id,
+      groupName: selectedGroup.name,
+      userId: user?.id ?? '',
       contact_name: contact.name ?? 'Unknown',
       invite_channel: phone ? 'app' : email ? 'email' : 'app',
       email,
@@ -206,7 +210,7 @@ const ContactList: React.FC = () => {
     };
     try {
       setInviteLoadingLocal(true);
-      await inviteMember({ groupId: selectedGroup.id, payload });
+      await inviteMember(payload);
       Alert.alert('Added', `${capitalize(contact.name)} added to group (existing).`);
     } catch (err: any) {
       Alert.alert('Add failed', err?.message ?? String(err));
@@ -338,6 +342,9 @@ const ContactList: React.FC = () => {
       const invite_channel = opt.kind === 'email' ? 'email' : opt.kind === 'phone' ? 'sms' : 'app';
 
       const payload = {
+        groupId: selectedGroup.id,
+        groupName: selectedGroup.name,
+        userId: user?.id ?? '',
         contact_name: inviteContactBeingInvited.name ?? 'Unknown',
         invite_channel: invite_channel as any,
         email: normalizedEmail,
@@ -345,7 +352,7 @@ const ContactList: React.FC = () => {
         type: 'new' as const,
       };
 
-      const res = await inviteMember({ groupId: selectedGroup.id, payload });
+      const res = await inviteMember(payload);
 
       Alert.alert(
         'Invited',

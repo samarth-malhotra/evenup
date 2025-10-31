@@ -356,7 +356,8 @@ export default function GroupTransactionDetail() {
         members={group?.members}
         mode="edit"
         initial={editInitial}
-        groupId={tx?.groupId ?? null}
+        groupId={tx?.groupId ?? ''}
+        groupName={group?.name ?? ''}
         // Note: no onSelectPaidBy/onSelectParticipants here -> AddBillSheet will use its internal modals in edit mode
       />
 

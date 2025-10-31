@@ -4,8 +4,8 @@ import { Alert } from 'react-native';
 
 import type { Group } from '@/features/groups/types';
 import { useAccessToken } from '@/hooks/useAccessToken';
-import { edge } from '@/services/supabase/constant';
-import { edgeFunction } from '@/services/supabase/edgeFunctions';
+import { rpc } from '@/services/supabase/constant';
+import { fetchRPC } from '@/services/supabase/fetchRPC';
 
 // Helper to make a temporary group object for optimistic update
 function makeTempGroup(inputName: string, userId: string): Group {
@@ -27,13 +27,10 @@ function makeTempGroup(inputName: string, userId: string): Group {
   };
 }
 
-export async function createGroup(name: string, accessToken: string): Promise<Group> {
-  const data = await edgeFunction<Group>(edge.createGroup, {
-    method: 'POST',
-    body: { name },
-    accessToken,
+async function createGroup(name: string): Promise<Group> {
+  return await fetchRPC<Group>(rpc.createGroup, {
+    name,
   });
-  return data as Group;
 }
 
 export default function useCreateGroupMutation() {
@@ -45,7 +42,7 @@ export default function useCreateGroupMutation() {
       if (!accessToken) {
         throw new Error(`Access token is missing`);
       }
-      return createGroup(name, accessToken);
+      return createGroup(name);
     },
 
     // optimistic update

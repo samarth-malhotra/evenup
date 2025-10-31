@@ -179,6 +179,7 @@ serve(async (req) => {
     }
     // Determine placeholderProfileId (reuse existing first match or create placeholder auth user + profile)
     let placeholderProfileId = null;
+    let placeholderProfileName = null;
     let createdAuthUserId = null;
     if (existingProfiles.length === 0) {
       // Create placeholder auth user + user_profiles
@@ -196,6 +197,7 @@ serve(async (req) => {
           createPayload.phone = phoneFromClient;
         }
         if (contact_name) {
+          placeholderProfileName = contact_name;
           createPayload.user_metadata = {
             display_name: contact_name,
           };
@@ -279,6 +281,14 @@ serve(async (req) => {
     } else {
       // reuse existing profile
       placeholderProfileId = existingProfiles[0].id;
+      // prefer nickname, then user_metadata.display_name, then display_name (legacy), else null
+      // NOTE: previous code used existingProfiles[0].display_name which could be undefined
+      const existing = existingProfiles[0];
+      placeholderProfileName =
+        existing.nickname ??
+        (existing.user_metadata && existing.user_metadata.display_name) ??
+        existing.display_name ??
+        null;
       console.info('Reusing existing profile id:', placeholderProfileId);
     }
     if (!placeholderProfileId) {
@@ -353,9 +363,33 @@ serve(async (req) => {
       normalized_phone: phoneFromClient ?? null,
       normalized_email: emailFromClient ?? null,
     };
+    // === NEW: compute p_member_name robustly ===
+    // Priority:
+    // 1) existing profile.nickname
+    // 2) existing profile.user_metadata.display_name
+    // 3) existing profile.display_name (legacy)
+    // 4) contact_name from payload
+    // 5) null
+    let memberName = null;
+    if (existingProfiles && existingProfiles.length > 0) {
+      const prof = existingProfiles[0];
+      memberName =
+        prof.nickname ??
+        (prof.user_metadata && prof.user_metadata.display_name) ??
+        prof.display_name ??
+        contact_name ??
+        null;
+    } else {
+      // placeholderProfileName will be set to contact_name when we created placeholder
+      memberName = placeholderProfileName ?? contact_name ?? null;
+    }
+    // ensure we never pass undefined
+    if (typeof memberName === 'undefined') memberName = null;
+    console.info('Computed memberName for RPC (p_member_name):', memberName);
     // === NEW: call the DB rpc to do the atomic work ===
     const rpcPayload = {
       p_group_id: groupId,
+      p_member_name: memberName,
       p_inviter: inviterProfileId,
       p_friend: placeholderProfileId,
       p_meta: meta,
@@ -404,6 +438,7 @@ serve(async (req) => {
     const successData = {
       inviteLink,
       friend_profile_id: placeholderProfileId,
+      friend_name: placeholderProfileName,
       invite_token: inviteToken,
       invite_sent_at: inviteSentAt,
       invite_expires_at: expiresAt,

@@ -151,6 +151,7 @@ export default function GroupSettings() {
           groupId: groupId,
           memberId: user.id,
           removedBy: user.id,
+          groupName: groupName,
         });
         // router.push('(tabs)/groups');
       }
@@ -159,7 +160,10 @@ export default function GroupSettings() {
       // TODO: call delete API
       // router.back();
       if (groupId && user?.id) {
-        deleteMutation.mutate({ groupId: groupId });
+        deleteMutation.mutate({
+          groupId: groupId,
+          group_name: groupName,
+        });
       }
     }
     router.push('(tabs)/groups');

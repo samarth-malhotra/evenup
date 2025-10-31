@@ -32,7 +32,7 @@ export async function fetchRPC<T>(functionName: string, params: Record<string, a
 
   // 4️⃣ Missing data
   if (!response.data) {
-    throw new SupaError('Missing data in RPC response', 'missing_data');
+    throw new SupaError(`Missing data in RPC response of function ${functionName}`, 'missing_data');
   }
 
   return response.data;

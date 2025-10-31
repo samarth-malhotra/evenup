@@ -10,11 +10,13 @@ const functionVersion = `${sb.baseUrl}/functions/v1`;
 
 export const edge = {
   signup: `${functionVersion}/signup`,
-  groupInvite: `${functionVersion}/groups-invite`,
-  createGroup: `${functionVersion}/create-group`,
+  addMember: `${functionVersion}/add-member`,
+  sendNotifications: `${functionVersion}/enqueue_notification`,
+  generateDeviceToken: `${functionVersion}/upsert-push-token`,
 } as const;
 
 export const rpc = {
+  createGroup: `create_group`,
   getGroupDetails: 'get_group_details',
   deleteGroup: 'delete_group',
   deleteGroupMember: 'delete_group_member',
@@ -31,5 +33,8 @@ export const rpc = {
   delete_transaction_comment: 'delete_transaction_comment',
   update_group_transaction_with_splits: 'update_group_transaction_with_splits',
   get_transaction_summary: 'get_transaction_summary',
+  getNotificationsByUser: 'get_notifications_by_user',
+  markNotificationRead: 'mark_notification_read',
+  markAllNotificationRead: 'mark_all_notifications_read',
   toggleGroupSimplified: 'toggle_group_simplified',
 } as const;
