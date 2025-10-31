@@ -1,20 +1,17 @@
 // File: supabase/functions/process_notifications/index.ts
-// Purpose: Cron-based Edge Function that consumes pgmq queue and delivers Expo push notifications.
-// Updated to use public.peek_notifications / public.delete_notifications RPC wrappers
 import { serve } from 'https://deno.land/std@0.203.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 // ---------- Config / env ----------
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL') ?? '';
 const SERVICE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
-const EXPO_ACCESS_TOKEN =
-  Deno.env.get('EXPO_ACCESS_TOKEN') ?? 'QEfcAFfiqhyhUyCqq0dGCRaWQpRLGt5srpuumitH';
+const EXPO_ACCESS_TOKEN = Deno.env.get('EXPO_ACCESS_TOKEN') ?? '';
 const CRON_SECRET = Deno.env.get('CRON_SECRET') ?? '';
 const DEBUG = (Deno.env.get('PROCESS_NOTIFS_DEBUG') ?? 'false') === 'true';
 // Tunables
 const QUEUE_NAME = 'notifications_queue';
 const MAX_BATCH = 100;
 const EXPO_BATCH_SIZE = 100;
-const EXPO_FETCH_TIMEOUT_MS = 8_000; // 8s per chunk (tune as needed)
+const EXPO_FETCH_TIMEOUT_MS = 8_000; // 8s per chunk
 // ---------- Basic env validation ----------
 if (DEBUG) {
   console.log('process_notifications starting. ENV presence:', {
@@ -24,7 +21,6 @@ if (DEBUG) {
     CRON_SECRET: !!CRON_SECRET,
   });
 }
-// Fail fast: don't create client with empty values (we'll still export handler but respond 500)
 let supabase = null;
 if (SUPABASE_URL && SERVICE_KEY) {
   try {
@@ -44,6 +40,7 @@ if (SUPABASE_URL && SERVICE_KEY) {
   }
 } else {
   console.error('Missing SUPABASE_URL or SERVICE_KEY; supabase client not created.');
+  // throw here is okay — but keep handler returning 500 as well
   throw new Error('Missing required environment variables');
 }
 // ---------- Helpers ----------
@@ -59,150 +56,11 @@ function safeJsonParse(input) {
 function timeoutPromise(ms, msg = 'timeout') {
   return new Promise((_, reject) => setTimeout(() => reject(new Error(msg)), ms));
 }
-/**
- * fetch with timeout wrapper
- */ async function fetchWithTimeout(resource, init, timeoutMs = EXPO_FETCH_TIMEOUT_MS) {
-  // Use Promise.race between fetch and timeout
+async function fetchWithTimeout(resource, init, timeoutMs = EXPO_FETCH_TIMEOUT_MS) {
   return Promise.race([
     fetch(resource, init),
     timeoutPromise(timeoutMs, `fetch timeout after ${timeoutMs}ms for ${String(resource)}`),
   ]);
-}
-// ---------- DB / Queue Operations using public RPC wrappers ----------
-async function queueHasMessages() {
-  if (!supabase) return false;
-  try {
-    const { data, error } = await supabase.rpc('peek_notifications', {
-      limit_count: 1,
-    });
-    if (error) {
-      console.error('queueHasMessages - rpc error:', error);
-      return false;
-    }
-    if (DEBUG)
-      console.log(
-        'queueHasMessages - peek result length:',
-        Array.isArray(data) ? data.length : data ? 1 : 0
-      );
-    return Array.isArray(data) ? data.length > 0 : !!data;
-  } catch (err) {
-    console.error('queueHasMessages - fatal:', err);
-    return false;
-  }
-}
-async function fetchQueueBatch() {
-  if (DEBUG) console.log('supabase generated:', supabase);
-  if (!supabase) return [];
-  try {
-    const { data, error } = await supabase.rpc('peek_notifications', {
-      limit_count: MAX_BATCH,
-    });
-    if (error) {
-      console.error('fetchQueueBatch rpc error:', error);
-      return [];
-    }
-    if (DEBUG)
-      console.log(
-        'fetchQueueBatch fetched:',
-        Array.isArray(data) ? data.length : 0,
-        data && data.slice ? data.slice(0, 5) : data
-      );
-    return data || [];
-  } catch (err) {
-    console.error('fetchQueueBatch fatal:', err);
-    return [];
-  }
-}
-async function deleteQueueMessages(msgIds) {
-  if (!supabase) return;
-  if (!msgIds || !msgIds.length) return;
-  try {
-    const { error } = await supabase.rpc('delete_notifications', {
-      msg_ids: msgIds,
-    });
-    if (error) {
-      console.error('deleteQueueMessages rpc error:', error);
-    } else if (DEBUG) {
-      console.log('Deleted messages from queue via RPC:', msgIds.length);
-    }
-  } catch (err) {
-    console.error('deleteQueueMessages fatal:', err);
-  }
-}
-// ---------- App-specific helpers (tokens, templates) ----------
-async function getActiveTokens(userId) {
-  if (!supabase) return [];
-  try {
-    const { data, error } = await supabase
-      .from('push_tokens')
-      .select('token, platform')
-      .eq('user_id', userId)
-      .eq('active', true);
-    if (error) {
-      console.error('getActiveTokens error for user', userId, error);
-      return [];
-    }
-    return data || [];
-  } catch (err) {
-    console.error('getActiveTokens fatal for user', userId, err);
-    return [];
-  }
-}
-async function getTemplate(subtype, locale, userId) {
-  if (!supabase)
-    return {
-      title_template: subtype,
-      body_template: subtype,
-    };
-  try {
-    // 1. exact match
-    const { data: tpl } = await supabase
-      .from('notification_templates')
-      .select('title_template, body_template')
-      .eq('subtype', subtype)
-      .eq('locale', locale)
-      .limit(1)
-      .maybeSingle();
-    if (tpl) return tpl;
-    // 2. user language fallback
-    if (userId) {
-      const { data: userLang } = await supabase
-        .from('user_profiles')
-        .select('language')
-        .eq('id', userId)
-        .maybeSingle();
-      if (userLang?.language && userLang.language !== locale) {
-        const { data: tpl2 } = await supabase
-          .from('notification_templates')
-          .select('title_template, body_template')
-          .eq('subtype', subtype)
-          .eq('locale', userLang.language)
-          .limit(1)
-          .maybeSingle();
-        if (tpl2) return tpl2;
-      }
-    }
-    // 3. English fallback
-    const { data: tplEn } = await supabase
-      .from('notification_templates')
-      .select('title_template, body_template')
-      .eq('subtype', subtype)
-      .eq('locale', 'en')
-      .limit(1)
-      .maybeSingle();
-    return (
-      tplEn || {
-        title_template: subtype,
-        body_template: subtype,
-      }
-    );
-  } catch (err) {
-    console.error('getTemplate fatal:', err);
-    return {
-      title_template: subtype,
-      body_template: subtype,
-    };
-  }
 }
 /**
  * Render template using simple mustache {{key}} pattern
@@ -213,8 +71,9 @@ async function getTemplate(subtype, locale, userId) {
     return value == null ? '' : String(value);
   });
 }
-// ---------- Expo sending ----------
-async function sendToExpo(messages) {
+/**
+ * Send to Expo with timeout
+ */ async function sendToExpo(messages) {
   if (!messages.length)
     return {
       ok: true,
@@ -234,18 +93,14 @@ async function sendToExpo(messages) {
     };
   }
   try {
-    const res = await fetchWithTimeout(
-      'https://exp.host/--/api/v2/push/send',
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${EXPO_ACCESS_TOKEN}`,
-        },
-        body: JSON.stringify(messages),
+    const res = await fetchWithTimeout('https://exp.host/--/api/v2/push/send', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${EXPO_ACCESS_TOKEN}`,
       },
-      EXPO_FETCH_TIMEOUT_MS
-    );
+      body: JSON.stringify(messages),
+    });
     const text = await res.text();
     let parsed;
     try {
@@ -280,168 +135,261 @@ async function sendToExpo(messages) {
     };
   }
 }
-// ---------- Main processing ----------
-async function processBatch(batch) {
-  if (!supabase) return 0;
-  const processedIds = [];
-  for (const msg of batch) {
-    try {
-      const payload = safeJsonParse(msg?.message) ?? {};
-      const notificationId = payload?.notification_id ?? payload?.id;
-      if (!notificationId) {
-        console.warn('Invalid message payload, missing notification_id:', msg);
-        processedIds.push(msg.msg_id);
-        continue;
-      }
-      // Fetch notification record
-      const { data: notif, error: notifErr } = await supabase
-        .from('notifications')
-        .select('*')
-        .eq('id', notificationId)
+// ---------- DB helpers ----------
+async function queueHasMessages() {
+  if (!supabase) return false;
+  try {
+    const { data, error } = await supabase.rpc('peek_notifications', {
+      limit_count: 1,
+    });
+    if (error) {
+      console.error('queueHasMessages - rpc error:', error);
+      return false;
+    }
+    if (DEBUG)
+      console.log(
+        'queueHasMessages - peek result length:',
+        Array.isArray(data) ? data.length : data ? 1 : 0
+      );
+    return Array.isArray(data) ? data.length > 0 : !!data;
+  } catch (err) {
+    console.error('queueHasMessages - fatal:', err);
+    return false;
+  }
+}
+async function deleteQueueMessages(msgIds) {
+  if (!supabase) return;
+  if (!msgIds || !msgIds.length) return;
+  // Ensure numeric array (bigint[] expectation)
+  const numeric = msgIds.map((m) => Number(m));
+  try {
+    const { error } = await supabase.rpc('delete_notifications', {
+      msg_ids: numeric,
+    });
+    if (error) {
+      console.error('deleteQueueMessages rpc error:', error);
+    } else if (DEBUG) {
+      console.log('Deleted messages from queue via RPC:', numeric.length);
+    }
+  } catch (err) {
+    console.error('deleteQueueMessages fatal:', err);
+  }
+}
+/**
+ * Mark invalid tokens as inactive when Expo says DeviceNotRegistered
+ * Accepts array of tokens (strings)
+ */ async function deactivateTokens(tokens) {
+  if (!supabase) return;
+  if (!tokens || !tokens.length) return;
+  try {
+    // update push_tokens active = false where token in (...)
+    const { error } = await supabase
+      .from('push_tokens')
+      .update({
+        active: false,
+        updated_at: new Date().toISOString(),
+      })
+      .in('token', tokens);
+    if (error) console.error('deactivateTokens error:', error);
+    else if (DEBUG) console.log('Deactivated tokens:', tokens.length);
+  } catch (e) {
+    console.error('deactivateTokens fatal:', e);
+  }
+}
+// ---------- Template helper (uses your existing getTemplate) ----------
+async function getTemplate(subtype, locale, userId) {
+  // Keep your existing getTemplate implementation or call DB. Minimal fallback:
+  if (!supabase)
+    return {
+      title_template: subtype,
+      body_template: subtype,
+    };
+  try {
+    const { data: tpl } = await supabase
+      .from('notification_templates')
+      .select('title_template, body_template')
+      .eq('subtype', subtype)
+      .eq('locale', locale)
+      .limit(1)
+      .maybeSingle();
+    if (tpl) return tpl;
+    if (userId) {
+      const { data: userLang } = await supabase
+        .from('user_profiles')
+        .select('language')
+        .eq('id', userId)
         .maybeSingle();
-      if (notifErr) {
-        console.error('Error fetching notification', notificationId, notifErr);
-        processedIds.push(msg.msg_id);
-        continue;
+      if (userLang?.language && userLang.language !== locale) {
+        const { data: tpl2 } = await supabase
+          .from('notification_templates')
+          .select('title_template, body_template')
+          .eq('subtype', subtype)
+          .eq('locale', userLang.language)
+          .limit(1)
+          .maybeSingle();
+        if (tpl2) return tpl2;
       }
-      if (!notif) {
-        console.warn('Notification record not found:', notificationId);
-        processedIds.push(msg.msg_id);
-        continue;
+    }
+    const { data: tplEn } = await supabase
+      .from('notification_templates')
+      .select('title_template, body_template')
+      .eq('subtype', subtype)
+      .eq('locale', 'en')
+      .limit(1)
+      .maybeSingle();
+    return (
+      tplEn || {
+        title_template: subtype,
+        body_template: subtype,
       }
-      const userId = notif.user_id;
-      const tokens = await getActiveTokens(userId);
-      if (!tokens.length) {
-        // update status: no device
-        try {
-          await supabase
-            .from('notifications')
-            .update({
-              status: 'no_device',
-              expo_response: {
-                error: 'no_active_device',
-              },
-              updated_at: new Date().toISOString(),
-            })
-            .eq('id', notificationId);
-        } catch (e) {
-          console.error('Failed updating notification no_device:', e);
-        }
-        processedIds.push(msg.msg_id);
-        continue;
-      }
-      // ---------------------------
-      // NEW: Enrich data with profiles, member, and group + expense fields
-      // ---------------------------
-      const dataObj = safeJsonParse(notif.data) ?? {};
-      // attempt to locate member id from notification row or payload
-      const possibleMemberId =
-        notif.member_id ||
-        dataObj.memberId ||
-        dataObj.member?.id ||
-        dataObj.templateParams?.memberId ||
-        null;
-      // attempt to locate group id from notification row or payload
-      const possibleGroupId =
-        notif.group_id ||
-        dataObj.group_id ||
-        dataObj.group?.id ||
-        dataObj.templateParams?.groupId ||
-        null;
-      // Build list of profile ids to fetch: actor, user (target/recipient), member (if present)
-      const idsToFetch = [];
-      if (notif.actor_id) idsToFetch.push(notif.actor_id);
-      if (notif.user_id && !idsToFetch.includes(notif.user_id)) idsToFetch.push(notif.user_id);
-      if (possibleMemberId && !idsToFetch.includes(possibleMemberId))
-        idsToFetch.push(possibleMemberId);
-      let actorProfile = null;
-      let userProfile = null;
-      let memberProfile = null;
-      if (idsToFetch.length) {
-        try {
-          // single query to fetch all relevant profiles
-          const { data: profiles, error: profErr } = await supabase
-            .from('user_profiles')
-            .select('id, nickname, avatar_url, phone, email')
-            .in('id', idsToFetch);
-          if (profErr) {
-            console.error('Failed fetching user_profiles for enrichment:', profErr);
-          } else if (Array.isArray(profiles)) {
-            for (const p of profiles) {
-              if (!p) continue;
-              if (String(p.id) === String(notif.actor_id)) actorProfile = p;
-              if (String(p.id) === String(notif.user_id)) userProfile = p;
-              if (possibleMemberId && String(p.id) === String(possibleMemberId)) memberProfile = p;
-            }
-          }
-        } catch (e) {
-          console.error('Fatal fetching user_profiles:', e);
-        }
-      }
-      // If the member refers to the same person as the notification recipient (user_id),
-      // produce a copy of memberProfile for templating with nickname => "You".
-      // This avoids mutating the fetched DB object and only affects template rendering.
-      let memberForTemplate = null;
-      if (memberProfile) {
-        memberForTemplate = {
-          ...memberProfile,
-        };
-        if (notif.user_id && String(memberForTemplate.id) === String(notif.user_id)) {
-          // Use "You" in templates instead of the member's name when the member is the recipient
-          // Templates that use {{member.nickname}} will now render "You".
-          memberForTemplate.nickname = 'You';
-        }
-      }
-      // Fetch group name if group id present
-      let groupObj = null;
-      if (possibleGroupId) {
-        try {
-          const { data: groupData, error: groupErr } = await supabase
-            .from('groups')
-            .select('id, name')
-            .eq('id', possibleGroupId)
-            .maybeSingle();
-          if (groupErr) {
-            console.error('Failed fetching group for enrichment:', groupErr);
-          } else if (groupData) {
-            groupObj = groupData;
-          }
-        } catch (e) {
-          console.error('Fatal fetching group:', e);
-        }
-      }
-      // Extract expense-related fields (amount, description, currency) from known shapes
-      const amount =
-        dataObj.amount ??
-        (dataObj.transaction && dataObj.transaction.amount) ??
-        (dataObj.payload && dataObj.payload.amount) ??
-        null;
-      const currency =
-        dataObj.currency ?? (dataObj.templateParams && dataObj.templateParams.currency) ?? null;
-      const description =
-        dataObj.description ??
-        (dataObj.templateParams && dataObj.templateParams.description) ??
-        (dataObj.payload && dataObj.payload.description) ??
-        null;
-      // Prepare enriched data object used for templating
-      const enrichedData = {
-        ...dataObj,
-        actor: actorProfile || null,
-        user: userProfile || null,
-        // use memberForTemplate (the possibly-modified copy) for templating
-        member: memberForTemplate || null,
-        group: groupObj || null,
-        subtype: notif.subtype,
-        // expense-specific friendly fields
-        amount,
-        currency,
-        description,
+    );
+  } catch (err) {
+    console.error('getTemplate fatal:', err);
+    return {
+      title_template: subtype,
+      body_template: subtype,
+    };
+  }
+}
+// ---------- Main processing using enriched RPC ----------
+// Paste this into your process_notifications Edge function (replace existing processBatch).
+// Replace your existing processBatch with this implementation.
+async function processBatch(limit = 100) {
+  if (!supabase) return 0;
+  const processedMsgIds = [];
+  // Fetch enriched notifications via new RPC
+  const { data: enrichedRows, error } = await supabase.rpc('peek_enriched_notifications', {
+    limit_count: limit,
+  });
+  console.log('enrichedRows: ', enrichedRows);
+  if (error) {
+    console.error('peek_enriched_notifications RPC error:', error);
+    return 0;
+  }
+  if (!enrichedRows || !enrichedRows.length) {
+    if (DEBUG) console.log('No messages found in queue.');
+    return 0;
+  }
+  const templateCache = new Map();
+  async function getTemplateCached(subtype, locale, userId) {
+    const key = `${subtype || ''}|${locale || 'en'}`;
+    if (templateCache.has(key)) return templateCache.get(key);
+    try {
+      const tpl = await getTemplate(subtype, locale, userId);
+      templateCache.set(key, tpl);
+      return tpl;
+    } catch (err) {
+      console.error('getTemplateCached error:', err);
+      const fallback = {
+        title_template: subtype,
+        body_template: subtype,
       };
-      // Render templates
-      const tpl = await getTemplate(notif.subtype, notif.locale || 'en', notif.user_id);
-      const title = renderTemplate(tpl.title_template || notif.subtype, enrichedData);
-      const body = renderTemplate(tpl.body_template || notif.subtype, enrichedData);
-      // Build expo messages
+      templateCache.set(key, fallback);
+      return fallback;
+    }
+  }
+  // Helper: mark tokens inactive in push_tokens table
+  async function deactivateTokens(tokensToDeactivate = []) {
+    if (!tokensToDeactivate || !tokensToDeactivate.length) return;
+    try {
+      // dedupe
+      const uniq = Array.from(new Set(tokensToDeactivate));
+      await supabase
+        .from('push_tokens')
+        .update({
+          active: false,
+          updated_at: new Date().toISOString(),
+        })
+        .in('token', uniq);
+      if (DEBUG) console.log('Deactivated tokens:', uniq.length);
+    } catch (e) {
+      console.error('Failed to deactivate tokens:', e);
+    }
+  }
+  // Iterate rows and process each notification
+  for (const row of enrichedRows) {
+    const notif = row.notification_row || {};
+    const msgId = row.msg_id;
+    const tokens = Array.isArray(row.tokens) ? row.tokens : [];
+    const userId = row.user_id;
+    const actorId = row.actor_id;
+    const actorRow = safeJsonParse(row.actor_profile) || null;
+    const userRow = safeJsonParse(row.user_profile) || null;
+    const memberRow = safeJsonParse(row.member_profile) || null;
+    const groupRow = safeJsonParse(row.group_obj) || null;
+    const dataObj = safeJsonParse(row.data) ?? {};
+    // Prepare actorForTemplate: clone actor row. If actor==user, show "You".
+    let actorForTemplate = actorRow
+      ? {
+          ...actorRow,
+        }
+      : null;
+    if (actorForTemplate && userRow && String(actorForTemplate.id) === String(userRow.id)) {
+      actorForTemplate.nickname = 'You';
+    }
+    // Prepare memberForTemplate: if member equals recipient, nickname => "You"
+    let memberForTemplate = memberRow
+      ? {
+          ...memberRow,
+        }
+      : null;
+    if (memberForTemplate && userRow && String(memberForTemplate.id) === String(userRow.id)) {
+      memberForTemplate.nickname = 'You';
+    }
+    console.log('[notif]: ', notif);
+    const enrichedData = {
+      ...dataObj,
+      actor: actorForTemplate,
+      user: userRow,
+      member: memberForTemplate,
+      group: groupRow,
+      subtype: notif.subtype,
+    };
+    // Render template always
+    const tpl = await getTemplateCached(notif.subtype, notif.locale || 'en', notif.user_id);
+    const title = renderTemplate(tpl.title_template || notif.subtype, enrichedData);
+    const body = renderTemplate(tpl.body_template || notif.subtype, enrichedData);
+    // Base update (always write title/body)
+    const baseUpdate = {
+      title,
+      body,
+      updated_at: new Date().toISOString(),
+    };
+    // Default status and expoResponse
+    let status = 'no_device';
+    let expoResponse = {
+      info: 'no tokens',
+    };
+    let ticket_id = null;
+    // CASE: actor == user => skip sending pushes, but set status skipped_self
+    if (actorId && userId && String(actorId) === String(userId)) {
+      status = 'skipped_self';
+      expoResponse = {
+        info: 'actor_self_skipped',
+      };
+      if (DEBUG)
+        console.log(`Skipping push sends for notification ${notif.id} because actor == user.`);
+      // Update notification with skipped_self
+      try {
+        await supabase
+          .from('notifications')
+          .update({
+            ...baseUpdate,
+            status,
+            expo_response: expoResponse,
+            ticket_id,
+          })
+          .eq('id', notif.id);
+      } catch (e) {
+        console.error('Failed updating notification for skipped_self:', notif.id, e);
+      }
+      // mark queue message processed
+      processedMsgIds.push(msgId);
+      continue; // skip to next row (no push attempts)
+    }
+    // CASE: send push only if tokens exist
+    if (tokens.length > 0) {
+      // Build expo messages in the same order as tokens array
       const expoMessages = tokens.map((t) => ({
         to: t.token,
         title,
@@ -451,83 +399,114 @@ async function processBatch(batch) {
           ...enrichedData,
         },
       }));
-      // Send in chunks
+      // We'll collect tokens to deactivate across chunks
+      const tokensToDeactivate = [];
+      // Send messages in chunks
       for (let i = 0; i < expoMessages.length; i += EXPO_BATCH_SIZE) {
         const chunk = expoMessages.slice(i, i + EXPO_BATCH_SIZE);
         const expoRes = await sendToExpo(chunk);
-        if (!expoRes?.ok) {
-          // mark failed, but continue processing other messages for resiliency
-          try {
-            const platforms = tokens
-              .map((t) => t.platform)
-              .filter(Boolean)
-              .join(',');
-            await supabase
-              .from('notifications')
-              .update({
-                status: 'failed',
-                platform: platforms || null,
-                expo_response: expoRes?.body || {
-                  error: 'ExpoSendFailed',
-                },
-                updated_at: new Date().toISOString(),
-              })
-              .eq('id', notificationId);
-          } catch (e) {
-            console.error('Failed updating notification to failed:', e);
+        // Consolidate expoResponse (best-effort)
+        if (expoRes?.body) {
+          // simple merge: keep last body under expoResponse and keep combined data array if present
+          if (!expoResponse || typeof expoResponse !== 'object') expoResponse = {};
+          // merge data arrays (if present)
+          if (Array.isArray(expoRes.body.data)) {
+            expoResponse.data = (expoResponse.data || []).concat(expoRes.body.data || []);
+          } else if (expoRes.body) {
+            expoResponse.last = expoRes.body;
           }
-          continue;
         }
-        // Success: update record with ticket info where available
+        if (!expoRes?.ok) {
+          status = 'failed';
+          // still inspect body for per-message errors (to detect not-registered)
+        } else {
+          status = 'pending';
+        }
+        // Check expoRes.body.data for per-message errors (aligned with chunk order)
+        // Expo response items correspond to chunk order
         try {
-          const ticket_id =
-            Array.isArray(expoRes.body?.data) && expoRes.body.data[0]?.id
-              ? expoRes.body.data[0].id
-              : null;
-          const platforms = tokens
-            .map((t) => t.platform)
-            .filter(Boolean)
-            .join(',');
-          await supabase
-            .from('notifications')
-            .update({
-              title,
-              body,
-              status: 'pending',
-              platform: platforms || null,
-              expo_response: expoRes.body,
-              ticket_id,
-              updated_at: new Date().toISOString(),
-            })
-            .eq('id', notificationId);
-        } catch (e) {
-          console.error('Failed updating notification on success:', e);
+          const respArray = expoRes?.body?.data;
+          if (Array.isArray(respArray)) {
+            for (let idx = 0; idx < respArray.length; idx++) {
+              const item = respArray[idx];
+              // item.status === 'error' / item.details / item.message may contain device not registered info
+              if (item && item.status === 'error') {
+                const errMsg = String(item.message || item.details || '');
+                // common indicators for device not registered
+                const lowered = errMsg.toLowerCase();
+                if (
+                  errMsg.includes('DeviceNotRegistered') ||
+                  errMsg.includes('NotRegistered') ||
+                  lowered.includes('not register') ||
+                  lowered.includes('device_not_registered')
+                ) {
+                  // collect token from chunk[idx]
+                  const badToken = chunk[idx]?.to;
+                  if (badToken) tokensToDeactivate.push(badToken);
+                  if (DEBUG)
+                    console.log('Detected not-registered token for:', badToken, 'error:', errMsg);
+                }
+              }
+            }
+          }
+        } catch (err) {
+          console.error('Error parsing expo response items for not-registered tokens:', err);
         }
+        // End chunk loop
+      } // end chunk loop
+      // After all chunks, if any tokens to deactivate -> update DB
+      if (tokensToDeactivate.length) {
+        await deactivateTokens(tokensToDeactivate);
       }
-      processedIds.push(msg.msg_id);
+      // Determine ticket_id: pick first id if available
+      try {
+        if (
+          Array.isArray(expoResponse?.data) &&
+          expoResponse.data.length > 0 &&
+          expoResponse.data[0]?.id
+        ) {
+          ticket_id = expoResponse.data[0].id;
+        }
+      } catch (e) {
+        // ignore
+      }
+    } // end if tokens
+    // Update notification row with final status & expo_response
+    try {
+      await supabase
+        .from('notifications')
+        .update({
+          ...baseUpdate,
+          status,
+          expo_response: expoResponse,
+          ticket_id,
+        })
+        .eq('id', notif.id);
     } catch (e) {
-      console.error('Failed processing msg_id', msg?.msg_id, e);
-      // remove message to avoid poison queue; optionally you can choose not to remove and implement retry/backoff
-      processedIds.push(msg?.msg_id);
+      console.error('Failed updating notification after send:', notif.id, e);
+    }
+    // mark queue message processed
+    processedMsgIds.push(msgId);
+  } // end for enrichedRows
+  // Delete processed queue messages (via RPC)
+  if (processedMsgIds.length) {
+    try {
+      await supabase.rpc('delete_notifications', {
+        msg_ids: processedMsgIds,
+      });
+      if (DEBUG) console.log('Deleted processed messages:', processedMsgIds.length);
+    } catch (e) {
+      console.error('delete_notifications RPC failed:', e);
     }
   }
-  // Cleanup processed messages
-  try {
-    await deleteQueueMessages(processedIds);
-  } catch (e) {
-    console.error('deleteQueueMessages failed:', e);
-  }
-  return processedIds.length;
+  return processedMsgIds.length;
 }
 // ---------- Handler (entrypoint) ----------
 serve(async function handler(req) {
-  // Quick method check
-  if (req.method !== 'POST') {
+  if (req.method !== 'POST')
     return new Response('Method Not Allowed', {
       status: 405,
     });
-  }
-  // Check supabase client and critical envs
   if (!supabase) {
     console.error('Supabase client not initialized. Missing SUPABASE_URL/SERVICE_KEY?');
     return new Response(
@@ -547,11 +526,6 @@ serve(async function handler(req) {
   try {
     const incomingSecret = req.headers.get('x-cron-secret');
     if (CRON_SECRET) {
-      console.log(
-        'incomingSecret: ',
-        incomingSecret === CRON_SECRET,
-        incomingSecret ? 'provided' : 'missing'
-      );
       if (!incomingSecret || incomingSecret !== CRON_SECRET) {
         console.warn('Invalid or missing x-cron-secret header - rejecting request');
         return new Response(
@@ -574,12 +548,9 @@ serve(async function handler(req) {
     }
   } catch (e) {
     console.error('Error checking cron secret header:', e);
-    // continue — but it's likely harmless to continue in debug scenarios
   }
-  // Instrumentation logs to find hang points quickly (remove or reduce in prod)
-  if (DEBUG) console.log('Handler: about to check queueHasMessages()');
+  if (DEBUG) console.log('Handler: checking queueHasMessages()');
   const hasQueue = await queueHasMessages();
-  if (DEBUG) console.log('Handler: queueHasMessages returned:', hasQueue);
   if (!hasQueue) {
     return new Response(
       JSON.stringify({
@@ -595,31 +566,13 @@ serve(async function handler(req) {
       }
     );
   }
-  if (DEBUG) console.log('Handler: about to fetchQueueBatch()');
-  const batch = await fetchQueueBatch();
-  if (DEBUG) console.log('Handler: fetchQueueBatch returned count:', batch.length);
-  if (!batch.length) {
-    return new Response(
-      JSON.stringify({
-        ok: true,
-        processed: 0,
-        reason: 'empty_batch',
-      }),
-      {
-        status: 200,
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      }
-    );
-  }
-  if (DEBUG) console.log('Handler: about to processBatch()');
-  const count = await processBatch(batch);
-  if (DEBUG) console.log('Handler: processed count:', count);
+  if (DEBUG) console.log('Handler: processing batch');
+  const processedCount = await processBatch(MAX_BATCH);
+  if (DEBUG) console.log('Handler: processedCount', processedCount);
   return new Response(
     JSON.stringify({
       ok: true,
-      processed: count,
+      processed: processedCount,
     }),
     {
       status: 200,

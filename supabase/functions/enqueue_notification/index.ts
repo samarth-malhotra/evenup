@@ -170,12 +170,13 @@ serve(async (req) => {
         baseData.currency = txRow.currency;
       }
     }
-    // Resolve recipients from group_members excluding status = 'deleted'
+    // Resolve recipients from group_members excluding status = 'deleted' and 'left
     const { data: members, error: membersErr } = await supabase
       .from('group_members')
       .select('user_id, status')
       .eq('group_id', groupId)
-      .neq('status', 'deleted'); // exclude deleted in the general fetch
+      .neq('status', 'deleted')
+      .neq('status', 'left'); // exclude deleted in the general fetch
     if (membersErr) {
       console.error('Error fetching group members:', membersErr);
       return new Response(
@@ -270,7 +271,6 @@ serve(async (req) => {
         ticket_id: null,
         expo_response: null,
         status: 'pending',
-        attempted_at: null,
         created_at: nowIso,
         updated_at: nowIso,
       });
@@ -293,8 +293,7 @@ serve(async (req) => {
           platform: null,
           ticket_id: null,
           expo_response: null,
-          status: 'actor',
-          attempted_at: null,
+          status: 'skipped_self',
           created_at: nowIso,
           updated_at: nowIso,
         }
@@ -333,10 +332,10 @@ serve(async (req) => {
       );
     }
     const finalInserted = inserted || [];
-    // Build messages for enqueue RPC (exclude actor rows)
+    // Build messages for enqueue RPC (include actor rows)
     const msgs = [];
     for (const row of finalInserted) {
-      if (row.status === 'actor') continue;
+      // if (row.status === 'skipped_self') continue;
       msgs.push(
         JSON.stringify({
           notification_id: row.id,
@@ -351,13 +350,13 @@ serve(async (req) => {
         });
         if (rpcErr) {
           console.error('enqueue_notifications rpc error:', rpcErr);
+          // if (row.status !== "actor")
           for (const row of finalInserted)
-            if (row.status !== 'actor')
-              enqueuedResults.push({
-                notification_id: row.id,
-                enqueued: false,
-                error: rpcErr,
-              });
+            enqueuedResults.push({
+              notification_id: row.id,
+              enqueued: false,
+              error: rpcErr,
+            });
         } else {
           enqueuedResults.push({
             enqueued: true,

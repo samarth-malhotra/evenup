@@ -33,4 +33,7 @@ export const rpc = {
   delete_transaction_comment: 'delete_transaction_comment',
   update_group_transaction_with_splits: 'update_group_transaction_with_splits',
   get_transaction_summary: 'get_transaction_summary',
+  getNotificationsByUser: 'get_notifications_by_user',
+  markNotificationRead: 'mark_notification_read',
+  markAllNotificationRead: 'mark_all_notifications_read',
 } as const;

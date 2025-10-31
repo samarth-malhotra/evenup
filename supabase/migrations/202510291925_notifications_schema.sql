@@ -51,3 +51,8 @@ ALTER TABLE push_tokens
 
 -- (Optional) Add index on last_seen to help pruning queries later
 CREATE INDEX IF NOT EXISTS push_tokens_last_seen_idx ON push_tokens (last_seen);
+
+ALTER TABLE public.notifications
+DROP COLUMN IF EXISTS group_id,
+DROP COLUMN IF EXISTS attempted_at;
+ADD COLUMN IF NOT EXISTS is_read boolean NOT NULL DEFAULT false;
