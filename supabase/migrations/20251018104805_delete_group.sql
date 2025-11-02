@@ -13,6 +13,7 @@ begin
   set 
     deleted_by = p_user_id,
     deleted_at = now(),
+    reverted_by  = NULL,
     status = 'deleted'
   where id = p_group_id;
 
@@ -41,4 +42,3 @@ exception
     );
 end;
 $$;
-

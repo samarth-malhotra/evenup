@@ -4,8 +4,10 @@ import { edgeFunction } from '@/services/supabase/edgeFunctions';
 
 export enum NotificationType {
   GroupDeleted = 'group_deleted',
+  GroupDeletedRevoked = 'group_deleted_revoked',
   GroupMemberAdded = 'group_member_added',
   GroupMemberDeleted = 'group_member_deleted',
+  GroupMemberDeletedRevoked = 'group_member_deleted_revoked',
   GroupMemberLeft = 'group_member_left',
 
   ExpenseCreated = 'expense_created',
