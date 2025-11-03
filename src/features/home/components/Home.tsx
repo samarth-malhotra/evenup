@@ -10,7 +10,7 @@ import { Avatar } from '@/components/Avatar';
 import SummaryCard from '@/components/SummaryCard';
 import ThemedSafeArea from '@/components/ThemedSafeArea';
 import CreateGroupBottomSheet from '@/features/groups/components/BottomSheet/CreateGroupSheet';
-import { useGroupsList } from '@/features/groups/hooks/useGroupsList';
+import { useGroupsInfinite } from '@/features/groups/hooks/useGroupsList';
 import { userAtom } from '@/stores/atoms/user';
 import { getBoxShadow } from '@/theme/hooks/getBoxShadow';
 import { useColor } from '@/theme/hooks/useColor';
@@ -65,13 +65,23 @@ export default function HomeScreen() {
   const openPaidByPicker = useCallback(async () => 'Anita', []);
   const openParticipantsPicker = useCallback(async () => ['You', 'Anita', 'Rohit'], []);
 
+  // const {
+  //   data: groupsList,
+  //   isLoading,
+  //   isError,
+  //   error: ApiError,
+  //   refetch,
+  // } = useGroupsList(user?.id);
+
   const {
-    data: groupsList,
+    groups: groupsList,
     isLoading,
-    isError,
-    error: ApiError,
+    isFetchingNextPage,
+    fetchNextPage,
+    hasNextPage,
     refetch,
-  } = useGroupsList(user?.id);
+    isRefetching,
+  } = useGroupsInfinite({ userId: user?.id ?? '', limit: 10 });
 
   useLayoutEffect(() => {
     navigation.setOptions({
