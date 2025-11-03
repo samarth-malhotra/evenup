@@ -18,6 +18,9 @@ export const QUERY_KEYS = {
   transaction: {
     details: (txId?: string) => ['transaction', txId, 'details'] as const,
   },
+  notifications: {
+    list: ['notifications', 'list'] as const,
+  },
 } as const;
 
 // small helper types (optional, handy)

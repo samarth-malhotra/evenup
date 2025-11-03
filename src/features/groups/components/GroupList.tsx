@@ -1,14 +1,22 @@
 // import groups from '@/app/(tabs)/groups';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
-import { router, useNavigation } from 'expo-router';
+import { router, useFocusEffect, useNavigation } from 'expo-router';
 import { useAtomValue } from 'jotai';
-import { useLayoutEffect, useState } from 'react';
-import { ActivityIndicator, FlatList, Pressable, Text, TextInput, View } from 'react-native';
+import { useCallback, useLayoutEffect, useState } from 'react';
+import {
+  ActivityIndicator,
+  FlatList,
+  Pressable,
+  RefreshControl,
+  Text,
+  TextInput,
+  View,
+} from 'react-native';
 
 import AppHeader from '@/components/AppHeader';
 import BalanceBadge from '@/features/groups/components/BalanceBadge';
 import CreateGroupBottomSheet from '@/features/groups/components/BottomSheet/CreateGroupSheet';
-import { useGroupsList } from '@/features/groups/hooks/useGroupsList';
+import { useGroupsInfinite } from '@/features/groups/hooks/useGroupsList';
 import { formatCurrency } from '@/features/groups/utils';
 import { userAtom } from '@/stores/atoms/user';
 import { useColor } from '@/theme/hooks/useColor';
@@ -22,12 +30,14 @@ export default function GroupList() {
   const [openNewGroupSheet, setOpenNewGroupSheet] = useState(false);
   const user = useAtomValue(userAtom);
   const {
-    data: groupsList,
+    groups: groupsList,
     isLoading,
-    isError,
-    error: ApiError,
+    isFetchingNextPage,
+    fetchNextPage,
+    hasNextPage,
     refetch,
-  } = useGroupsList(user?.id);
+    isRefetching,
+  } = useGroupsInfinite({ userId: user?.id ?? '', limit: 10 });
 
   useLayoutEffect(() => {
     navigation.setOptions({
@@ -49,6 +59,13 @@ export default function GroupList() {
       ),
     });
   }, [getColor, navigation]);
+
+  useFocusEffect(
+    useCallback(() => {
+      // this runs each time screen gains focus
+      refetch();
+    }, [refetch])
+  );
 
   console.log('Group List: ', isLoading, groupsList?.length);
   if (isLoading) {
@@ -130,6 +147,23 @@ export default function GroupList() {
             </Pressable>
           );
         }}
+        refreshing={isRefetching} // <- show native pull refresh spinner while refetching
+        onRefresh={() => refetch()} // <- trigger a refetch
+        contentContainerStyle={{ paddingBottom: 32 }}
+        onEndReached={() => {
+          if (hasNextPage && !isFetchingNextPage) {
+            fetchNextPage();
+          }
+        }}
+        onEndReachedThreshold={0.5}
+        refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetch} />}
+        ListFooterComponent={
+          isFetchingNextPage ? (
+            <View className="py-4">
+              <ActivityIndicator />
+            </View>
+          ) : null
+        }
       />
       {/* Create New Group Bottom Sheet */}
       <CreateGroupBottomSheet

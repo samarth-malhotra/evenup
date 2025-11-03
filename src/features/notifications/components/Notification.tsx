@@ -1,147 +1,293 @@
-import { Feather, Ionicons } from '@expo/vector-icons';
-import { useNavigation } from 'expo-router';
-import { useCallback, useEffect, useLayoutEffect, useMemo, useState } from 'react';
-import { RefreshControl, SectionList, Text, TouchableOpacity, View } from 'react-native';
+// NotificationsSectionScreen.tsx
 
-import AppHeader from '@/components/AppHeader';
-import { styles } from '@/features/notifications/style';
+import { Ionicons } from '@expo/vector-icons';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+// import { format } from 'libphonenumber-js';
+import { format, isToday, isYesterday } from 'date-fns';
+import { useAtomValue } from 'jotai';
+import React, { useCallback, useMemo } from 'react';
+import type { ListRenderItemInfo, SectionListData } from 'react-native';
 import {
-  loadActivities,
-  pickAvatarTint,
-  pickIconName,
-  saveActivities,
-  splitSections,
-  timeAgo,
-} from '@/features/notifications/util';
-import { useTheme } from '@/theme/hooks/useTheme';
+  ActivityIndicator,
+  Pressable,
+  RefreshControl,
+  SectionList,
+  Text,
+  View,
+} from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import type { Activity } from '../types';
+import type { NotificationItem } from '@/features/notifications/hooks/useUserNotifications';
+// import { useNotificationsInfinite } from '@/features/notifications/hooks/useUserNotifications';
+// import type { NotificationItem } from '@/hooks/useNotificationsInfinite';
+// import { useNotificationsInfinite } from '@/hooks/useNotificationsInfinite';
+import {
+  markAllNotificationRead as rpcMarkAllNotificationRead,
+  markNotificationRead as rpcMarkNotificationRead,
+  useNotificationsInfinite,
+} from '@/features/notifications/hooks/useUserNotifications';
+import { userAtom } from '@/stores/atoms/user';
 
-export default function NotificationsScreen() {
-  const { theme } = useTheme();
-  const [list, setList] = useState<Activity[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
+// Section type
+type Section = {
+  title: 'Today' | 'Yesterday' | 'Earlier';
+  data: NotificationItem[];
+};
 
-  const unreadCount = useMemo(() => list.filter((a) => !a.read).length, [list]);
-  const sections = useMemo(() => splitSections(list), [list]);
+export default function NotificationsSectionScreen({ route, navigation }: any) {
+  const user = useAtomValue(userAtom);
+  const userId = user?.id ?? '';
+  const { top } = useSafeAreaInsets();
 
-  const navigation = useNavigation();
+  const {
+    isLoading,
+    isFetchingNextPage,
+    fetchNextPage,
+    hasNextPage,
+    isRefetching,
+    refetch,
+    notifications,
+    total,
+    unread,
+  } = useNotificationsInfinite({
+    userId,
+    limit: 50,
+    onlyUnread: false,
+    enabled: !!userId,
+  });
 
-  useLayoutEffect(() => {
-    navigation.setOptions({
-      headerShown: true,
-      header: () => <AppHeader title="Notifications" showBackButton />,
-    });
-  }, [navigation]);
+  const queryClient = useQueryClient();
 
-  useEffect(() => {
-    (async () => {
-      const data = await loadActivities();
-      setList(data);
-      setLoading(false);
-    })();
-  }, []);
+  // Mark single read mutation (optimistic)
+  const markReadMutation = useMutation({
+    mutationFn: (payload: { p_user_id: string; p_notification_id: string }) =>
+      rpcMarkNotificationRead(payload),
+    onMutate: async ({ p_notification_id }) => {
+      const key = ['notifications', userId, { limit: 50, onlyUnread: false }];
+      await queryClient.cancelQueries({ queryKey: key });
+      const previous = queryClient.getQueryData<any>(key);
 
-  const toggleRead = useCallback(async (id: string) => {
-    setList((prev) => {
-      const next = prev.map((a) => (a.id === id ? { ...a, read: !a.read } : a));
-      saveActivities(next);
-      return next;
-    });
-  }, []);
+      queryClient.setQueryData<any>(key, (old: any) => {
+        if (!old) return old;
+        if (old.pages) {
+          return {
+            ...old,
+            pages: old.pages.map((page: any) => ({
+              ...page,
+              notifications: page.notifications.map((n: any) =>
+                n.notification_id === p_notification_id ? { ...n, is_read: true } : n
+              ),
+            })),
+            unread: Math.max(0, (old.unread ?? 0) - 1),
+          };
+        }
+        return {
+          ...old,
+          notifications: (old.notifications ?? []).map((n: any) =>
+            n.notification_id === p_notification_id ? { ...n, is_read: true } : n
+          ),
+          unread: Math.max(0, (old.unread ?? 0) - 1),
+        };
+      });
 
-  const markAllRead = useCallback(async () => {
-    setList((prev) => {
-      const next = prev.map((a) => ({ ...a, read: true }));
-      saveActivities(next);
-      return next;
-    });
-  }, []);
+      return { previous };
+    },
+    onError: (err, vars, context: any) => {
+      const key = ['notifications', userId, { limit: 50, onlyUnread: false }];
+      if (context?.previous) queryClient.setQueryData(key, context.previous);
+    },
+    onSettled: () => {
+      const key = ['notifications', userId, { limit: 50, onlyUnread: false }];
+      queryClient.invalidateQueries({ queryKey: key });
+    },
+  });
 
-  const onRefresh = useCallback(async () => {
-    setRefreshing(true);
-    // simulate fetch
-    const data = await loadActivities();
-    setList(data);
-    setRefreshing(false);
-  }, []);
+  // Mark all read mutation
+  const markAllMutation = useMutation({
+    mutationFn: ({ p_user_id }: { p_user_id: string }) => rpcMarkAllNotificationRead({ p_user_id }),
+    onMutate: async () => {
+      const key = ['notifications', userId, { limit: 50, onlyUnread: false }];
+      await queryClient.cancelQueries({ queryKey: key });
+      const previous = queryClient.getQueryData<any>(key);
+      queryClient.setQueryData<any>(key, (old: any) => {
+        if (!old) return old;
+        if (old.pages) {
+          return {
+            ...old,
+            pages: old.pages.map((page: any) => ({
+              ...page,
+              notifications: page.notifications.map((n: any) => ({ ...n, is_read: true })),
+            })),
+            unread: 0,
+          };
+        }
+        return {
+          ...old,
+          notifications: (old.notifications ?? []).map((n: any) => ({ ...n, is_read: true })),
+          unread: 0,
+        };
+      });
+      return { previous };
+    },
+    onError: (err, vars, context: any) => {
+      const key = ['notifications', userId, { limit: 50, onlyUnread: false }];
+      if (context?.previous) queryClient.setQueryData(key, context.previous);
+    },
+    onSettled: () => {
+      const key = ['notifications', userId, { limit: 50, onlyUnread: false }];
+      queryClient.invalidateQueries({ queryKey: key });
+    },
+  });
 
-  const renderItem = ({ item }: { item: Activity }) => {
-    const unread = !item.read;
-    return (
-      <TouchableOpacity
-        activeOpacity={0.85}
-        onPress={() => toggleRead(item.id)}
-        style={[styles.row, unread ? styles.rowUnread : styles.rowRead]}>
-        <View style={[styles.avatar, pickAvatarTint(item.category)]}>
-          <Feather name={pickIconName(item.category)} size={18} />
-        </View>
+  // Helper to group notifications into sections by date
+  const sections: Section[] = useMemo(() => {
+    const today: NotificationItem[] = [];
+    const yesterday: NotificationItem[] = [];
+    const earlier: NotificationItem[] = [];
 
-        <View style={{ flex: 1 }}>
-          <Text numberOfLines={2} style={[styles.title, unread && styles.titleUnread]}>
-            {item.title}
-          </Text>
-          {!!item.subtitle && (
-            <Text numberOfLines={1} style={styles.subtitle}>
-              {item.subtitle}
+    for (const n of notifications) {
+      const dt = new Date(n.created_at);
+      if (isToday(dt)) {
+        today.push(n);
+      } else if (isYesterday(dt)) {
+        yesterday.push(n);
+      } else {
+        earlier.push(n);
+      }
+    }
+
+    const out: Section[] = [];
+    if (today.length) out.push({ title: 'Today', data: today });
+    if (yesterday.length) out.push({ title: 'Yesterday', data: yesterday });
+    if (earlier.length) out.push({ title: 'Earlier', data: earlier });
+    return out;
+  }, [notifications]);
+
+  const onPressNotification = useCallback(
+    (item: NotificationItem) => {
+      if (!item.is_read) {
+        markReadMutation.mutate({ p_user_id: userId, p_notification_id: item.notification_id });
+      }
+      // navigate or deep link here
+      // navigation?.navigate('GroupDetail', { id: someIdFromNotification });
+    },
+    [markReadMutation, userId]
+  );
+
+  const onRefresh = useCallback(() => {
+    return refetch();
+  }, [refetch]);
+
+  // infinite scroll trigger
+  const onEndReached = useCallback(() => {
+    if (hasNextPage && !isFetchingNextPage) fetchNextPage();
+  }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
+
+  const renderItem = useCallback(
+    ({ item }: ListRenderItemInfo<NotificationItem>) => {
+      return (
+        <Pressable
+          onPress={() => onPressNotification(item)}
+          className={`flex-row items-start justify-between border-b border-gray-100 px-4 py-3 ${
+            item.is_read ? 'bg-white' : 'bg-white'
+          }`}>
+          <View className="flex-1 pr-2">
+            <Text
+              className={`text-sm ${item.is_read ? 'text-gray-600' : 'font-semibold text-black'}`}>
+              {item.title ?? 'Notification'}
             </Text>
-          )}
-        </View>
-
-        <View style={{ alignItems: 'flex-end', gap: 6 }}>
-          {!!item.amountText && <Text style={styles.amount}>{item.amountText}</Text>}
-          <View style={styles.rightMeta}>
-            {unread && <View style={styles.unreadDot} />}
-            <Text>{timeAgo(item.createdAt)}</Text>
+            {item.body ? (
+              <Text className="mt-1 text-xs text-gray-500" numberOfLines={2}>
+                {item.body}
+              </Text>
+            ) : null}
+            <Text className="mt-1 text-xs text-gray-400">{formatDateLabel(item.created_at)}</Text>
           </View>
-        </View>
-      </TouchableOpacity>
-    );
-  };
 
-  const renderSectionHeader = ({ section: { title } }: any) => (
-    <View style={styles.sectionHeader}>
-      <Text style={styles.sectionTitle}>{title}</Text>
-    </View>
+          {!item.is_read ? (
+            <View className="h-3 w-3 self-start rounded-full bg-red-500" />
+          ) : (
+            <Ionicons name="chevron-forward" size={20} color="#9CA3AF" />
+          )}
+        </Pressable>
+      );
+    },
+    [onPressNotification]
+  );
+
+  const renderSectionHeader = useCallback(
+    ({ section }: { section: SectionListData<NotificationItem, Section> }) => {
+      return (
+        <View className="border-b border-gray-200 bg-gray-50 px-4 py-2">
+          <Text className="text-xs font-medium text-gray-500">{section.title}</Text>
+        </View>
+      );
+    },
+    []
   );
 
   return (
-    <>
-      {/* Top bar */}
-      <View style={styles.topBar}>
-        {/* <Text style={styles.screenTitle}>Notifications</Text> */}
+    <View className="flex-1 bg-white" style={{ paddingTop: top }}>
+      {/* Header */}
+      <View className="flex-row items-center justify-between border-b border-gray-200 px-4 py-3">
+        <Text className="text-lg font-bold">Notifications</Text>
 
-        <TouchableOpacity
-          accessibilityRole="button"
-          onPress={markAllRead}
-          disabled={unreadCount === 0}
-          style={[styles.markAllBtn, unreadCount === 0 && { opacity: 0.5 }]}>
-          <Feather name="check-circle" size={18} />
-          <Text style={styles.markAllText}>
-            Mark all as read{unreadCount ? ` (${unreadCount})` : ''}
+        <View className="flex-row items-center space-x-3">
+          <Text className="text-sm text-gray-500">
+            {unread ?? 0}/{total} unread
           </Text>
-        </TouchableOpacity>
+
+          <Pressable
+            onPress={() => markAllMutation.mutate({ p_user_id: userId })}
+            className="rounded-md bg-gray-100 px-3 py-1">
+            <Text className="text-sm">Mark all read</Text>
+          </Pressable>
+        </View>
       </View>
 
-      <SectionList
-        sections={sections}
-        keyExtractor={(item) => item.id}
-        renderItem={renderItem}
-        renderSectionHeader={renderSectionHeader}
-        stickySectionHeadersEnabled={false}
-        contentContainerStyle={styles.listContainer}
-        ItemSeparatorComponent={() => <View style={styles.separator} />}
-        ListEmptyComponent={
-          !loading ? (
-            <View style={styles.emptyWrap}>
-              <Ionicons name="notifications-off-outline" size={28} color="#9CA3AF" />
-              <Text style={styles.emptyText}>No notifications yet</Text>
-            </View>
-          ) : null
-        }
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
-      />
-    </>
+      {/* Body */}
+      {isLoading ? (
+        <View className="flex-1 items-center justify-center">
+          <ActivityIndicator size="large" />
+        </View>
+      ) : notifications.length === 0 ? (
+        <View className="flex-1 items-center justify-center px-6">
+          <Ionicons name="notifications-off-outline" size={48} color="#9CA3AF" />
+          <Text className="mt-3 text-center text-gray-500">You're all caught up</Text>
+          <Pressable onPress={() => refetch()} className="mt-4 rounded-md bg-blue-500 px-4 py-2">
+            <Text className="text-white">Refresh</Text>
+          </Pressable>
+        </View>
+      ) : (
+        <SectionList
+          sections={sections}
+          keyExtractor={(item) => item.notification_id}
+          renderItem={renderItem}
+          renderSectionHeader={renderSectionHeader}
+          stickySectionHeadersEnabled={false}
+          onEndReachedThreshold={0.6}
+          onEndReached={onEndReached}
+          refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={onRefresh} />}
+          ListFooterComponent={
+            isFetchingNextPage ? (
+              <View className="items-center py-4">
+                <ActivityIndicator />
+              </View>
+            ) : null
+          }
+        />
+      )}
+    </View>
   );
+}
+
+/** small helper: format created_at for display (time part) */
+function formatDateLabel(iso: string) {
+  try {
+    const d = new Date(iso);
+    // show time for Today/Yesterday, or full date for earlier
+    return format(d, 'p'); // e.g. 4:30 PM
+  } catch (e) {
+    return iso;
+  }
 }
